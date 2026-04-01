@@ -2,117 +2,108 @@
 setlocal enabledelayedexpansion
 title Instalador y Lanzador de TAG Logistica
 
+:: Definir colores simples (opcional, omitido para maxima compatibilidad)
 echo ===================================================
 echo   TAG LOGISTICA - SCRIPT DE DESPLIEGUE AUTOMATICO  
 echo ===================================================
 echo [LOG] Iniciando proceso de montaje de aplicacion...
 echo.
 
-:: 1. Verificar existencia de Git
-echo [LOG] Verificando requisitos del sistema (Git)...
+:: 1. Verificar Git
+echo [LOG] Verificando requisitos del sistema: Git...
 where git >nul 2>nul
-if %errorlevel% neq 0 (
-    echo [ERROR CRITICO] Git no esta instalado o no esta en el PATH.
-    echo Por favor instala Git desde https://git-scm.com/
-    pause
-    exit /b 1
-)
+if %errorlevel% neq 0 goto :NO_GIT
 
-:: 2. Verificar existencia de Docker
-echo [LOG] Verificando requisitos del sistema (Docker)...
+:: 2. Verificar Docker
+echo [LOG] Verificando requisitos del sistema: Docker...
 where docker >nul 2>nul
-if %errorlevel% neq 0 (
-    echo [ERROR CRITICO] Docker no esta instalado o no se encuentra activo.
-    echo Asegurate de tener Docker Desktop instalado y corriendo.
-    pause
-    exit /b 1
+if %errorlevel% neq 0 goto :NO_DOCKER
+
+:: 3. Verificar Carpeta / Clonar
+if exist "docker-compose.yml" goto :GOT_FILES
+
+echo [LOG] No se encontro docker-compose.yml en la carpeta actual. 
+echo [LOG] Intentando clonar el repositorio desde GitHub...
+:: RECUERDA: Cambiar el link de abajo por el tuyo real antes de distribuir
+git clone https://github.com/usuario/TAG.git .
+if !errorlevel! neq 0 goto :CLONE_FAIL
+goto :SYNC_DONE
+
+:GOT_FILES
+echo [LOG] Proyecto detectado localmente. Buscando actualizaciones...
+git pull origin develop >nul 2>&1
+if !errorlevel! neq 0 (
+    echo [ADVERTENCIA] No se pudo sincronizar con GitHub. Se usara la version local.
 )
 
-:: 3. Verificar Archivos o Clonar de Github
-if not exist "docker-compose.yml" (
-    echo [LOG] No se encontro docker-compose.yml en la carpeta actual. 
-    echo [LOG] Intentando clonar el repositorio desde GitHub...
-    
-    :: ATENCION USUARIO: REEMPLAZA EL LINK DE ABAJO POR TU ENLACE REAL DE GITHUB
-    git clone https://github.com/usuario/TAG.git .
-    
-    if !errorlevel! neq 0 (
-        echo [ERROR] Hubo un problema al clonar el repositorio.
-        echo Asegurate de que la carpeta este totalmente vacia e intenta de nuevo.
-        pause
-        exit /b 1
-    )
-) else (
-    echo [LOG] Proyecto detectado localmente. Buscando ultimas actualizaciones (git pull)...
-    git pull origin develop
-    if !errorlevel! neq 0 (
-        echo [ADVERTENCIA] Git alerto problemas o no hay internet. Se continuara con la version local.
-    )
-)
-
+:SYNC_DONE
 :: 4. Preparar Backend (.env)
 echo [LOG] Mapeando archivos de configuracion...
 if not exist "api\.env" (
     if exist "api\.env.example" (
         copy /Y "api\.env.example" "api\.env" >nul
-        echo [LOG] - Archivo api\.env generado exitosamente.
+        echo [LOG] - Archivo api\.env generado.
     ) else (
-        echo [ADVERTENCIA] No se encontro api\.env.example. Probablemente deba crear un .env manual.
+        echo [ADVERTENCIA] No se encontro api\.env.example.
     )
-) else (
-     echo [LOG] - Archivo api\.env ya existe. Omitiendo.
 )
 
-:: 5. Instalar Node Modules (Frontend) via Docker temporal
-echo [LOG] Instalando paquetes de Node.js en el cliente (aislado en Docker)...
+:: 5. Instalar Node Modules (Frontend)
+echo [LOG] Instalando paquetes del cliente...
 docker run --rm -v "%cd%\client:/app" -w /app node:20-alpine npm install
-if %errorlevel% neq 0 (
-    echo [ERROR CRITICO] Fallo la instalacion de paquetes de React/Vite.
-    pause
-    exit /b 1
-)
+if %errorlevel% neq 0 goto :INSTALL_FAIL
 
-:: 6. Instalar Composer Packages (Backend) via Docker temporal
-echo [LOG] Instalando dependencias de PHP/Laravel (aislado en Docker)...
+:: 6. Instalar Composer Packages (Backend)
+echo [LOG] Instalando dependencias del API...
 docker run --rm -v "%cd%\api:/app" -w /app composer:latest install --ignore-platform-reqs
-if %errorlevel% neq 0 (
-    echo [ERROR CRITICO] Fallo la compilacion de Vendor para Laravel.
-    pause
-    exit /b 1
-)
+if %errorlevel% neq 0 goto :INSTALL_FAIL
 
 :: 7. Iniciar el entorno General
-echo [LOG] Levantando la infraestructura principal (Base de Datos, API, Cliente)...
+echo [LOG] Levantando infraestructura con Docker-Compose...
 docker-compose up -d --build
-if %errorlevel% neq 0 (
-    echo [ERROR CRITICO] Docker-Compose fallo en iniciar los servicios principales. Revisa si un puerto (3306, 8000 o 5173) esta ocupado.
-    pause
-    exit /b 1
-)
+if %errorlevel% neq 0 goto :COMPOSE_FAIL
 
-:: 8. Operaciones Post-Instalacion BD
-echo [LOG] Generando clave local de aplicacion Laravel...
+:: 8. Operaciones Post-Instalacion
+echo [LOG] Generando clave de aplicacion...
 docker-compose exec api php artisan key:generate
 
-echo [LOG] Esperando inicializacion segura del motor MySQL...
+echo [LOG] Esperando a la base de datos...
 timeout /t 10 /nobreak >nul
 
-echo [LOG] Lanzando migraciones de la Base de Datos...
+echo [LOG] Ejecutando migraciones...
 docker-compose exec api php artisan migrate --force
 
 echo.
 echo ===================================================
 echo   DESPLIEGUE FINALIZADO CON EXITO
 echo ===================================================
-echo Tu monorepo "TAG Logistica" ya esta operando localmente:
+echo Frontend : http://localhost:5173
+echo API      : http://localhost:8000
 echo.
-echo [ APP ] Frontend (React/Vite) : http://localhost:5173
-echo [ API ] Backend (Laravel)     : http://localhost:8000
-echo [ DB  ] MySQL 8.0             : localhost:3306
-echo.
-echo Si en algun momento quieres apagar los servidores,
-echo ejecuta por consola: "docker-compose down"
-echo.
-echo Presiona cualquier boton para cerrar esta ventana...
-pause >nul
+pause
 exit /b 0
+
+:NO_GIT
+echo [ERROR CRITICO] Git no esta instalado.
+pause
+exit /b 1
+
+:NO_DOCKER
+echo [ERROR CRITICO] Docker no esta corriendo o instalado.
+pause
+exit /b 1
+
+:CLONE_FAIL
+echo [ERROR] No se pudo clonar el repositorio. Verifica tu conexion.
+pause
+exit /b 1
+
+:INSTALL_FAIL
+echo [ERROR CRITICO] Fallo la instalacion de dependencias (Node/Composer).
+pause
+exit /b 1
+
+:COMPOSE_FAIL
+echo [ERROR CRITICO] Docker-Compose fallo. Revisa los puertos 5173, 8000 y 3306.
+pause
+exit /b 1
