@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { mockClients, mockTrips } from '../data/mockData';
+import { mockProveedores as mockClients, mockViajes } from '../data/mockData';
 import { Plus, ChevronDown, Edit } from 'lucide-react';
 
 const Clients = () => {
@@ -7,7 +7,7 @@ const Clients = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
 
-  const getClientTrips = (clientId) => mockTrips.filter(t => t.clientId === clientId);
+  const getClientTrips = (clientId) => mockViajes.filter(t => t.proveedor_id === clientId);
 
   const openNew = () => {
     setEditingClient(null);
@@ -54,11 +54,11 @@ const Clients = () => {
                 return (
                   <React.Fragment key={client.id}>
                     <tr>
-                      <td style={{ fontWeight: '500' }}>{client.name}</td>
+                      <td style={{ fontWeight: '500' }}>{client.razon_social}</td>
                       <td>{client.cuit}</td>
-                      <td>{client.contact}</td>
-                      <td>{client.phone}</td>
-                      <td>{client.address}</td>
+                      <td>{client.contacto}</td>
+                      <td>{client.telefono}</td>
+                      <td>{client.direccion}</td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button 
@@ -89,11 +89,11 @@ const Clients = () => {
                                 <tbody>
                                   {clientTrips.map(trip => (
                                     <tr key={trip.id}>
-                                      <td width="20%">{trip.id}</td>
-                                      <td>{trip.origin} {'->'} {trip.destination}</td>
-                                      <td>{trip.dateStart}</td>
+                                      <td width="20%">#{trip.id}</td>
+                                      <td>{trip.origen} {'→'} {trip.destino}</td>
+                                      <td>{trip.fecha_salida}</td>
                                       <td align="right">
-                                        <span className={`badge ${trip.status === 'Finalizado' ? 'success' : 'info'}`}>{trip.status}</span>
+                                        <span className={`badge ${trip.estado === 'finalizado' ? 'success' : 'info'}`}>{trip.estado}</span>
                                       </td>
                                     </tr>
                                   ))}
@@ -129,7 +129,7 @@ const Clients = () => {
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <div style={{ flex: 2 }}>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Razón Social / Empresa</label>
-                  <input type="text" className="input-field" placeholder="Ej. Acme Logística S.A." defaultValue={editingClient?.name} required />
+                  <input type="text" className="input-field" placeholder="Ej. Acme Logística S.A." defaultValue={editingClient?.razon_social} required />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>CUIT / CUIL</label>
@@ -139,17 +139,17 @@ const Clients = () => {
 
               <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Dirección (Casa Central)</label>
-                <input type="text" className="input-field" placeholder="Ej. Ruta Nacional 9 Km 500" defaultValue={editingClient?.address} required />
+                <input type="text" className="input-field" placeholder="Ej. Ruta Nacional 9 Km 500" defaultValue={editingClient?.direccion} required />
               </div>
 
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Persona de Contacto</label>
-                  <input type="text" className="input-field" placeholder="Ej. Juan Pérez" defaultValue={editingClient?.contact} />
+                  <input type="text" className="input-field" placeholder="Ej. Juan Pérez" defaultValue={editingClient?.contacto} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Teléfono</label>
-                  <input type="text" className="input-field" placeholder="+54 9 11 0000-0000" defaultValue={editingClient?.phone} />
+                  <input type="text" className="input-field" placeholder="+54 9 11 0000-0000" defaultValue={editingClient?.telefono} />
                 </div>
               </div>
 

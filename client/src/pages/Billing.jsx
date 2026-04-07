@@ -1,6 +1,24 @@
 import React, { useState } from 'react';
-import { mockBilling, mockTrips, mockClients } from '../data/mockData';
+import { mockViajes, mockProveedores, mockFacturas } from '../data/mockData';
 import { UploadCloud, FileText, Search } from 'lucide-react';
+
+// Build a flat billing list from viajes remitos + facturas
+const buildBillingDocs = () => {
+  const docs = [];
+  mockViajes.forEach(v => {
+    if (v.remitos) {
+      v.remitos.forEach(r => {
+        const factura = r.factura_id ? mockFacturas.find(f => f.id === r.factura_id) : null;
+        docs.push({ id: r.id, type: 'Remito', documentNumber: r.numero, tripId: v.id, file: `remito_${r.id}.pdf`, date: r.fecha, status: r.estado === 'conforme' ? 'Conforme' : 'Pendiente' });
+        if (factura && !docs.find(d => d.type === 'Factura' && d.documentNumber === factura.numero)) {
+          docs.push({ id: `f-${factura.id}`, type: 'Factura', documentNumber: factura.numero, tripId: v.id, file: `factura_${factura.id}.pdf`, date: factura.fecha_emision, status: factura.estado === 'pagada' ? 'Conforme' : 'Pendiente' });
+        }
+      });
+    }
+  });
+  return docs;
+};
+const mockBilling = buildBillingDocs();
 
 const Billing = () => {
   const [activeTab, setActiveTab] = useState('Todos');
@@ -8,10 +26,10 @@ const Billing = () => {
   const documentTypes = ['Todos', 'Factura', 'Remito', 'Carta de Porte', 'Hoja de Ruta'];
 
   const getTripDetails = (tripId) => {
-    const trip = mockTrips.find(t => t.id === tripId);
+    const trip = mockViajes.find(t => t.id === tripId);
     if (!trip) return 'Desconocido';
-    const client = mockClients.find(c => c.id === trip.clientId);
-    return `${tripId} (${client?.name || 'Varios'})`;
+    const prov = mockProveedores.find(p => p.id === trip.proveedor_id);
+    return `Viaje #${tripId} (${prov?.razon_social || 'Varios'})`;
   };
 
   const getStatusBadge = (status) => {
@@ -67,7 +85,7 @@ const Billing = () => {
             <input type="text" className="input-field" placeholder="Número de Documento (Ej. FC-0001)" />
             <select className="input-field">
               <option value="">Vincular a un Viaje...</option>
-              {mockTrips.map(t => <option key={t.id} value={t.id}>{t.id} - {t.origin} a {t.destination}</option>)}
+              {mockViajes.map(t => <option key={t.id} value={t.id}>#{t.id} - {t.origen} a {t.destino}</option>)}
             </select>
             <button style={{ width: '100%', padding: '0.75rem' }}>Procesar y Guardar</button>
           </div>
