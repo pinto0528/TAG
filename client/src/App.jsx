@@ -61,13 +61,7 @@ const Header = ({ onLogout, theme, toggleTheme }) => {
 
 const Navigation = () => {
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/trips', label: 'Viajes', icon: Truck },
-    { path: '/clients', label: 'Clientes', icon: Users },
-    { path: '/resources', label: 'Recursos', icon: HardDrive },
-    { path: '/billing', label: 'Documentacion', icon: Receipt },
-    { path: '/docs', label: 'Control Riesgo', icon: FileText },
-    { path: '/config', label: 'Configuración', icon: Settings },
   ];
 
   return (
@@ -120,14 +114,15 @@ function App() {
           <Header onLogout={() => setIsAuthenticated(false)} theme={theme} toggleTheme={toggleTheme} />
           <div className="content-area">
             <Routes>
-              <Route path="/" element={<Dashboard theme={theme} />} />
+              <Route path="/" element={<Navigate to="/trips" replace />} />
+              <Route path="/dashboard" element={<Dashboard theme={theme} />} />
               <Route path="/trips" element={<Trips />} />
               <Route path="/clients" element={<Clients />} />
               <Route path="/resources" element={<Resources />} />
               <Route path="/billing" element={<Billing />} />
               <Route path="/docs" element={<Documentation />} />
               <Route path="/config" element={<Configuration />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/trips" replace />} />
             </Routes>
           </div>
         </main>
