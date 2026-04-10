@@ -11,13 +11,44 @@ class ViajeController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Viaje::with(['proveedor', 'unidad', 'chofer', 'fletero', 'carga', 'gastos', 'anticipos', 'remitos']);
+        $query = Viaje::select('viajes.*')->with(['proveedor', 'unidad', 'chofer', 'fletero', 'carga', 'gastos', 'anticipos', 'remitos']);
         
         if ($request->boolean('archivados')) {
             $query->onlyTrashed();
         }
         
-        $viajes = $query->orderBy('id', 'desc')->get();
+        if ($request->has('sort_by') && $request->has('sort_dir')) {
+            $sortBy = $request->get('sort_by');
+            $sortDir = strtolower($request->get('sort_dir'));
+            
+            if ($sortBy === 'estado' && in_array($sortDir, ['pendiente', 'en_curso', 'finalizado', 'cancelado'])) {
+                // Para estado, ordenamos para que el estado seleccionado aparezca primero
+                $query->orderByRaw("CASE WHEN estado = ? THEN 0 ELSE 1 END", [$sortDir])
+                      ->orderBy('viajes.id', 'desc');
+            } else {
+                $dir = $sortDir === 'asc' ? 'asc' : 'desc';
+                if ($sortBy === 'proveedor') {
+                    $query->leftJoin('proveedores', 'viajes.proveedor_id', '=', 'proveedores.id')
+                          ->orderBy('proveedores.razon_social', $dir);
+                } elseif ($sortBy === 'chofer') {
+                    $query->leftJoin('choferes', 'viajes.chofer_id', '=', 'choferes.id')
+                          ->orderBy('choferes.nombre', $dir);
+                } elseif ($sortBy === 'unidad') {
+                    $query->leftJoin('unidades', 'viajes.unidad_id', '=', 'unidades.id')
+                          ->orderBy('unidades.marca', $dir)->orderBy('unidades.patente', $dir);
+                } elseif ($sortBy === 'ruta') {
+                    $query->orderBy('origen', $dir);
+                } elseif ($sortBy === 'precio') {
+                    $query->orderBy('viajes.precio', $dir);
+                } else {
+                    $query->orderBy('viajes.id', 'desc');
+                }
+            }
+        } else {
+            $query->orderBy('viajes.id', 'desc');
+        }
+        
+        $viajes = $query->paginate(10);
         return response()->json($viajes);
     }
 

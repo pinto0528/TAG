@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { mockViajes, mockProveedores, mockChoferes, mockUnidades, mockFleteros, mockFacturas, mockOrdenesPago, mockCheques } from '../data/mockData';
-import { Plus, ChevronDown, Edit, DollarSign, Package, FileText, Truck as TruckIcon, ArrowRight, CheckCircle2, Clock, Printer } from 'lucide-react';
+import { Plus, ChevronDown, Edit, DollarSign, Package, FileText, Truck as TruckIcon, ArrowRight, CheckCircle2, Clock, Printer, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount || 0);
 
@@ -22,6 +22,11 @@ const getFleteroName = (trip) => trip.fletero?.razon_social || mockFleteros.find
 
 // Helpers para tarifa
 const UNIDAD_MEDIDA_LABELS = {
+  viaje: 'Precio fijo por viaje',
+  kg: 'Por kilogramo de carga',
+  km: 'Por kilómetro recorrido',
+  bulto: 'Por bulto / unidad',
+  tonelada: 'Por tonelada de carga',
   por_viaje: 'Precio fijo por viaje',
   por_kg: 'Por kilogramo de carga',
   por_km: 'Por kilómetro recorrido',
@@ -77,7 +82,7 @@ const PrintSelectedTable = ({ viajes }) => (
               Lle: {trip.fecha_llegada ? trip.fecha_llegada.split('T')[0] : 'S/D'} {trip.hora_llegada ? trip.hora_llegada.substring(11,16) : ''}
             </td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{getProveedorName(trip)}</td>
-            <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{trip.origen} → {trip.destino} {trip.km_recorrido ? `(${trip.km_recorrido}km)` : ''}</td>
+            <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{trip.origen} → {trip.destino}</td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{trip.estado.toUpperCase()}</td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>
               {trip.fletero_id ? `[Tercerizado] ${getFleteroName(trip)}` : `[Propio] Chofer: ${getChoferName(trip)}`}
@@ -117,7 +122,7 @@ const PrintTripSheet = ({ viaje }) => (
           <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Logística</h3>
           <p><strong>Origen:</strong> {viaje.origen}</p>
           <p><strong>Destino:</strong> {viaje.destino}</p>
-          <p><strong>Distancia aprox:</strong> {viaje.km_recorrido ? `${viaje.km_recorrido} km` : 'N/A'}</p>
+          <br/>
           <br/>
           <p><strong>Fecha Salida:</strong> {viaje.fecha_salida ? viaje.fecha_salida.split('T')[0] : 'S/D'} {viaje.hora_salida ? viaje.hora_salida.substring(11,16) : ''}</p>
           <p><strong>Fecha Llegada:</strong> {viaje.fecha_llegada ? viaje.fecha_llegada.split('T')[0] : 'S/D'} {viaje.hora_llegada ? viaje.hora_llegada.substring(11,16) : ''}</p>
@@ -218,6 +223,7 @@ const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes,
 
   const [alertMsg, setAlertMsg] = useState(null);
   const [confirmCfg, setConfirmCfg] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const proveedor = proveedores.find(p => p.id === Number(proveedorId));
 
@@ -225,10 +231,15 @@ const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes,
   const calcularPrecio = () => {
     if (!proveedor) return 0;
     switch (proveedor.unidad_medida) {
-      case 'por_viaje': return proveedor.tarifa;
-      case 'por_kg': return (Number(pesoKg) || 0) * proveedor.tarifa;
-      case 'por_km': return (Number(kmRecorrido) || 0) * proveedor.tarifa;
-      case 'por_bulto': return (Number(bultos) || 0) * proveedor.tarifa;
+      case 'por_viaje':
+      case 'viaje': return proveedor.tarifa;
+      case 'por_kg':
+      case 'kg': return (Number(pesoKg) || 0) * proveedor.tarifa;
+      case 'tonelada': return ((Number(pesoKg) || 0) / 1000) * proveedor.tarifa;
+      case 'por_km':
+      case 'km': return (Number(kmRecorrido) || 0) * proveedor.tarifa;
+      case 'por_bulto':
+      case 'bulto': return (Number(bultos) || 0) * proveedor.tarifa;
       default: return 0;
     }
   };
@@ -237,9 +248,9 @@ const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes,
   const precioFinal = usarManual ? (Number(precioManual) || 0) : precioCalculado;
 
   // What input does the proveedor need?
-  const necesitaKm = proveedor?.unidad_medida === 'por_km';
-  const necesitaPeso = proveedor?.unidad_medida === 'por_kg';
-  const necesitaBultos = proveedor?.unidad_medida === 'por_bulto';
+  const necesitaKm = proveedor?.unidad_medida === 'por_km' || proveedor?.unidad_medida === 'km';
+  const necesitaPeso = proveedor?.unidad_medida === 'por_kg' || proveedor?.unidad_medida === 'kg' || proveedor?.unidad_medida === 'tonelada';
+  const necesitaBultos = proveedor?.unidad_medida === 'por_bulto' || proveedor?.unidad_medida === 'bulto';
 
   return (
     <div style={{
@@ -459,7 +470,9 @@ const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes,
             </div>
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button type="button" className="outline" onClick={onClose}>Cancelar</button>
-              {!d.deleted_at && <button type="button" onClick={async () => {
+              {!d.deleted_at && <button type="button" disabled={isSaving} style={{ opacity: isSaving ? 0.7 : 1 }} onClick={async () => {
+                if (isSaving) return;
+                setIsSaving(true);
                 const payload = {
                   tipo_transporte: tipoTransporte,
                   proveedor_id: proveedorId,
@@ -502,8 +515,15 @@ const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes,
                   }
                 } catch (e) {
                   setAlertMsg('Error de red al conectar al API');
+                } finally {
+                  setIsSaving(false);
                 }
-              }}>{isEdit ? 'Guardar Cambios' : 'Crear Viaje'}</button>}
+              }}>{isSaving ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px' }}></div>
+                  Guardando...
+                </div>
+              ) : (isEdit ? 'Guardar Cambios' : 'Crear Viaje')}</button>}
             </div>
           </div>
         </form>
@@ -784,6 +804,12 @@ const Trips = () => {
   const [expandedTrip, setExpandedTrip] = useState(null);
   const [formTrip, setFormTrip] = useState(undefined); // undefined = closed, null = new, object = edit
   const [viajes, setViajes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [sortBy, setSortBy] = useState(null);
+  const [sortDir, setSortDir] = useState(null);
 
   const [proveedores, setProveedores] = useState(mockProveedores);
   const [unidades, setUnidades] = useState(mockUnidades);
@@ -824,14 +850,26 @@ const Trips = () => {
     else setSelectedTrips([...selectedTrips, id]);
   };
 
-  const fetchViajes = async () => {
+  const fetchViajes = async (page = currentPage, forceSortBy = sortBy, forceSortDir = sortDir) => {
+    setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/viajes${verArchivados ? '?archivados=1' : ''}`);
+      let url = `http://localhost:8000/api/viajes?page=${page}`;
+      if (verArchivados) url += '&archivados=1';
+      if (forceSortBy && forceSortDir) {
+        url += `&sort_by=${forceSortBy}&sort_dir=${forceSortDir}`;
+      }
+      const res = await fetch(url);
       if (res.ok) {
-        setViajes(await res.json());
+        const json = await res.json();
+        setViajes(json.data || []);
+        setCurrentPage(json.current_page || 1);
+        setTotalPages(json.last_page || 1);
+        setTotalRecords(json.total || 0);
       }
     } catch (e) {
       console.error("Error fetching viajes:", e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -853,12 +891,61 @@ const Trips = () => {
   };
 
   React.useEffect(() => {
-    fetchViajes();
+    setCurrentPage(1);
+    fetchViajes(1, sortBy, sortDir);
   }, [verArchivados]);
 
   React.useEffect(() => {
     fetchOptions();
   }, []);
+
+  const handleSort = (column) => {
+    let newSortBy = column;
+    let newSortDir = null;
+
+    if (column === 'estado') {
+       const estados = ['pendiente', 'en_curso', 'finalizado', 'cancelado', null];
+       if (sortBy === 'estado' && sortDir) {
+          const currentIndex = estados.indexOf(sortDir);
+          newSortDir = estados[currentIndex + 1] || null;
+       } else {
+          newSortDir = 'pendiente';
+       }
+       if (!newSortDir) newSortBy = null;
+    } else {
+       if (sortBy === column) {
+          if (sortDir === 'asc') newSortDir = 'desc';
+          else if (sortDir === 'desc') { newSortBy = null; newSortDir = null; }
+          else newSortDir = 'asc';
+       } else {
+          newSortDir = 'asc';
+       }
+    }
+    
+    setSortBy(newSortBy);
+    setSortDir(newSortDir);
+    setCurrentPage(1);
+    fetchViajes(1, newSortBy, newSortDir);
+  };
+
+  const SortableHeader = ({ title, column, style }) => {
+     const isActive = sortBy === column;
+     return (
+       <th onClick={() => handleSort(column)} style={{ cursor: 'pointer', userSelect: 'none', ...style }}>
+         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: style?.textAlign === 'right' ? 'flex-end' : 'flex-start' }}>
+           {title}
+           {isActive && column !== 'estado' && (
+             sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+           )}
+           {isActive && column === 'estado' && (
+             <span style={{ fontSize: '0.65rem', backgroundColor: 'var(--bg-primary)', color: 'white', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>
+               {sortDir.toUpperCase()}
+             </span>
+           )}
+         </div>
+       </th>
+     );
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -893,97 +980,152 @@ const Trips = () => {
               <tr>
                 <th style={{ width: '40px', textAlign: 'center' }}><input type="checkbox" checked={viajes.length > 0 && selectedTrips.length === viajes.length} onChange={toggleSelectAll} /></th>
                 <th>#</th>
-                <th>Proveedor</th>
-                <th>Ruta</th>
-                <th>Unidad</th>
-                <th>Chofer</th>
-                <th>Estado</th>
-                <th style={{ textAlign: 'right' }}>Precio</th>
+                <SortableHeader title="Proveedor" column="proveedor" />
+                <SortableHeader title="Ruta" column="ruta" />
+                <SortableHeader title="Unidad" column="unidad" />
+                <SortableHeader title="Chofer" column="chofer" />
+                <SortableHeader title="Estado" column="estado" />
+                <SortableHeader title="Precio" column="precio" style={{ textAlign: 'right' }} />
                 <th style={{ textAlign: 'center' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {viajes.map(trip => {
-                const isExpanded = expandedTrip === trip.id;
-                const totalGastos = trip.gastos?.reduce((a, g) => a + g.monto, 0) || 0;
+              {loading ? (
+                <tr>
+                  <td colSpan="9" style={{ textAlign: 'center', padding: '3rem' }}>
+                    <div className="spinner" style={{ margin: '0 auto 1rem auto' }}></div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Cargando viajes...</div>
+                  </td>
+                </tr>
+              ) : viajes.length === 0 ? (
+                <tr>
+                  <td colSpan="9" style={{ textAlign: 'center', padding: '2rem' }}>No hay viajes cargados.</td>
+                </tr>
+              ) : (
+                viajes.map(trip => {
+                  const isExpanded = expandedTrip === trip.id;
 
-                return (
-                  <React.Fragment key={trip.id}>
-                    <tr style={{ opacity: trip.deleted_at ? 0.6 : 1 }}>
-                      <td style={{ textAlign: 'center' }}>
-                        <input type="checkbox" checked={selectedTrips.includes(trip.id)} onChange={() => toggleTripSelection(trip.id)} />
-                      </td>
-                      <td style={{ fontWeight: '500' }}>
-                        {trip.codigo_viaje}
-                        {trip.deleted_at && <span style={{ display: 'block', fontSize: '0.6rem', color: 'var(--color-danger-text)' }}>ARCHIVADO</span>}
-                      </td>
-                      <td>{getProveedorName(trip)}</td>
-                      <td>{trip.origen} {'→'} {trip.destino}</td>
-                      <td style={{ fontSize: '0.8rem' }}>{getUnidadLabel(trip)}</td>
-                      <td>{getChoferName(trip)}</td>
-                      <td>{getStatusBadge(trip.estado)}</td>
-                      <td style={{ textAlign: 'right', fontWeight: '500' }}>{formatCurrency(trip.precio)}</td>
-                      <td style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                          {!trip.deleted_at ? (
+                  return (
+                    <React.Fragment key={trip.id}>
+                      <tr style={{ opacity: trip.deleted_at ? 0.6 : 1 }}>
+                        <td style={{ textAlign: 'center' }}>
+                          <input type="checkbox" checked={selectedTrips.includes(trip.id)} onChange={() => toggleTripSelection(trip.id)} />
+                        </td>
+                        <td style={{ fontWeight: '500' }}>
+                          {trip.codigo_viaje}
+                          {trip.deleted_at && <span style={{ display: 'block', fontSize: '0.6rem', color: 'var(--color-danger-text)' }}>ARCHIVADO</span>}
+                        </td>
+                        <td>{getProveedorName(trip)}</td>
+                        <td>{trip.origen} {'→'} {trip.destino}</td>
+                        <td style={{ fontSize: '0.8rem' }}>{getUnidadLabel(trip)}</td>
+                        <td>{getChoferName(trip)}</td>
+                        <td>{getStatusBadge(trip.estado)}</td>
+                        <td style={{ textAlign: 'right', fontWeight: '500' }}>{formatCurrency(trip.precio)}</td>
+                        <td style={{ textAlign: 'center' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                            {!trip.deleted_at ? (
+                              <button
+                                className="outline"
+                                style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}
+                                onClick={() => setFormTrip(trip)}
+                                title="Editar viaje"
+                              >
+                                <Edit size={14} />
+                              </button>
+                            ) : (
+                               <button
+                                className="outline success"
+                                style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', borderColor: 'var(--color-success-text)', color: 'var(--color-success-text)' }}
+                                onClick={async () => {
+                                   await fetch(`http://localhost:8000/api/viajes/${trip.id}/restore`, { method: 'POST' });
+                                   fetchViajes();
+                                }}
+                                title="Desarchivar viaje"
+                              >
+                                Restaurar
+                               </button>
+                            )}
                             <button
                               className="outline"
                               style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}
-                              onClick={() => setFormTrip(trip)}
-                              title="Editar viaje"
+                              onClick={() => { setTripToPrint(trip); setPrintMode('sheet'); }}
+                              title="Imprimir Hoja de Ruta"
                             >
-                              <Edit size={14} />
+                              <Printer size={14} />
                             </button>
-                          ) : (
-                             <button
-                              className="outline success"
-                              style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', borderColor: 'var(--color-success-text)', color: 'var(--color-success-text)' }}
-                              onClick={async () => {
-                                 await fetch(`http://localhost:8000/api/viajes/${trip.id}/restore`, { method: 'POST' });
-                                 fetchViajes();
-                              }}
-                              title="Desarchivar viaje"
+                            <button
+                              className="outline"
+                              style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}
+                              onClick={() => setExpandedTrip(isExpanded ? null : trip.id)}
                             >
-                              Restaurar
-                             </button>
-                          )}
-                          <button
-                            className="outline"
-                            style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}
-                            onClick={() => { setTripToPrint(trip); setPrintMode('sheet'); }}
-                            title="Imprimir Hoja de Ruta"
-                          >
-                            <Printer size={14} />
-                          </button>
-                          <button
-                            className="outline"
-                            style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}
-                            onClick={() => setExpandedTrip(isExpanded ? null : trip.id)}
-                          >
-                            Detalle <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {isExpanded && (
-                      <tr style={{ backgroundColor: 'var(--bg-hover)' }}>
-                        <td colSpan="8" style={{ padding: '1rem' }}>
-                          <TripDetail trip={trip} />
+                              Detalle <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-              {viajes.length === 0 && (
-                <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', padding: '2rem' }}>No hay viajes cargados.</td>
-                </tr>
+
+                      {isExpanded && (
+                        <tr style={{ backgroundColor: 'var(--bg-hover)' }}>
+                          <td colSpan="9" style={{ padding: '1rem' }}>
+                            <TripDetail trip={trip} />
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
+        
+        {/* Paginación */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderTop: '1px solid var(--border-color)', backgroundColor: 'var(--bg-body)' }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              Mostrando página <strong>{currentPage}</strong> de <strong>{totalPages}</strong> (Total: {totalRecords} viajes)
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+               <button 
+                 className="outline" 
+                 style={{ padding: '0.4rem 0.5rem', display: 'flex' }}
+                 disabled={currentPage <= 1 || loading} 
+                 onClick={() => { setCurrentPage(c => c - 1); fetchViajes(currentPage - 1, sortBy, sortDir); }}
+               >
+                 <ChevronLeft size={16} />
+               </button>
+               
+               {[...Array(totalPages)].map((_, i) => {
+                 const pageNum = i + 1;
+                 if (pageNum === 1 || pageNum === totalPages || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)) {
+                   return (
+                     <button
+                       key={pageNum}
+                       className={currentPage === pageNum ? "" : "outline"}
+                       style={{ padding: '0.2rem 0.75rem', minWidth: '32px' }}
+                       disabled={currentPage === pageNum || loading}
+                       onClick={() => { setCurrentPage(pageNum); fetchViajes(pageNum, sortBy, sortDir); }}
+                     >
+                       {pageNum}
+                     </button>
+                   );
+                 } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                   return <span key={pageNum} style={{ color: 'var(--text-muted)' }}>...</span>;
+                 }
+                 return null;
+               })}
+
+               <button 
+                 className="outline" 
+                 style={{ padding: '0.4rem 0.5rem', display: 'flex' }}
+                 disabled={currentPage >= totalPages || loading} 
+                 onClick={() => { setCurrentPage(c => c + 1); fetchViajes(currentPage + 1, sortBy, sortDir); }}
+               >
+                 <ChevronRight size={16} />
+               </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {formTrip !== undefined && (
