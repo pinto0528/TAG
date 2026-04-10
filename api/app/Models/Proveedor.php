@@ -16,8 +16,17 @@ class Proveedor extends Model
         'telefono',
         'email',
         'contacto',
+        'unidad_medida',
+        'tarifa',
         'notas',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'tarifa' => 'decimal:2',
+        ];
+    }
 
     public function viajes(): HasMany
     {

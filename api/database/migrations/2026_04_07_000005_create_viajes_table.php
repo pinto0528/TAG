@@ -22,6 +22,7 @@ return new class extends Migration
             $table->date('fecha_llegada')->nullable();
             $table->time('hora_llegada')->nullable();
             $table->decimal('precio', 12, 2)->default(0);
+            $table->integer('km_recorrido')->default(0);
             $table->text('observaciones')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users');
             $table->foreignId('updated_by')->nullable()->constrained('users');

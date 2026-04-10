@@ -3,10 +3,10 @@
 // ============================================================
 
 export const mockProveedores = [
-  { id: 1, razon_social: 'Acme Corp', cuit: '30-12345678-9', direccion: 'Av. Corrientes 1234, CABA', telefono: '11-4444-5555', email: 'logistica@acme.com', contacto: 'Juan Perez' },
-  { id: 2, razon_social: 'Logistica Sur SRL', cuit: '30-98765432-1', direccion: 'Ruta 3 KM 45, Buenos Aires', telefono: '11-3333-2222', email: 'ops@logsur.com', contacto: 'Maria Lopez' },
-  { id: 3, razon_social: 'AgroExport SA', cuit: '33-44556677-9', direccion: 'Puerto Rosario, Santa Fe', telefono: '341-555-1234', email: 'despacho@agroexport.com', contacto: 'Carlos Diaz' },
-  { id: 4, razon_social: 'Distribuidora del Norte', cuit: '30-11223344-5', direccion: 'Av. Perón 500, Tucumán', telefono: '381-444-0000', email: 'admin@distnorte.com', contacto: 'Ana Gomez' },
+  { id: 1, razon_social: 'Acme Corp', cuit: '30-12345678-9', direccion: 'Av. Corrientes 1234, CABA', telefono: '11-4444-5555', email: 'logistica@acme.com', contacto: 'Juan Perez', unidad_medida: 'por_viaje', tarifa: 850000 },
+  { id: 2, razon_social: 'Logistica Sur SRL', cuit: '30-98765432-1', direccion: 'Ruta 3 KM 45, Buenos Aires', telefono: '11-3333-2222', email: 'ops@logsur.com', contacto: 'Maria Lopez', unidad_medida: 'por_kg', tarifa: 55 },
+  { id: 3, razon_social: 'AgroExport SA', cuit: '33-44556677-9', direccion: 'Puerto Rosario, Santa Fe', telefono: '341-555-1234', email: 'despacho@agroexport.com', contacto: 'Carlos Diaz', unidad_medida: 'por_km', tarifa: 1200 },
+  { id: 4, razon_social: 'Distribuidora del Norte', cuit: '30-11223344-5', direccion: 'Av. Perón 500, Tucumán', telefono: '381-444-0000', email: 'admin@distnorte.com', contacto: 'Ana Gomez', unidad_medida: 'por_bulto', tarifa: 5000 },
 ];
 
 export const mockChoferes = [
@@ -129,6 +129,16 @@ export const mockFacturas = [
   { id: 1, numero: 'FC-A-0001-00004561', tipo: 'A', fecha_emision: '2026-04-05', monto_neto: 702479, iva: 147521, monto_total: 850000, estado: 'pendiente' },
   { id: 2, numero: 'FC-A-0001-00004562', tipo: 'A', fecha_emision: '2026-03-28', monto_neto: 991736, iva: 208264, monto_total: 1200000, estado: 'pagada' },
   { id: 3, numero: 'FC-A-0001-00004563', tipo: 'A', fecha_emision: '2026-03-12', monto_neto: 785124, iva: 164876, monto_total: 950000, estado: 'pagada' },
+];
+
+export const mockOrdenesPago = [
+  { id: 1, factura_id: 2, numero: 'OP-0001-00002134', fecha: '2026-04-01', monto_total: 1200000, estado: 'emitida' },
+  { id: 2, factura_id: 3, numero: 'OP-0001-00002135', fecha: '2026-04-02', monto_total: 950000, estado: 'pagada' },
+];
+
+export const mockCheques = [
+  { id: 1, orden_pago_id: 2, numero: 'CH-99881122', banco: 'Galicia', fecha_emision: '2026-04-02', fecha_cobro: '2026-04-15', monto: 500000, beneficiario: 'Acme Corp', estado: 'pendiente' },
+  { id: 2, orden_pago_id: 2, numero: 'CH-99881123', banco: 'Galicia', fecha_emision: '2026-04-02', fecha_cobro: '2026-04-20', monto: 450000, beneficiario: 'Acme Corp', estado: 'pendiente' },
 ];
 
 export const mockDocsAlerts = [

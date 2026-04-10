@@ -1,5 +1,5 @@
 import React from 'react';
-import { mockDocsAlerts, mockDrivers, mockFleet } from '../data/mockData';
+import { mockDocsAlerts, mockChoferes as mockDrivers, mockUnidades as mockFleet } from '../data/mockData';
 import { UploadCloud, FileText, AlertCircle } from 'lucide-react';
 
 const Documentation = () => {

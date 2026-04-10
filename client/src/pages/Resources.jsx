@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { mockDrivers, mockFleet } from '../data/mockData';
+import { mockChoferes as mockDrivers, mockUnidades as mockFleet } from '../data/mockData';
 import { User, Truck, Plus } from 'lucide-react';
 
 const Resources = () => {

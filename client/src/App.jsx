@@ -1,16 +1,9 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
-import { LayoutDashboard, Truck, Users, HardDrive, FileText, Receipt, Settings, Bell, Search, LogOut, Eye, EyeOff } from 'lucide-react';
+import { Truck, Bell, Search, LogOut, Eye, EyeOff } from 'lucide-react';
 import './App.css';
 
-// Lazy loading pages or direct imports for PoC (direct for simplicity)
-import Dashboard from './pages/Dashboard';
 import Trips from './pages/Trips';
-import Clients from './pages/Clients';
-import Resources from './pages/Resources';
-import Documentation from './pages/Documentation';
-import Configuration from './pages/Configuration';
-import Billing from './pages/Billing';
 import Login from './pages/Login';
 
 const Header = ({ onLogout, theme, toggleTheme }) => {
@@ -115,13 +108,7 @@ function App() {
           <div className="content-area">
             <Routes>
               <Route path="/" element={<Navigate to="/trips" replace />} />
-              <Route path="/dashboard" element={<Dashboard theme={theme} />} />
               <Route path="/trips" element={<Trips />} />
-              <Route path="/clients" element={<Clients />} />
-              <Route path="/resources" element={<Resources />} />
-              <Route path="/billing" element={<Billing />} />
-              <Route path="/docs" element={<Documentation />} />
-              <Route path="/config" element={<Configuration />} />
               <Route path="*" element={<Navigate to="/trips" replace />} />
             </Routes>
           </div>

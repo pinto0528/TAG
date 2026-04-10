@@ -8,9 +8,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 class Viaje extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'viajes';
+
+    protected $appends = ['codigo_viaje'];
+
+    public function getCodigoViajeAttribute()
+    {
+        $tipo = $this->fletero_id !== null ? 'T' : 'P';
+        $fecha = $this->fecha_salida ? $this->fecha_salida->format('dmy') : 'SD';
+        return "{$tipo}-{$fecha}-{$this->id}";
+    }
 
     protected $fillable = [
         'unidad_id',
@@ -25,6 +38,7 @@ class Viaje extends Model
         'fecha_llegada',
         'hora_llegada',
         'precio',
+        'km_recorrido',
         'observaciones',
         'created_by',
         'updated_by',
@@ -39,6 +53,7 @@ class Viaje extends Model
             'fecha_llegada' => 'date',
             'hora_llegada' => 'datetime',
             'precio' => 'decimal:2',
+            'km_recorrido' => 'integer',
         ];
     }
 
