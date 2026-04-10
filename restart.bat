@@ -5,4 +5,3 @@ echo.
 echo ¡Todo reiniciado exitosamente! 
 echo Frontend: http://localhost:5173
 echo Backend API: http://localhost:8000
-pause

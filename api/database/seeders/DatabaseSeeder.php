@@ -22,6 +22,9 @@ class DatabaseSeeder extends Seeder
             'email' => 'admin@tag.com',
         ]);
 
-        $this->call(DomainSeeder::class);
+        $this->call([
+            DomainSeeder::class,
+            CapacitySeeder::class,
+        ]);
     }
 }
