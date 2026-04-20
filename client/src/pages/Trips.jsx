@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { mockViajes, mockProveedores, mockChoferes, mockUnidades, mockFleteros, mockFacturas, mockOrdenesPago, mockCheques } from '../data/mockData';
-import { Plus, ChevronDown, Edit, DollarSign, Package, FileText, Truck as TruckIcon, ArrowRight, CheckCircle2, Clock, Printer, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ChevronDown, Edit, DollarSign, Package, FileText, Truck as TruckIcon, ArrowRight, CheckCircle2, Clock, Printer, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Trash2, X, Search } from 'lucide-react';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount || 0);
 
@@ -46,6 +46,338 @@ const PrintPortal = ({ children }) => {
   return createPortal(children, el);
 };
 
+const PrintReceipt = ({ type, item, viaje }) => (
+    <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif' }}>
+        <div style={{ border: '2px solid black', padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid black', pb: '10px', mb: '20px' }}>
+                <div>
+                    <h1 style={{ margin: 0, fontSize: '24px' }}>COMPROBANTE DE {type.toUpperCase()}</h1>
+                    <p style={{ margin: '5px 0' }}>Transporte y Logística TAG</p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                    <p style={{ margin: 0 }}><strong>Fecha:</strong> {item.fecha}</p>
+                    <p style={{ margin: 0 }}><strong>Viaje Nro:</strong> {viaje.codigo_viaje}</p>
+                </div>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+                <p><strong>Concepto:</strong> {item.concepto || item.tipo}</p>
+                <p><strong>Monto:</strong> <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatCurrency(item.monto)}</span></p>
+                {item.metodo_pago && <p><strong>Método de Pago:</strong> {item.metodo_pago}</p>}
+            </div>
+
+            <div style={{ marginBottom: '40px' }}>
+                <h4 style={{ marginBottom: '10px', borderBottom: '1px solid #ccc' }}>Detalles del Viaje</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px' }}>
+                    <p><strong>Chofer:</strong> {getChoferName(viaje)}</p>
+                    <p><strong>Unidad:</strong> {getUnidadLabel(viaje)}</p>
+                    <p><strong>Origen:</strong> {viaje.origen}</p>
+                    <p><strong>Destino:</strong> {viaje.destino}</p>
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '60px' }}>
+                <div style={{ textAlign: 'center', width: '200px', borderTop: '1px solid black', paddingTop: '10px' }}>
+                    <p style={{ margin: 0, fontSize: '12px' }}>Firma Autorizada</p>
+                </div>
+                <div style={{ textAlign: 'center', width: '200px', borderTop: '1px solid black', paddingTop: '10px' }}>
+                    <p style={{ margin: 0, fontSize: '12px' }}>Firma Recibí</p>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+const PrintDocumentVoucher = ({ type, item, viaje }) => (
+    <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif' }}>
+        <div style={{ border: '2px solid black', padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid black', pb: '10px', mb: '20px' }}>
+                <div>
+                    <h1 style={{ margin: 0, fontSize: '24px' }}>{type.toUpperCase()}</h1>
+                    <p style={{ margin: '5px 0' }}>TAG - Gestión de Documentación</p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                    <p style={{ margin: 0 }}><strong>Fecha:</strong> {item.fecha || item.fecha_emision}</p>
+                    <p style={{ margin: 0 }}><strong>Viaje:</strong> {viaje.codigo_viaje}</p>
+                </div>
+            </div>
+
+            <div style={{ marginBottom: '30px' }}>
+                <p><strong>Número:</strong> {item.numero || 'S/N'}</p>
+                {item.monto_total && <p><strong>Monto Total:</strong> {formatCurrency(item.monto_total)}</p>}
+                {item.descripcion && <p><strong>Descripción:</strong> {item.descripcion}</p>}
+                <p><strong>Estado:</strong> {item.estado}</p>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+                <h4 style={{ marginBottom: '10px', borderBottom: '1px solid #ccc' }}>Referencia de Viaje</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px' }}>
+                    <p><strong>Proveedor:</strong> {getProveedorName(viaje)}</p>
+                    <p><strong>Ruta:</strong> {viaje.origen} {' → '} {viaje.destino}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+// ============================================================ 
+// SUB-FORM COMPONENTS
+// ============================================================
+
+const SubFormModal = ({ title, onClose, children }) => (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+        <div className="card" style={{ width: '90%', maxWidth: '500px', padding: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{title}</h3>
+                <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
+            </div>
+            {children}
+        </div>
+    </div>
+);
+
+const GastoForm = ({ gasto, viajetoId, onSave, onClose }) => {
+    const [formData, setFormData] = useState(gasto || { viaje_id: viajetoId, tipo: 'Combustible', concepto: '', monto: 0, fecha: new Date().toISOString().split('T')[0], notas: '' });
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const url = gasto ? `http://localhost:8000/api/gastos/${gasto.id}` : 'http://localhost:8000/api/gastos';
+            const method = gasto ? 'PUT' : 'POST';
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            if (res.ok) onSave();
+            else alert('Error al guardar gasto');
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Tipo</label>
+                <select className="input-field" value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })}>
+                    <option>Combustible</option>
+                    <option>Peaje</option>
+                    <option>Mantenimiento</option>
+                    <option>Viáticos</option>
+                    <option>Seguro</option>
+                    <option>Otros</option>
+                </select>
+            </div>
+            <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Concepto</label>
+                <input className="input-field" value={formData.concepto} onChange={e => setFormData({ ...formData, concepto: e.target.value })} required />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Monto</label>
+                    <input type="number" className="input-field" value={formData.monto} onChange={e => setFormData({ ...formData, monto: e.target.value })} required />
+                </div>
+                <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fecha</label>
+                    <input type="date" className="input-field" value={formData.fecha} onChange={e => setFormData({ ...formData, fecha: e.target.value })} required />
+                </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+                <button type="button" className="outline" onClick={onClose}>Cancelar</button>
+                <button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Guardar Gasto'}</button>
+            </div>
+        </form>
+    );
+};
+
+const AnticipoForm = ({ anticipo, viajetoId, onSave, onClose }) => {
+    const [formData, setFormData] = useState(anticipo || { viaje_id: viajetoId, concepto: 'Adelanto Chofer', monto: 0, fecha: new Date().toISOString().split('T')[0], metodo_pago: 'Efectivo', notas: '' });
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const url = anticipo ? `http://localhost:8000/api/anticipos/${anticipo.id}` : 'http://localhost:8000/api/anticipos';
+            const method = anticipo ? 'PUT' : 'POST';
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            if (res.ok) onSave();
+            else alert('Error al guardar anticipo');
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Concepto</label>
+                <input className="input-field" value={formData.concepto} onChange={e => setFormData({ ...formData, concepto: e.target.value })} required />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Monto</label>
+                    <input type="number" className="input-field" value={formData.monto} onChange={e => setFormData({ ...formData, monto: e.target.value })} required />
+                </div>
+                <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fecha</label>
+                    <input type="date" className="input-field" value={formData.fecha} onChange={e => setFormData({ ...formData, fecha: e.target.value })} required />
+                </div>
+            </div>
+            <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Método de Pago</label>
+                <select className="input-field" value={formData.metodo_pago} onChange={e => setFormData({ ...formData, metodo_pago: e.target.value })}>
+                    <option>Efectivo</option>
+                    <option>Transferencia</option>
+                    <option>Cheque</option>
+                </select>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+                <button type="button" className="outline" onClick={onClose}>Cancelar</button>
+                <button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Guardar Anticipo'}</button>
+            </div>
+        </form>
+    );
+};
+
+const RemitoForm = ({ viajetoId, onSave, onClose }) => {
+    const [formData, setFormData] = useState({ viaje_id: viajetoId, numero: '', fecha: new Date().toISOString().split('T')[0], descripcion: '', estado: 'conforme', notas: '' });
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const res = await fetch('http://localhost:8000/api/remitos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            if (res.ok) onSave();
+            else alert('Error al guardar remito');
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Número de Remito</label>
+                <input className="input-field" value={formData.numero} onChange={e => setFormData({ ...formData, numero: e.target.value })} required />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fecha</label>
+                    <input type="date" className="input-field" value={formData.fecha} onChange={e => setFormData({ ...formData, fecha: e.target.value })} required />
+                </div>
+                <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Estado</label>
+                    <select className="input-field" value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })}>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="conforme">Conforme</option>
+                        <option value="rechazado">Rechazado</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Descripción / Notas</label>
+                <textarea className="input-field" value={formData.descripcion} onChange={e => setFormData({ ...formData, descripcion: e.target.value })} rows={3} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+                <button type="button" className="outline" onClick={onClose}>Cancelar</button>
+                <button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Cargar Remito'}</button>
+            </div>
+        </form>
+    );
+};
+
+const FacturaForm = ({ viajetoId, onSave, onClose }) => {
+    const [formData, setFormData] = useState({ viaje_id: viajetoId, numero: '', tipo: 'A', punto_venta: '', fecha_emision: new Date().toISOString().split('T')[0], monto_neto: 0, iva: 0, monto_total: 0, estado: 'pendiente', notas: '' });
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const total = parseFloat(formData.monto_neto || 0) + parseFloat(formData.iva || 0);
+        setFormData(prev => ({ ...prev, monto_total: total }));
+    }, [formData.monto_neto, formData.iva]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const res = await fetch('http://localhost:8000/api/facturas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            if (res.ok) onSave();
+            else {
+                const err = await res.json();
+                alert('Error al guardar factura: ' + JSON.stringify(err.errors || err.message));
+            }
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Tipo</label>
+                    <select className="input-field" value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })}>
+                        <option>A</option>
+                        <option>B</option>
+                        <option>C</option>
+                    </select>
+                </div>
+                <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Punto de Venta</label>
+                    <input className="input-field" value={formData.punto_venta} onChange={e => setFormData({ ...formData, punto_venta: e.target.value })} placeholder="0001" />
+                </div>
+            </div>
+            <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Número de Factura</label>
+                <input className="input-field" value={formData.numero} onChange={e => setFormData({ ...formData, numero: e.target.value })} required placeholder="0001-00000123" />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fecha Emisión</label>
+                    <input type="date" className="input-field" value={formData.fecha_emision} onChange={e => setFormData({ ...formData, fecha_emision: e.target.value })} required />
+                </div>
+                <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Estado</label>
+                    <select className="input-field" value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })}>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="pagada">Pagada</option>
+                    </select>
+                </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Neto</label>
+                    <input type="number" className="input-field" value={formData.monto_neto} onChange={e => setFormData({ ...formData, monto_neto: e.target.value })} required />
+                </div>
+                <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>IVA</label>
+                    <input type="number" className="input-field" value={formData.iva} onChange={e => setFormData({ ...formData, iva: e.target.value })} required />
+                </div>
+                <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Total</label>
+                    <input type="number" className="input-field" value={formData.monto_total} readOnly style={{ backgroundColor: 'var(--bg-body)' }} />
+                </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+                <button type="button" className="outline" onClick={onClose}>Cancelar</button>
+                <button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Cargar Factura'}</button>
+            </div>
+        </form>
+    );
+};
+
 const PrintSelectedTable = ({ viajes }) => (
   <div style={{ padding: '0', fontFamily: 'sans-serif', color: 'black' }}>
     <style>{`@page { size: A4 landscape; margin: 10mm; }`}</style>
@@ -82,7 +414,7 @@ const PrintSelectedTable = ({ viajes }) => (
               Lle: {trip.fecha_llegada ? trip.fecha_llegada.split('T')[0] : 'S/D'} {trip.hora_llegada ? trip.hora_llegada.substring(11,16) : ''}
             </td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{getProveedorName(trip)}</td>
-            <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{trip.origen} → {trip.destino}</td>
+            <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{trip.origen} {' → '} {trip.destino}</td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{trip.estado.toUpperCase()}</td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>
               {trip.fletero_id ? `[Tercerizado] ${getFleteroName(trip)}` : `[Propio] Chofer: ${getChoferName(trip)}`}
@@ -540,12 +872,22 @@ const labelStyle = { display: 'block', marginBottom: '0.25rem', fontSize: '0.8re
 // ============================================================ 
 // EXPANDED ROW DETAIL (TABBED)
 // ============================================================
-const TripDetail = ({ trip }) => {
+const TripDetail = ({ trip, onRefresh, onPrint }) => {
   const [activeTab, setActiveTab] = useState('resumen');
+  const [modalCfg, setModalCfg] = useState(null); // { type: 'gasto'|'anticipo'|'remito'|'factura', item: null|object }
 
-  const totalGastos = trip.gastos?.reduce((a, g) => a + g.monto, 0) || 0;
-  const totalAnticipos = trip.anticipos?.reduce((a, an) => a + an.monto, 0) || 0;
+  const totalGastos = trip.gastos?.reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
+  const totalAnticipos = trip.anticipos?.reduce((a, an) => a + parseFloat(an.monto), 0) || 0;
   const margen = (trip.precio || 0) - totalGastos;
+
+  const handleDelete = async (endpoint, id) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
+    try {
+        const res = await fetch(`http://localhost:8000/api/${endpoint}/${id}`, { method: 'DELETE' });
+        if (res.ok) onRefresh();
+        else alert('Error al eliminar');
+    } catch (e) { console.error(e); }
+  };
 
   return (
     <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
@@ -577,7 +919,7 @@ const TripDetail = ({ trip }) => {
 
       <div style={{ padding: '1.5rem' }}>
 
-        {/* TAB 1: RESUMEN (LOGISTICA + CARGA) */}
+        {/* TAB 1: RESUMEN */}
         {activeTab === 'resumen' && (
           <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 300px' }}>
@@ -614,151 +956,162 @@ const TripDetail = ({ trip }) => {
           </div>
         )}
 
-        {/* TAB 2: FINANZAS (GASTOS + MARGEN) */}
+        {/* TAB 2: FINANZAS */}
         {activeTab === 'finanzas' && (
           <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
             <div style={{ flex: '2 1 400px' }}>
-              <h4 style={subHeaderStyle}><DollarSign size={14} />Desglose de Gastos y Anticipos</h4>
-              {trip.gastos && trip.gastos.length > 0 ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                <h4 style={{ ...subHeaderStyle, marginBottom: 0 }}><DollarSign size={14} />Desglose de Gastos y Anticipos</h4>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                   <button className="outline success" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => setModalCfg({ type: 'anticipo', item: null })}>+ Anticipo</button>
+                   <button className="outline" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => setModalCfg({ type: 'gasto', item: null })}>+ Gasto</button>
+                </div>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                      <th style={{ padding: '0.5rem 0' }}>Tipo</th>
-                      <th>Concepto</th>
+                      <th style={{ padding: '0.5rem 0' }}>Concepto</th>
                       <th>Fecha</th>
                       <th style={{ textAlign: 'right' }}>Monto</th>
+                      <th style={{ textAlign: 'right' }}>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {trip.gastos.map(g => (
+                    {trip.gastos?.map(g => (
                       <tr key={g.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                        <td style={{ padding: '0.65rem 0' }}><span className="badge" style={{ backgroundColor: 'var(--bg-body)', fontSize: '0.7rem' }}>{g.tipo}</span></td>
-                        <td>{g.concepto}</td>
+                        <td style={{ padding: '0.65rem 0' }}>
+                            <span className="badge" style={{ backgroundColor: 'var(--bg-body)', fontSize: '0.65rem', mr: '0.5rem' }}>{g.tipo}</span>
+                            {g.concepto}
+                        </td>
                         <td>{g.fecha}</td>
                         <td style={{ textAlign: 'right', fontWeight: 500, color: 'var(--color-danger-text)' }}>{formatCurrency(g.monto)}</td>
+                        <td style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                                <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'gasto', item: g })} title="Editar"><Edit size={14} /></button>
+                                <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('receipt', g, trip)} title="Imprimir"><Printer size={14} /></button>
+                                <button className="outline" style={{ padding: '0.2rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('gastos', g.id)} title="Eliminar"><Trash2 size={14} /></button>
+                            </div>
+                        </td>
                       </tr>
                     ))}
                     {trip.anticipos?.map(an => (
                       <tr key={`an-${an.id}`} style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(34, 197, 94, 0.05)' }}>
-                        <td style={{ padding: '0.65rem 0' }}><span className="badge success" style={{ fontSize: '0.7rem' }}>Anticipo</span></td>
-                        <td>Pago Chofer / Adelanto</td>
+                        <td style={{ padding: '0.65rem 0' }}>
+                            <span className="badge success" style={{ fontSize: '0.65rem', mr: '0.5rem' }}>Anticipo</span>
+                            {an.concepto}
+                        </td>
                         <td>{an.fecha}</td>
                         <td style={{ textAlign: 'right', fontWeight: 500, color: 'var(--color-success-text)' }}>-{formatCurrency(an.monto)}</td>
+                        <td style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                                <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'anticipo', item: an })} title="Editar"><Edit size={14} /></button>
+                                <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('receipt', an, trip)} title="Imprimir"><Printer size={14} /></button>
+                                <button className="outline" style={{ padding: '0.2rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('anticipos', an.id)} title="Eliminar"><Trash2 size={14} /></button>
+                            </div>
+                        </td>
                       </tr>
                     ))}
+                    {(!trip.gastos?.length && !trip.anticipos?.length) && (
+                        <tr><td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Sin registros financieros.</td></tr>
+                    )}
                   </tbody>
                 </table>
-              ) : <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No hay gastos registrados aún.</p>}
+              </div>
             </div>
 
             <div style={{ flex: '1 1 200px' }}>
               <div style={{ backgroundColor: 'var(--bg-body)', padding: '1.5rem', borderRadius: 'var(--radius-md)', textAlign: 'center', border: '1px solid var(--border-color)' }}>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Precio Acordado</div>
                 <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatCurrency(trip.precio)}</div>
-
                 <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
-
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Egresos Totales</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Gastos Totales</div>
                 <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-danger-text)' }}>-{formatCurrency(totalGastos)}</div>
-
+                <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Anticipos Entregados</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#16a34a' }}>{formatCurrency(totalAnticipos)}</div>
                 <div style={{ height: '2px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
-
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Rentabilidad Estimada</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Margen Operativo</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: margen >= 0 ? 'var(--color-success-text)' : 'var(--color-danger-text)' }}>
                   {formatCurrency(margen)}
-                </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                  {trip.precio > 0 ? `${((margen / trip.precio) * 100).toFixed(1)}% de margen` : '—'}
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* TAB 3: DOCUMENTACION (THE FULL CHAIN) */}
+        {/* TAB 3: DOCUMENTACION */}
         {activeTab === 'documentacion' && (
           <div>
-            <h4 style={subHeaderStyle}><FileText size={14} />Trazabilidad de Documentación</h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                <h4 style={{ ...subHeaderStyle, marginBottom: 0 }}><FileText size={14} />Trazabilidad de Documentación</h4>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                   <button className="outline" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => setModalCfg({ type: 'factura', item: null })}>+ Factura</button>
+                   <button className="outline" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => setModalCfg({ type: 'remito', item: null })}>+ Remito</button>
+                </div>
+            </div>
 
             {trip.remitos && trip.remitos.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {trip.remitos.map(r => {
-                  const factura = r.factura_id ? mockFacturas.find(f => f.id === r.factura_id) : null;
-                  const op = factura ? mockOrdenesPago.find(o => o.factura_id === factura.id) : null;
-                  const cheques = op ? mockCheques.filter(c => c.orden_pago_id === op.id) : [];
-
-                  return (
-                    <div key={r.id} style={chainContainerStyle}>
-
-                      {/* 1. REMITO */}
-                      <div style={stepStyle}>
-                        <div style={stepTitleStyle}><FileText size={14} /> Remito</div>
-                        <div style={stepContentStyle}>
-                          <strong>{r.numero}</strong>
-                          <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>{r.fecha}</span>
-                          <span className={`badge ${r.estado === 'conforme' ? 'success' : 'warning'}`} style={{ fontSize: '0.65rem' }}>{r.estado}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {trip.remitos.map(r => (
+                    <div key={r.id} style={{ ...chainContainerStyle, position: 'relative' }}>
+                        <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', display: 'flex', gap: '0.25rem' }}>
+                             <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('document', r, trip)} title="Imprimir"><Printer size={14} /></button>
+                             <button className="outline" style={{ padding: '0.2rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('remitos', r.id)} title="Eliminar"><Trash2 size={14} /></button>
                         </div>
-                      </div>
-
-                      <ArrowRight size={20} style={arrowStyle} />
-
-                      {/* 2. FACTURA */}
-                      <div style={{ ...stepStyle, opacity: factura ? 1 : 0.4 }}>
-                        <div style={stepTitleStyle}><FileText size={14} /> Factura</div>
-                        <div style={stepContentStyle}>
-                          {factura ? (
-                            <>
-                              <strong>{factura.numero}</strong>
-                              <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>{factura.fecha_emision}</span>
-                              <span className={`badge ${factura.estado === 'pagada' ? 'success' : 'info'}`} style={{ fontSize: '0.65rem' }}>{factura.estado}</span>
-                            </>
-                          ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>Pendiente de Facturar</span>}
+                        <div style={stepStyle}>
+                            <div style={stepTitleStyle}><FileText size={14} /> Remito</div>
+                            <div style={stepContentStyle}>
+                                <strong>{r.numero}</strong>
+                                <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>{r.fecha}</span>
+                                <span className={`badge ${r.estado === 'conforme' ? 'success' : 'warning'}`} style={{ fontSize: '0.65rem' }}>{r.estado}</span>
+                            </div>
                         </div>
-                      </div>
-
-                      <ArrowRight size={20} style={arrowStyle} />
-
-                      {/* 3. ORDEN DE PAGO */}
-                      <div style={{ ...stepStyle, opacity: op ? 1 : 0.4 }}>
-                        <div style={stepTitleStyle}><Clock size={14} /> Orden de Pago</div>
-                        <div style={stepContentStyle}>
-                          {op ? (
-                            <>
-                              <strong>{op.numero}</strong>
-                              <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>{op.fecha}</span>
-                              <span className={`badge ${op.estado === 'pagada' ? 'success' : 'info'}`} style={{ fontSize: '0.65rem' }}>{op.estado}</span>
-                            </>
-                          ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>No emitida</span>}
+                        <ArrowRight size={20} style={arrowStyle} />
+                        <div style={{ ...stepStyle, opacity: r.factura ? 1 : 0.4 }}>
+                            <div style={stepTitleStyle}><FileText size={14} /> Factura</div>
+                            <div style={stepContentStyle}>
+                                {r.factura ? (
+                                    <>
+                                        <strong>{r.factura.numero}</strong>
+                                        <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>{r.factura.fecha_emision}</span>
+                                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                                            <span className={`badge ${r.factura.estado === 'pagada' ? 'success' : 'info'}`} style={{ fontSize: '0.65rem' }}>{r.factura.estado}</span>
+                                            <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('facturas', r.factura.id)} title="Eliminar Factura"><Trash2 size={12} /></button>
+                                        </div>
+                                    </>
+                                ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>Sin factura vinculada</span>}
+                            </div>
                         </div>
-                      </div>
-
-                      <ArrowRight size={20} style={arrowStyle} />
-
-                      {/* 4. CHEQUES */}
-                      <div style={{ ...stepStyle, flex: 2, opacity: cheques.length > 0 ? 1 : 0.4 }}>
-                        <div style={stepTitleStyle}><CheckCircle2 size={14} /> Cheques / Pagos</div>
-                        <div style={{ ...stepContentStyle, flexDirection: 'row', flexWrap: 'wrap', gap: '0.5rem' }}>
-                          {cheques.length > 0 ? (
-                            cheques.map(c => (
-                              <div key={c.id} style={{ border: '1px solid var(--border-color)', padding: '0.25rem 0.5rem', borderRadius: '4px', display: 'flex', flexDirection: 'column', minWidth: '120px' }}>
-                                <span style={{ fontWeight: 600, fontSize: '0.75rem' }}>{c.numero}</span>
-                                <span style={{ fontSize: '0.65rem' }}>{c.banco} - {formatCurrency(c.monto)}</span>
-                                <span style={{ fontSize: '0.65rem', color: c.estado === 'cobrado' ? 'var(--color-success-text)' : 'var(--color-warning-text)' }}>{c.estado}</span>
-                              </div>
-                            ))
-                          ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>Sin cobros/pagos</span>}
-                        </div>
-                      </div>
-
                     </div>
-                  );
-                })}
+                ))}
               </div>
-            ) : <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sin remitos cargados para este viaje.</p>}
+            ) : <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sin remitos cargados.</p>}
           </div>
         )}
-
       </div>
+
+      {/* Sub-form Modals */}
+      {modalCfg?.type === 'gasto' && (
+        <SubFormModal title={modalCfg.item ? 'Editar Gasto' : 'Nuevo Gasto'} onClose={() => setModalCfg(null)}>
+            <GastoForm viajetoId={trip.id} gasto={modalCfg.item} onSave={() => { setModalCfg(null); onRefresh(); }} onClose={() => setModalCfg(null)} />
+        </SubFormModal>
+      )}
+      {modalCfg?.type === 'anticipo' && (
+        <SubFormModal title={modalCfg.item ? 'Editar Anticipo' : 'Nuevo Anticipo'} onClose={() => setModalCfg(null)}>
+            <AnticipoForm viajetoId={trip.id} anticipo={modalCfg.item} onSave={() => { setModalCfg(null); onRefresh(); }} onClose={() => setModalCfg(null)} />
+        </SubFormModal>
+      )}
+      {modalCfg?.type === 'remito' && (
+        <SubFormModal title="Nuevo Remito" onClose={() => setModalCfg(null)}>
+            <RemitoForm viajetoId={trip.id} onSave={() => { setModalCfg(null); onRefresh(); }} onClose={() => setModalCfg(null)} />
+        </SubFormModal>
+      )}
+      {modalCfg?.type === 'factura' && (
+        <SubFormModal title="Nueva Factura" onClose={() => setModalCfg(null)}>
+            <FacturaForm viajetoId={trip.id} onSave={() => { setModalCfg(null); onRefresh(); }} onClose={() => setModalCfg(null)} />
+        </SubFormModal>
+      )}
     </div>
   );
 };
@@ -810,6 +1163,9 @@ const Trips = () => {
   const [totalRecords, setTotalRecords] = useState(0);
   const [sortBy, setSortBy] = useState(null);
   const [sortDir, setSortDir] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
 
   const [proveedores, setProveedores] = useState(mockProveedores);
   const [unidades, setUnidades] = useState(mockUnidades);
@@ -820,6 +1176,7 @@ const Trips = () => {
 
   const [printMode, setPrintMode] = useState(null);
   const [tripToPrint, setTripToPrint] = useState(null);
+  const [printItem, setPrintItem] = useState(null);
 
   useEffect(() => {
     if (printMode) {
@@ -858,6 +1215,10 @@ const Trips = () => {
       if (forceSortBy && forceSortDir) {
         url += `&sort_by=${forceSortBy}&sort_dir=${forceSortDir}`;
       }
+      if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
+      if (fechaDesde) url += `&fecha_desde=${fechaDesde}`;
+      if (fechaHasta) url += `&fecha_hasta=${fechaHasta}`;
+
       const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
@@ -893,7 +1254,16 @@ const Trips = () => {
   React.useEffect(() => {
     setCurrentPage(1);
     fetchViajes(1, sortBy, sortDir);
-  }, [verArchivados]);
+  }, [verArchivados, fechaDesde, fechaHasta]);
+
+  // Debounce para búsqueda
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setCurrentPage(1);
+      fetchViajes(1, sortBy, sortDir);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   React.useEffect(() => {
     fetchOptions();
@@ -950,7 +1320,14 @@ const Trips = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '600' }}>Gestión de Viajes</h2>
+        <div>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
+            Gestión de Viajes
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+            Listado general y seguimiento de operaciones de transporte.
+          </p>
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {selectedTrips.length > 0 && (
             <button style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#0284c7', color: 'white', borderColor: '#0284c7' }} onClick={() => setPrintMode('table')}>
@@ -964,8 +1341,25 @@ const Trips = () => {
       </div>
 
       <div className="card" style={{ display: 'flex', gap: '1rem', alignItems: 'center', padding: '1rem', flexWrap: 'wrap' }}>
-        <input type="text" className="input-field" placeholder="Buscar en viajes..." style={{ flex: '1 1 200px' }} />
-        <input type="date" className="input-field" style={{ width: '150px' }} />
+        <div style={{ position: 'relative', flex: '1 1 250px' }}>
+          <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input 
+            type="text" 
+            className="input-field" 
+            placeholder="Buscar por código, ruta, chofer..." 
+            style={{ paddingLeft: '2.5rem' }}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Desde:</span>
+          <input type="date" className="input-field" style={{ width: '150px' }} value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Hasta:</span>
+          <input type="date" className="input-field" style={{ width: '150px' }} value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', borderLeft: '1px solid var(--border-color)', paddingLeft: '1rem' }}>
           <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
             <input type="checkbox" checked={verArchivados} onChange={(e) => setVerArchivados(e.target.checked)} /> Mostrar Archivados solos
@@ -1016,7 +1410,7 @@ const Trips = () => {
                           {trip.deleted_at && <span style={{ display: 'block', fontSize: '0.6rem', color: 'var(--color-danger-text)' }}>ARCHIVADO</span>}
                         </td>
                         <td>{getProveedorName(trip)}</td>
-                        <td>{trip.origen} {'→'} {trip.destino}</td>
+                        <td>{trip.origen} {' → '} {trip.destino}</td>
                         <td style={{ fontSize: '0.8rem' }}>{getUnidadLabel(trip)}</td>
                         <td>{getChoferName(trip)}</td>
                         <td>{getStatusBadge(trip.estado)}</td>
@@ -1067,7 +1461,7 @@ const Trips = () => {
                       {isExpanded && (
                         <tr style={{ backgroundColor: 'var(--bg-hover)' }}>
                           <td colSpan="9" style={{ padding: '1rem' }}>
-                            <TripDetail trip={trip} />
+                            <TripDetail trip={trip} onRefresh={() => fetchViajes(currentPage)} onPrint={(type, item, t) => { setTripToPrint(t); setPrintMode(type); setPrintItem(item); }} />
                           </td>
                         </tr>
                       )}
@@ -1141,6 +1535,18 @@ const Trips = () => {
       {printMode === 'sheet' && tripToPrint && (
          <PrintPortal>
             <PrintTripSheet viaje={tripToPrint} />
+         </PrintPortal>
+      )}
+
+      {printMode === 'receipt' && tripToPrint && printItem && (
+         <PrintPortal>
+            <PrintReceipt type="Anticipo/Gasto" item={printItem} viaje={tripToPrint} />
+         </PrintPortal>
+      )}
+
+      {printMode === 'document' && tripToPrint && printItem && (
+         <PrintPortal>
+            <PrintDocumentVoucher type="Comprobante" item={printItem} viaje={tripToPrint} />
          </PrintPortal>
       )}
     </div>

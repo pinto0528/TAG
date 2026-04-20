@@ -11,10 +11,34 @@ class ViajeController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Viaje::select('viajes.*')->with(['proveedor', 'unidad', 'chofer', 'fletero', 'carga', 'gastos', 'anticipos', 'remitos']);
+        $query = Viaje::select('viajes.*')->with(['proveedor', 'unidad', 'chofer', 'fletero', 'carga', 'gastos', 'anticipos', 'remitos.factura']);
         
         if ($request->boolean('archivados')) {
             $query->onlyTrashed();
+        }
+
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('codigo_viaje', 'like', "%{$search}%")
+                  ->orWhere('origen', 'like', "%{$search}%")
+                  ->orWhere('destino', 'like', "%{$search}%")
+                  ->orWhereHas('chofer', function ($cq) use ($search) {
+                      $cq->where('nombre', 'like', "%{$search}%")
+                         ->orWhere('apellido', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('proveedor', function ($pq) use ($search) {
+                      $pq->where('razon_social', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($request->has('fecha_desde')) {
+            $query->whereDate('fecha_salida', '>=', $request->get('fecha_desde'));
+        }
+
+        if ($request->has('fecha_hasta')) {
+            $query->whereDate('fecha_salida', '<=', $request->get('fecha_hasta'));
         }
         
         if ($request->has('sort_by') && $request->has('sort_dir')) {
