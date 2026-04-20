@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
-import { Truck, Bell, Search, LogOut, Eye, EyeOff } from 'lucide-react';
+import { Truck, Bell, Search, LogOut, Eye, EyeOff, Layout } from 'lucide-react';
 import './App.css';
 
 import Trips from './pages/Trips';
+import Resources from './pages/Resources';
 import Login from './pages/Login';
 
 const Header = ({ onLogout, theme, toggleTheme }) => {
@@ -15,7 +16,7 @@ const Header = ({ onLogout, theme, toggleTheme }) => {
     <>
       <header className="top-header">
       <div className="header-title">
-        {pathName.charAt(0).toUpperCase() + pathName.slice(1)}
+        {/* Titulo removido por pedido del usuario */}
       </div>
       <div className="header-actions">
         <button className="icon-button" title="Buscar"><Search size={20} /></button>
@@ -55,6 +56,7 @@ const Header = ({ onLogout, theme, toggleTheme }) => {
 const Navigation = () => {
   const navItems = [
     { path: '/trips', label: 'Viajes', icon: Truck },
+    { path: '/resources', label: 'Recursos', icon: Layout },
   ];
 
   return (
@@ -109,6 +111,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/trips" replace />} />
               <Route path="/trips" element={<Trips />} />
+              <Route path="/resources" element={<Resources />} />
               <Route path="*" element={<Navigate to="/trips" replace />} />
             </Routes>
           </div>
