@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { mockViajes, mockProveedores, mockChoferes, mockUnidades, mockFleteros, mockFacturas, mockOrdenesPago, mockCheques } from '../data/mockData';
 import { Plus, ChevronDown, Edit, DollarSign, Package, FileText, Truck as TruckIcon, ArrowRight, CheckCircle2, Clock, Printer, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
+const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:8000/api';
+
 const formatCurrency = (amount) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount || 0);
 
 const getStatusBadge = (status) => {
@@ -453,7 +455,7 @@ const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes,
                     setConfirmCfg({
                       message: '¿Seguro que deseas archivar este viaje? Ya no aparecerá en el listado activo.',
                       action: async () => {
-                         await fetch(`http://localhost:8000/api/viajes/${d.id}`, { method: 'DELETE' });
+                         await fetch(`${API_BASE}/viajes/${d.id}`, { method: 'DELETE' });
                          onSave();
                          onClose();
                       }
@@ -462,7 +464,7 @@ const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes,
                )}
                {isEdit && !!d.deleted_at && (
                  <button type="button" className="outline success" style={{ color: 'var(--color-success-text)', borderColor: 'var(--color-success-text)' }} onClick={async () => {
-                   await fetch(`http://localhost:8000/api/viajes/${d.id}/restore`, { method: 'POST' });
+                   await fetch(`${API_BASE}/viajes/${d.id}/restore`, { method: 'POST' });
                    onSave();
                    onClose();
                  }}>Restaurar Viaje</button>
@@ -499,7 +501,7 @@ const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes,
                 };
                 try {
                   const isUpdate = d.id !== undefined;
-                  const url = isUpdate ? `http://localhost:8000/api/viajes/${d.id}` : 'http://localhost:8000/api/viajes';
+                  const url = isUpdate ? `${API_BASE}/viajes/${d.id}` : `${API_BASE}/viajes`;
                   const res = await fetch(url, {
                     method: isUpdate ? 'PUT' : 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -853,7 +855,7 @@ const Trips = () => {
   const fetchViajes = async (page = currentPage, forceSortBy = sortBy, forceSortDir = sortDir) => {
     setLoading(true);
     try {
-      let url = `http://localhost:8000/api/viajes?page=${page}`;
+      let url = `${API_BASE}/viajes?page=${page}`;
       if (verArchivados) url += '&archivados=1';
       if (forceSortBy && forceSortDir) {
         url += `&sort_by=${forceSortBy}&sort_dir=${forceSortDir}`;
@@ -876,10 +878,10 @@ const Trips = () => {
   const fetchOptions = async () => {
     try {
       const [provRes, uniRes, choRes, fleRes] = await Promise.all([
-        fetch('http://localhost:8000/api/proveedores'),
-        fetch('http://localhost:8000/api/unidades'),
-        fetch('http://localhost:8000/api/choferes'),
-        fetch('http://localhost:8000/api/fleteros')
+        fetch(`${API_BASE}/proveedores`),
+        fetch(`${API_BASE}/unidades`),
+        fetch(`${API_BASE}/choferes`),
+        fetch(`${API_BASE}/fleteros`)
       ]);
       if (provRes.ok) setProveedores(await provRes.json());
       if (uniRes.ok) setUnidades(await uniRes.json());
@@ -1037,7 +1039,7 @@ const Trips = () => {
                                 className="outline success"
                                 style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', borderColor: 'var(--color-success-text)', color: 'var(--color-success-text)' }}
                                 onClick={async () => {
-                                   await fetch(`http://localhost:8000/api/viajes/${trip.id}/restore`, { method: 'POST' });
+                                   await fetch(`${API_BASE}/viajes/${trip.id}/restore`, { method: 'POST' });
                                    fetchViajes();
                                 }}
                                 title="Desarchivar viaje"

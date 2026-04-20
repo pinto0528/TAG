@@ -1,0 +1,17 @@
+version: "2.1"
+services:
+  duplicati:
+    image: lscr.io/linuxserver/duplicati:latest
+    container_name: duplicati
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Argentina/Buenos_Aires # Ajustado a tu zona horaria
+    volumes:
+      - /DATA/AppData/duplicati/config:/config
+      - /mnt/backup:/backups # El nuevo HDD físico para guardar los backups
+      - /DATA/AppData:/source/AppData:ro # Solo lectura para seguridad
+      - /DATA/pintonube:/source/pintonube:ro # Solo lectura para seguridad
+    ports:
+      - 8200:8200
+    restart: unless-stopped
