@@ -13,6 +13,7 @@ class Unidad extends Model
     protected $table = 'unidades';
 
     protected $fillable = [
+        'proveedor_id',
         'patente',
         'marca',
         'modelo',
@@ -31,6 +32,11 @@ class Unidad extends Model
             'seguro_vencimiento' => 'date',
             'activo' => 'boolean',
         ];
+    }
+
+    public function proveedor(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Proveedor::class);
     }
 
     public function viajes(): HasMany

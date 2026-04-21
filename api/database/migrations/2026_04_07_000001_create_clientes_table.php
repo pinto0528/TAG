@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('proveedores', function (Blueprint $table) {
+        Schema::create('clientes', function (Blueprint $table) {
             $table->id();
             $table->string('razon_social');
             $table->string('cuit')->unique()->nullable();
@@ -16,8 +16,6 @@ return new class extends Migration
             $table->string('telefono')->nullable();
             $table->string('email')->nullable();
             $table->string('contacto')->nullable();
-            $table->string('unidad_medida')->default('por_viaje'); // por_viaje, por_kg, por_km, por_bulto
-            $table->decimal('tarifa', 12, 2)->default(0);
             $table->text('notas')->nullable();
             $table->timestamps();
         });
@@ -25,6 +23,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('proveedores');
+        Schema::dropIfExists('clientes');
     }
 };

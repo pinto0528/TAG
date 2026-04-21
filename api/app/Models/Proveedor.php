@@ -16,16 +16,17 @@ class Proveedor extends Model
         'telefono',
         'email',
         'contacto',
-        'unidad_medida',
-        'tarifa',
         'notas',
     ];
 
-    protected function casts(): array
+    public function unidades(): HasMany
     {
-        return [
-            'tarifa' => 'decimal:2',
-        ];
+        return $this->hasMany(Unidad::class);
+    }
+
+    public function choferes(): HasMany
+    {
+        return $this->hasMany(Chofer::class);
     }
 
     public function viajes(): HasMany

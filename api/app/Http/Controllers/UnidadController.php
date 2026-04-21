@@ -25,6 +25,15 @@ class UnidadController extends Controller
             });
         }
 
+        if ($request->has('proveedor_id')) {
+            $provId = $request->get('proveedor_id');
+            if ($provId === 'propio' || $provId === 'null') {
+                $query->whereNull('proveedor_id');
+            } else {
+                $query->where('proveedor_id', $provId);
+            }
+        }
+
         return response()->json($query->orderBy('id', 'desc')->get());
     }
 
@@ -39,6 +48,7 @@ class UnidadController extends Controller
             'numero_interno' => 'nullable|string',
             'vtv_vencimiento' => 'nullable|date',
             'seguro_vencimiento' => 'nullable|date',
+            'proveedor_id' => 'nullable|exists:proveedores,id',
             'activo' => 'boolean',
         ]);
 
@@ -65,6 +75,7 @@ class UnidadController extends Controller
             'numero_interno' => 'nullable|string',
             'vtv_vencimiento' => 'nullable|date',
             'seguro_vencimiento' => 'nullable|date',
+            'proveedor_id' => 'nullable|exists:proveedores,id',
             'activo' => 'boolean',
         ]);
 

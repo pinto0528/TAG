@@ -20,15 +20,15 @@ class Viaje extends Model
 
     public function getCodigoViajeAttribute()
     {
-        $tipo = $this->fletero_id !== null ? 'T' : 'P';
+        $tipo = $this->proveedor_id !== null ? 'T' : 'P';
         return $tipo . '-' . str_pad($this->id, 5, '0', STR_PAD_LEFT);
     }
 
     protected $fillable = [
         'unidad_id',
         'chofer_id',
+        'cliente_id',
         'proveedor_id',
-        'fletero_id',
         'estado',
         'origen',
         'destino',
@@ -36,7 +36,8 @@ class Viaje extends Model
         'hora_salida',
         'fecha_llegada',
         'hora_llegada',
-        'precio',
+        'precio_pactado',
+        'costo_proveedor',
         'km_recorrido',
         'observaciones',
         'created_by',
@@ -48,10 +49,9 @@ class Viaje extends Model
         return [
             'estado' => EstadoViaje::class,
             'fecha_salida' => 'date',
-            'hora_salida' => 'datetime',
             'fecha_llegada' => 'date',
-            'hora_llegada' => 'datetime',
-            'precio' => 'decimal:2',
+            'precio_pactado' => 'decimal:2',
+            'costo_proveedor' => 'decimal:2',
             'km_recorrido' => 'integer',
         ];
     }
@@ -68,14 +68,14 @@ class Viaje extends Model
         return $this->belongsTo(Chofer::class);
     }
 
+    public function cliente(): BelongsTo
+    {
+        return $this->belongsTo(Cliente::class);
+    }
+
     public function proveedor(): BelongsTo
     {
         return $this->belongsTo(Proveedor::class);
-    }
-
-    public function fletero(): BelongsTo
-    {
-        return $this->belongsTo(Fletero::class);
     }
 
     public function carga(): HasOne

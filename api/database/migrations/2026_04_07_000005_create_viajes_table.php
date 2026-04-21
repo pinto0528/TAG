@@ -12,8 +12,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('unidad_id')->constrained('unidades');
             $table->foreignId('chofer_id')->nullable()->constrained('choferes');
-            $table->foreignId('proveedor_id')->constrained('proveedores');
-            $table->foreignId('fletero_id')->nullable()->constrained('fleteros');
+            $table->foreignId('cliente_id')->constrained('clientes');
+            $table->foreignId('proveedor_id')->nullable()->constrained('proveedores');
             $table->string('estado')->default('pendiente');
             $table->string('origen');
             $table->string('destino');
@@ -21,7 +21,8 @@ return new class extends Migration
             $table->time('hora_salida')->nullable();
             $table->date('fecha_llegada')->nullable();
             $table->time('hora_llegada')->nullable();
-            $table->decimal('precio', 12, 2)->default(0);
+            $table->decimal('precio_pactado', 12, 2)->default(0);
+            $table->decimal('costo_proveedor', 12, 2)->default(0);
             $table->integer('km_recorrido')->default(0);
             $table->text('observaciones')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users');

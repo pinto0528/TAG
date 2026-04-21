@@ -13,6 +13,7 @@ class Chofer extends Model
     protected $table = 'choferes';
 
     protected $fillable = [
+        'proveedor_id',
         'nombre',
         'apellido',
         'dni',
@@ -33,6 +34,11 @@ class Chofer extends Model
             'linti_vencimiento' => 'date',
             'activo' => 'boolean',
         ];
+    }
+
+    public function proveedor(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Proveedor::class);
     }
 
     public function viajes(): HasMany
