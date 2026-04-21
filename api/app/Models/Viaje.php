@@ -21,8 +21,7 @@ class Viaje extends Model
     public function getCodigoViajeAttribute()
     {
         $tipo = $this->fletero_id !== null ? 'T' : 'P';
-        $fecha = $this->fecha_salida ? $this->fecha_salida->format('dmy') : 'SD';
-        return "{$tipo}-{$fecha}-{$this->id}";
+        return $tipo . '-' . str_pad($this->id, 5, '0', STR_PAD_LEFT);
     }
 
     protected $fillable = [

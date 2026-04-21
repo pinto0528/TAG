@@ -22,19 +22,18 @@ class FacturaController extends Controller
             'monto_total' => 'required|numeric|min:0',
             'estado' => 'required|string|in:pendiente,pagada,anulada',
             'notas' => 'nullable|string',
-            'viaje_id' => 'required|exists:viajes,id', // Needed to link via Remitos or directly to the UI
+            'remito_ids' => 'required|array',
+            'remito_ids.*' => 'exists:remitos,id',
         ]);
 
-        $viaje_id = $validated['viaje_id'];
-        unset($validated['viaje_id']);
+        $remito_ids = $validated['remito_ids'];
+        unset($validated['remito_ids']);
 
-        $factura = DB::transaction(function () use ($validated, $viaje_id) {
+        $factura = DB::transaction(function () use ($validated, $remito_ids) {
             $factura = Factura::create($validated);
             
-            // We link all remitos of this trip that don't have a factura yet
-            Remito::where('viaje_id', $viaje_id)
-                  ->whereNull('factura_id')
-                  ->update(['factura_id' => $factura->id]);
+            // Link specific remitos
+            Remito::whereIn('id', $remito_ids)->update(['factura_id' => $factura->id]);
                   
             return $factura;
         });
