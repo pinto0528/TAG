@@ -21,31 +21,39 @@ class DatabaseSeeder extends Seeder
             'password' => bcrypt('admin123'),
         ]);
 
-        // Mock Proveedor
-        $proveedor = \App\Models\Proveedor::create([
+        // Mock Cliente (Formerly Proveedor)
+        $cliente = \App\Models\Cliente::create([
             'razon_social' => 'Mercado Libre SRL',
             'cuit' => '30-71111111-9',
             'direccion' => 'Arias 3751, CABA',
             'telefono' => '011 4640-8000',
             'email' => 'logistica@mercadolibre.com',
             'contacto' => 'Andrés Galperín',
-            'unidad_medida' => 'por_viaje',
-            'tarifa' => 125000,
-            'notas' => 'Proveedor VIP',
+            'notas' => 'Cliente VIP',
         ]);
 
-        // Mock Chofer
-        $chofer = \App\Models\Chofer::create([
+        // Mock Proveedor (Formerly Fletero)
+        $proveedor_ext = \App\Models\Proveedor::create([
+            'razon_social' => 'Transportes El Rápido S.A.',
+            'cuit' => '33-44444444-9',
+            'direccion' => 'Belgrano 1234, Rosario',
+            'telefono' => '0341 456-1234',
+            'email' => 'elrapido@gmail.com',
+        ]);
+
+        // Mock Chofer Propio
+        $chofer_propio = \App\Models\Chofer::create([
             'nombre' => 'Roberto',
             'apellido' => 'Sánchez',
             'dni' => '21.456.789',
             'telefono' => '11 2345-6789',
             'licencia_vencimiento' => '2026-10-15',
             'linti_vencimiento' => '2025-08-20',
+            'proveedor_id' => null, // Propio
         ]);
 
-        // Mock Unidad
-        $unidad = \App\Models\Unidad::create([
+        // Mock Unidad Propia
+        $unidad_propia = \App\Models\Unidad::create([
             'patente' => 'AE 456 XY',
             'marca' => 'Mercedes-Benz',
             'modelo' => 'Actros',
@@ -55,14 +63,23 @@ class DatabaseSeeder extends Seeder
             'vtv_vencimiento' => '2025-12-01',
             'seguro_vencimiento' => '2025-06-30',
             'activo' => true,
+            'proveedor_id' => null, // Propio
         ]);
 
-        // Mock Fletero
-        $fletero = \App\Models\Fletero::create([
-            'razon_social' => 'Transportes El Rápido S.A.',
-            'cuit' => '33-44444444-9',
-            'telefono' => '0341 456-1234',
-            'email' => 'elrapido@gmail.com',
+        // Mock Assets for Tercerizado
+        $chofer_ext = \App\Models\Chofer::create([
+            'nombre' => 'Juan',
+            'apellido' => 'Pérez',
+            'dni' => '30.111.222',
+            'proveedor_id' => $proveedor_ext->id,
+        ]);
+
+        $unidad_ext = \App\Models\Unidad::create([
+            'patente' => 'TER-789',
+            'marca' => 'Scania',
+            'modelo' => 'R450',
+            'tipo' => 'Semi',
+            'proveedor_id' => $proveedor_ext->id,
         ]);
 
         // 5 Fictitious Trips
@@ -75,17 +92,20 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($trips as $index => $tData) {
+            $esTercerizado = $tData['tipo'] === 'tercerizado';
+            
             $viaje = \App\Models\Viaje::create([
-                'proveedor_id' => $proveedor->id,
-                'unidad_id' => $tData['tipo'] === 'propio' ? $unidad->id : null,
-                'chofer_id' => $tData['tipo'] === 'propio' ? $chofer->id : null,
-                'fletero_id' => $tData['tipo'] === 'tercerizado' ? $fletero->id : null,
+                'cliente_id' => $cliente->id,
+                'proveedor_id' => $esTercerizado ? $proveedor_ext->id : null,
+                'unidad_id' => $esTercerizado ? $unidad_ext->id : $unidad_propia->id,
+                'chofer_id' => $esTercerizado ? $chofer_ext->id : $chofer_propio->id,
                 'origen' => $tData['origen'],
                 'destino' => $tData['destino'],
                 'estado' => $index % 2 == 0 ? 'finalizado' : 'en_curso',
                 'fecha_salida' => now()->addDays($index)->format('Y-m-d'),
                 'hora_salida' => '08:00',
-                'precio' => 150000 + ($index * 10000),
+                'precio_pactado' => 150000 + ($index * 10000),
+                'costo_proveedor' => $esTercerizado ? 120000 + ($index * 5000) : 0,
                 'km_recorrido' => 300 + ($index * 50),
             ]);
 
@@ -96,7 +116,6 @@ class DatabaseSeeder extends Seeder
                 'requiere_refrigeracion' => $index % 3 == 0,
             ]);
 
-            // Add some gastos/anticipos to one trip
             if ($index === 0) {
                 \App\Models\Gasto::create([
                     'viaje_id' => $viaje->id,

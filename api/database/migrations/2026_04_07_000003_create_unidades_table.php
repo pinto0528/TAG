@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('unidades', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('proveedor_id')->nullable()->constrained('proveedores');
             $table->string('patente')->unique();
             $table->string('marca')->nullable();
             $table->string('modelo')->nullable();

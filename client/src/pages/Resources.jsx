@@ -7,6 +7,8 @@ const Resources = () => {
     const [activeTab, setActiveTab] = useState('choferes'); // 'choferes' or 'unidades'
     const [choferes, setChoferes] = useState([]);
     const [unidades, setUnidades] = useState([]);
+    const [proveedores, setProveedores] = useState([]);
+    const [selectedContext, setSelectedContext] = useState('propio'); // 'propio' or provider_id
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
@@ -18,7 +20,7 @@ const Resources = () => {
         setLoading(true);
         try {
             const endpoint = activeTab === 'choferes' ? 'choferes' : 'unidades';
-            const res = await fetch(`${API_BASE_URL}/${endpoint}?search=${search}&archivados=${showArchived}`);
+            const res = await fetch(`${API_BASE_URL}/${endpoint}?search=${search}&archivados=${showArchived}&proveedor_id=${selectedContext}`);
             const data = await res.json();
             if (activeTab === 'choferes') {
                 setChoferes(data);
@@ -32,9 +34,23 @@ const Resources = () => {
         }
     };
 
+    const fetchProveedores = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/proveedores`);
+            const data = await res.json();
+            setProveedores(data);
+        } catch (error) {
+            console.error('Error fetching proveedores:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchProveedores();
+    }, []);
+
     useEffect(() => {
         fetchData();
-    }, [activeTab, search, showArchived]);
+    }, [activeTab, search, showArchived, selectedContext]);
 
     const handleSave = async (payload) => {
         const endpoint = activeTab === 'choferes' ? 'choferes' : 'unidades';
@@ -107,29 +123,49 @@ const Resources = () => {
                         Gestiona choferes y unidades de la flota.
                     </p>
                 </div>
-                <button 
-                    onClick={() => { setEditingItem(null); setShowModal(true); }}
-                    style={{ 
-                        display: 'flex', alignItems: 'center', gap: '0.5rem', 
-                        padding: '0.75rem 1.25rem', borderRadius: 'var(--radius-lg)',
-                        boxShadow: '0 4px 6px -1px rgb(var(--bg-primary-rgb) / 0.2)' 
-                    }}
-                >
-                    <Plus size={18} /> {activeTab === 'choferes' ? 'Nuevo Chofer' : 'Nueva Unidad'}
-                </button>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <button
+                        onClick={() => { setEditingItem(null); setShowModal(true); }}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            padding: '0.75rem 1.25rem', borderRadius: 'var(--radius-lg)',
+                            boxShadow: '0 4px 6px -1px rgb(var(--bg-primary-rgb) / 0.2)',
+                            marginTop: 'auto'
+                        }}
+                    >
+                        <Plus size={18} /> {activeTab === 'choferes' ? 'Nuevo Chofer' : 'Nueva Unidad'}
+                    </button>
+                </div>
             </div>
 
             {/* Filters and Tabs */}
             <div className="card" style={{ padding: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-body)', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
-                    <button 
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <select
+                            className="input-field"
+                            style={{ minWidth: '220px', padding: '0.5rem' }}
+                            value={selectedContext}
+                            onChange={(e) => setSelectedContext(e.target.value)}
+                        >
+                            <option value="propio">Flota Propia (TAG)</option>
+                            <optgroup label="Proveedores / Fleteros">
+                                {proveedores.map(p => (
+                                    <option key={p.id} value={p.id}>{p.razon_social}</option>
+                                ))}
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <button
                         className={activeTab === 'choferes' ? '' : 'outline'}
                         style={{ border: 'none', background: activeTab === 'choferes' ? 'white' : 'transparent', color: activeTab === 'choferes' ? 'var(--text-main)' : 'var(--text-muted)', boxShadow: activeTab === 'choferes' ? 'var(--shadow-sm)' : 'none' }}
                         onClick={() => setActiveTab('choferes')}
                     >
                         <User size={16} style={{ marginRight: '0.5rem' }} /> Choferes
                     </button>
-                    <button 
+                    <button
                         className={activeTab === 'unidades' ? '' : 'outline'}
                         style={{ border: 'none', background: activeTab === 'unidades' ? 'white' : 'transparent', color: activeTab === 'unidades' ? 'var(--text-main)' : 'var(--text-muted)', boxShadow: activeTab === 'unidades' ? 'var(--shadow-sm)' : 'none' }}
                         onClick={() => setActiveTab('unidades')}
@@ -138,13 +174,13 @@ const Resources = () => {
                     </button>
                 </div>
 
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flex: 1, maxWidth: '500px' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flex: 1 }}>
                     <div style={{ position: 'relative', flex: 1 }}>
                         <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                        <input 
-                            type="text" 
-                            className="input-field" 
-                            placeholder={`Buscar por nombre, patente, DNI...`} 
+                        <input
+                            type="text"
+                            className="input-field"
+                            placeholder={`Buscar por nombre, patente, DNI...`}
                             style={{ paddingLeft: '2.5rem' }}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -152,15 +188,15 @@ const Resources = () => {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                   <input 
-                    type="checkbox" 
-                    id="showArchived" 
-                    checked={showArchived} 
-                    onChange={e => setShowArchived(e.target.checked)} 
-                    style={{ cursor: 'pointer' }}
-                   />
-                   <label htmlFor="showArchived" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', cursor: 'pointer' }}>Ver archivados</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderLeft: '1px solid var(--border-color)', paddingLeft: '1rem' }}>
+                    <input
+                        type="checkbox"
+                        id="showArchived"
+                        checked={showArchived}
+                        onChange={e => setShowArchived(e.target.checked)}
+                        style={{ cursor: 'pointer' }}
+                    />
+                    <label htmlFor="showArchived" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', cursor: 'pointer' }}>Ver Archivados</label>
                 </div>
             </div>
 
@@ -171,10 +207,10 @@ const Resources = () => {
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
                     {(activeTab === 'choferes' ? choferes : unidades).map(item => (
-                        <ItemCard 
-                            key={item.id} 
-                            item={item} 
-                            type={activeTab} 
+                        <ItemCard
+                            key={item.id}
+                            item={item}
+                            type={activeTab}
                             onEdit={(item) => { setEditingItem(item); setShowModal(true); }}
                             onDelete={handleDelete}
                             onRestore={handleRestore}
@@ -191,15 +227,16 @@ const Resources = () => {
             )}
 
             {showModal && (
-                <Modal 
-                    title={editingItem ? `Editar ${activeTab === 'choferes' ? 'Chofer' : 'Unidad'}` : `Nuevo ${activeTab === 'choferes' ? 'Chofer' : 'Unidad'}`} 
+                <Modal
+                    title={editingItem ? `Editar ${activeTab === 'choferes' ? 'Chofer' : 'Unidad'}` : `Nuevo ${activeTab === 'choferes' ? 'Chofer' : 'Unidad'}`}
                     onClose={() => setShowModal(false)}
                 >
-                    <Form 
-                        type={activeTab} 
-                        initialData={editingItem} 
-                        onSave={handleSave} 
-                        onCancel={() => setShowModal(false)} 
+                    <Form
+                        type={activeTab}
+                        initialData={editingItem}
+                        onSave={handleSave}
+                        onCancel={() => setShowModal(false)}
+                        selectedContext={selectedContext}
                     />
                 </Modal>
             )}
@@ -209,10 +246,10 @@ const Resources = () => {
 
 const ItemCard = ({ item, type, onEdit, onDelete, onRestore, onToggleActive }) => {
     const isArchived = !!item.deleted_at;
-    
+
     return (
-        <div className="card" style={{ 
-            display: 'flex', flexDirection: 'column', gap: '1rem', 
+        <div className="card" style={{
+            display: 'flex', flexDirection: 'column', gap: '1rem',
             position: 'relative', overflow: 'hidden',
             opacity: isArchived ? 0.6 : 1,
             borderLeft: `4px solid ${item.activo ? 'var(--color-success-text)' : 'var(--color-danger-text)'}`,
@@ -221,8 +258,8 @@ const ItemCard = ({ item, type, onEdit, onDelete, onRestore, onToggleActive }) =
         }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div style={{ 
-                        background: item.activo ? 'var(--color-success-bg)' : 'var(--color-danger-bg)', 
+                    <div style={{
+                        background: item.activo ? 'var(--color-success-bg)' : 'var(--color-danger-bg)',
                         padding: '0.75rem', borderRadius: 'var(--radius-md)',
                         color: item.activo ? 'var(--color-success-text)' : 'var(--color-danger-text)'
                     }}>
@@ -287,8 +324,8 @@ const ItemCard = ({ item, type, onEdit, onDelete, onRestore, onToggleActive }) =
                     {item.activo ? 'Activo' : 'Inactivo'}
                 </span>
                 {!isArchived && (
-                    <button 
-                        className="outline" 
+                    <button
+                        className="outline"
                         style={{ fontSize: '0.7rem', padding: '0.25rem 0.5rem' }}
                         onClick={() => onToggleActive(item)}
                     >
@@ -301,9 +338,9 @@ const ItemCard = ({ item, type, onEdit, onDelete, onRestore, onToggleActive }) =
 };
 
 const Modal = ({ title, onClose, children }) => (
-    <div style={{ 
-        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-        background: 'rgba(0,0,0,0.5)', zIndex: 1000, 
+    <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(0,0,0,0.5)', zIndex: 1000,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         backdropFilter: 'blur(4px)'
     }}>
@@ -317,11 +354,12 @@ const Modal = ({ title, onClose, children }) => (
     </div>
 );
 
-const Form = ({ type, initialData, onSave, onCancel }) => {
+const Form = ({ type, initialData, onSave, onCancel, selectedContext }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState(initialData || {
         activo: true,
-        tipo: type === 'unidades' ? 'Camión' : undefined
+        tipo: type === 'unidades' ? 'Camión' : undefined,
+        proveedor_id: selectedContext === 'propio' ? null : selectedContext
     });
 
     const handleChange = (e) => {

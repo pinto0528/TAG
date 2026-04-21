@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('choferes', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('proveedor_id')->nullable()->constrained('proveedores');
             $table->string('nombre');
             $table->string('apellido');
             $table->string('dni')->unique()->nullable();

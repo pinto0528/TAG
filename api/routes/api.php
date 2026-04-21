@@ -19,8 +19,18 @@ Route::post('/unidades/{id}/restore', [UnidadController::class, 'restore']);
 Route::apiResource('choferes', ChoferController::class);
 Route::post('/choferes/{id}/restore', [ChoferController::class, 'restore']);
 
-Route::get('/proveedores', function () { return \App\Models\Proveedor::all(); });
-Route::get('/fleteros', function () { return \App\Models\Fletero::all(); });
+Route::get('/clientes', function () { return \App\Models\Cliente::all(); });
+Route::get('/proveedores', function () { return \App\Models\Proveedor::with(['unidades', 'choferes'])->get(); });
+Route::get('/debug-viajes', function () { 
+    $start = microtime(true);
+    $data = \App\Models\Viaje::all();
+    $end = microtime(true);
+    return response()->json([
+        'time_ms' => ($end - $start) * 1000,
+        'count' => count($data),
+        'data' => $data
+    ]);
+});
 
 Route::apiResource('gastos', \App\Http\Controllers\GastoController::class)->only(['store', 'update', 'destroy']);
 Route::apiResource('anticipos', \App\Http\Controllers\AnticipoController::class)->only(['store', 'update', 'destroy']);

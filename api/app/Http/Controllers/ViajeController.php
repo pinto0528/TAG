@@ -12,8 +12,7 @@ class ViajeController extends Controller
     public function index(Request $request)
     {
         $query = Viaje::select('viajes.*')->with([
-            'proveedor', 'unidad', 'chofer', 'fletero', 'carga', 'gastos', 'anticipos', 
-            'remitos.factura.ordenPago.cheques'
+            'cliente', 'proveedor', 'unidad', 'chofer', 'carga'
         ]);
         
         if ($request->boolean('archivados')) {
@@ -31,7 +30,7 @@ class ViajeController extends Controller
                       $cq->where('nombre', 'like', "%{$search}%")
                          ->orWhere('apellido', 'like', "%{$search}%");
                   })
-                  ->orWhereHas('proveedor', function ($pq) use ($search) {
+                  ->orWhereHas('cliente', function ($pq) use ($search) {
                       $pq->where('razon_social', 'like', "%{$search}%");
                   });
             });
@@ -56,6 +55,9 @@ class ViajeController extends Controller
                 $dir = $sortDir === 'asc' ? 'asc' : 'desc';
                 if ($sortBy === 'id') {
                     $query->orderBy('viajes.id', $dir);
+                } elseif ($sortBy === 'cliente') {
+                    $query->leftJoin('clientes', 'viajes.cliente_id', '=', 'clientes.id')
+                          ->orderBy('clientes.razon_social', $dir);
                 } elseif ($sortBy === 'proveedor') {
                     $query->leftJoin('proveedores', 'viajes.proveedor_id', '=', 'proveedores.id')
                           ->orderBy('proveedores.razon_social', $dir);
@@ -67,8 +69,10 @@ class ViajeController extends Controller
                           ->orderBy('unidades.marca', $dir)->orderBy('unidades.patente', $dir);
                 } elseif ($sortBy === 'ruta') {
                     $query->orderBy('origen', $dir);
-                } elseif ($sortBy === 'precio') {
-                    $query->orderBy('viajes.precio', $dir);
+                } elseif ($sortBy === 'precio_pactado') {
+                    $query->orderBy('viajes.precio_pactado', $dir);
+                } elseif ($sortBy === 'costo_proveedor') {
+                    $query->orderBy('viajes.costo_proveedor', $dir);
                 } else {
                     $query->orderBy('viajes.id', 'desc');
                 }
@@ -84,19 +88,19 @@ class ViajeController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'tipo_transporte' => 'required|in:propio,tercerizado',
-            'proveedor_id' => 'required|exists:proveedores,id',
+            'cliente_id' => 'required|exists:clientes,id',
+            'proveedor_id' => 'nullable|exists:proveedores,id',
             'origen' => 'required|string',
             'destino' => 'required|string',
-            'precio' => 'required|numeric|min:0',
-            'unidad_id' => 'nullable|exists:unidades,id',
-            'chofer_id' => 'nullable|exists:choferes,id',
-            'fletero_id' => 'nullable|exists:fleteros,id',
+            'precio_pactado' => 'required|numeric|min:0',
+            'costo_proveedor' => 'nullable|numeric|min:0',
+            'unidad_id' => 'required|exists:unidades,id',
+            'chofer_id' => 'required|exists:choferes,id',
             'km_recorrido' => 'nullable|integer',
             'fecha_salida' => 'nullable|date',
-            'hora_salida' => 'nullable|date_format:H:i',
+            'hora_salida' => 'nullable|string',
             'fecha_llegada' => 'nullable|date',
-            'hora_llegada' => 'nullable|date_format:H:i',
+            'hora_llegada' => 'nullable|string',
             'observaciones' => 'nullable|string',
             'estado' => 'nullable|string',
             
@@ -108,23 +112,6 @@ class ViajeController extends Controller
             'carga.requiere_refrigeracion' => 'nullable|boolean',
         ]);
 
-        if ($validated['tipo_transporte'] === 'propio') {
-            if (empty($validated['unidad_id']) || empty($validated['chofer_id'])) {
-                throw ValidationException::withMessages([
-                    'unidad_id' => 'Unidad y Chofer son requeridos para transporte propio.'
-                ]);
-            }
-            $validated['fletero_id'] = null;
-        } else {
-            if (empty($validated['fletero_id'])) {
-                throw ValidationException::withMessages([
-                    'fletero_id' => 'El Fletero es requerido para el transporte tercerizado.'
-                ]);
-            }
-            $validated['unidad_id'] = null;
-            $validated['chofer_id'] = null;
-        }
-
         if (empty($validated['estado'])) {
             $validated['estado'] = 'pendiente';
         }
@@ -132,8 +119,8 @@ class ViajeController extends Controller
         $viaje = Viaje::create([
             'unidad_id' => $validated['unidad_id'],
             'chofer_id' => $validated['chofer_id'],
-            'proveedor_id' => $validated['proveedor_id'],
-            'fletero_id' => $validated['fletero_id'],
+            'cliente_id' => $validated['cliente_id'],
+            'proveedor_id' => $validated['proveedor_id'] ?? null,
             'estado' => $validated['estado'],
             'origen' => $validated['origen'],
             'destino' => $validated['destino'],
@@ -141,7 +128,8 @@ class ViajeController extends Controller
             'hora_salida' => $validated['hora_salida'] ?? null,
             'fecha_llegada' => $validated['fecha_llegada'] ?? null,
             'hora_llegada' => $validated['hora_llegada'] ?? null,
-            'precio' => $validated['precio'],
+            'precio_pactado' => $validated['precio_pactado'],
+            'costo_proveedor' => $validated['costo_proveedor'] ?? 0,
             'km_recorrido' => $validated['km_recorrido'] ?? 0,
             'observaciones' => $validated['observaciones'] ?? null,
         ]);
@@ -157,7 +145,7 @@ class ViajeController extends Controller
             ]);
         }
 
-        $viaje->load(['proveedor', 'unidad', 'chofer', 'fletero', 'carga', 'gastos', 'anticipos', 'remitos']);
+        $viaje->load(['cliente', 'proveedor', 'unidad', 'chofer', 'carga', 'gastos', 'anticipos', 'remitos']);
 
         return response()->json($viaje, 201);
     }
@@ -165,46 +153,22 @@ class ViajeController extends Controller
     public function update(Request $request, Viaje $viaje)
     {
         $validated = $request->validate([
-            'tipo_transporte' => 'required|in:propio,tercerizado',
-            'proveedor_id' => 'required|exists:proveedores,id',
+            'cliente_id' => 'required|exists:clientes,id',
+            'proveedor_id' => 'nullable|exists:proveedores,id',
             'origen' => 'required|string',
             'destino' => 'required|string',
-            'precio' => 'required|numeric|min:0',
-            'unidad_id' => 'nullable|exists:unidades,id',
-            'chofer_id' => 'nullable|exists:choferes,id',
-            'fletero_id' => 'nullable|exists:fleteros,id',
+            'precio_pactado' => 'required|numeric|min:0',
+            'costo_proveedor' => 'nullable|numeric|min:0',
+            'unidad_id' => 'required|exists:unidades,id',
+            'chofer_id' => 'required|exists:choferes,id',
             'km_recorrido' => 'nullable|integer',
             'fecha_salida' => 'nullable|date',
-            'hora_salida' => 'nullable|date_format:H:i',
+            'hora_salida' => 'nullable|string',
             'fecha_llegada' => 'nullable|date',
-            'hora_llegada' => 'nullable|date_format:H:i',
+            'hora_llegada' => 'nullable|string',
             'observaciones' => 'nullable|string',
             'estado' => 'nullable|string',
-            
-            // Carga
-            'carga.descripcion' => 'nullable|string',
-            'carga.tipo_carga' => 'nullable|string',
-            'carga.peso_kg' => 'nullable|numeric|min:0',
-            'carga.cantidad_bultos' => 'nullable|integer|min:0',
-            'carga.requiere_refrigeracion' => 'nullable|boolean',
         ]);
-
-        if ($validated['tipo_transporte'] === 'propio') {
-            if (empty($validated['unidad_id']) || empty($validated['chofer_id'])) {
-                throw ValidationException::withMessages([
-                    'unidad_id' => 'Unidad y Chofer son requeridos para transporte propio.'
-                ]);
-            }
-            $validated['fletero_id'] = null;
-        } else {
-            if (empty($validated['fletero_id'])) {
-                throw ValidationException::withMessages([
-                    'fletero_id' => 'El Fletero es requerido para el transporte tercerizado.'
-                ]);
-            }
-            $validated['unidad_id'] = null;
-            $validated['chofer_id'] = null;
-        }
 
         if (empty($validated['estado'])) {
             $validated['estado'] = 'pendiente';
@@ -213,8 +177,8 @@ class ViajeController extends Controller
         $viaje->update([
             'unidad_id' => $validated['unidad_id'],
             'chofer_id' => $validated['chofer_id'],
-            'proveedor_id' => $validated['proveedor_id'],
-            'fletero_id' => $validated['fletero_id'],
+            'cliente_id' => $validated['cliente_id'],
+            'proveedor_id' => $validated['proveedor_id'] ?? null,
             'estado' => $validated['estado'],
             'origen' => $validated['origen'],
             'destino' => $validated['destino'],
@@ -222,7 +186,8 @@ class ViajeController extends Controller
             'hora_salida' => $validated['hora_salida'] ?? null,
             'fecha_llegada' => $validated['fecha_llegada'] ?? null,
             'hora_llegada' => $validated['hora_llegada'] ?? null,
-            'precio' => $validated['precio'],
+            'precio_pactado' => $validated['precio_pactado'],
+            'costo_proveedor' => $validated['costo_proveedor'] ?? 0,
             'km_recorrido' => $validated['km_recorrido'] ?? 0,
             'observaciones' => $validated['observaciones'] ?? null,
         ]);
@@ -245,7 +210,7 @@ class ViajeController extends Controller
         }
 
         $viaje->refresh();
-        $viaje->load(['proveedor', 'unidad', 'chofer', 'fletero', 'carga', 'gastos', 'anticipos', 'remitos']);
+        $viaje->load(['cliente', 'proveedor', 'unidad', 'chofer', 'carga', 'gastos', 'anticipos', 'remitos']);
 
         return response()->json($viaje, 200);
     }

@@ -26,6 +26,15 @@ class ChoferController extends Controller
             });
         }
 
+        if ($request->has('proveedor_id')) {
+            $provId = $request->get('proveedor_id');
+            if ($provId === 'propio' || $provId === 'null') {
+                $query->whereNull('proveedor_id');
+            } else {
+                $query->where('proveedor_id', $provId);
+            }
+        }
+
         return response()->json($query->orderBy('id', 'desc')->get());
     }
 
@@ -41,6 +50,7 @@ class ChoferController extends Controller
             'fecha_nacimiento' => 'nullable|date',
             'licencia_vencimiento' => 'nullable|date',
             'linti_vencimiento' => 'nullable|date',
+            'proveedor_id' => 'nullable|exists:proveedores,id',
             'activo' => 'boolean',
         ]);
 
@@ -68,6 +78,7 @@ class ChoferController extends Controller
             'fecha_nacimiento' => 'nullable|date',
             'licencia_vencimiento' => 'nullable|date',
             'linti_vencimiento' => 'nullable|date',
+            'proveedor_id' => 'nullable|exists:proveedores,id',
             'activo' => 'boolean',
         ]);
 

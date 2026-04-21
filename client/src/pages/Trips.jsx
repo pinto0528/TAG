@@ -20,10 +20,10 @@ const getStatusBadge = (status) => {
   }
 };
 
-const getProveedorName = (trip) => trip.proveedor?.razon_social || mockProveedores.find(p => p.id === trip.proveedor_id)?.razon_social || '—';
-const getChoferName = (trip) => trip.chofer ? `${trip.chofer.nombre} ${trip.chofer.apellido}` : (mockChoferes.find(d => d.id === trip.chofer_id) ? `${mockChoferes.find(d => d.id === trip.chofer_id).nombre} ${mockChoferes.find(d => d.id === trip.chofer_id).apellido}` : '— Sin asignar —');
-const getUnidadLabel = (trip) => trip.unidad ? `${trip.unidad.marca} ${trip.unidad.modelo} (${trip.unidad.patente})` : (mockUnidades.find(f => f.id === trip.unidad_id) ? `${mockUnidades.find(f => f.id === trip.unidad_id).marca} ${mockUnidades.find(f => f.id === trip.unidad_id).modelo} (${mockUnidades.find(f => f.id === trip.unidad_id).patente})` : '—');
-const getFleteroName = (trip) => trip.fletero?.razon_social || mockFleteros.find(f => f.id === trip.fletero_id)?.razon_social || null;
+const getClienteName = (trip) => trip.cliente?.razon_social || '—';
+const getChoferName = (trip) => trip.chofer ? `${trip.chofer.nombre} ${trip.chofer.apellido}` : '— Sin asignar —';
+const getUnidadLabel = (trip) => trip.unidad ? `${trip.unidad.marca} ${trip.unidad.modelo} (${trip.unidad.patente})` : '—';
+const getProveedorName = (trip) => trip.proveedor?.razon_social || null;
 
 // Helpers para tarifa
 const UNIDAD_MEDIDA_LABELS = {
@@ -52,23 +52,22 @@ const PrintPortal = ({ children }) => {
 };
 
 const PrintReceipt = ({ type, item, viaje }) => {
-  const isAnticipo = type.toLowerCase().includes('anticipo') || item.metodo_pago;
-  // User requested to remove colors
+  const isAnticipo = type.toLowerCase().includes('anticipo');
   const color = '#333';
   const displayTitle = isAnticipo ? 'COMPROBANTE DE ANTICIPO' : 'COMPROBANTE DE GASTO';
 
   return (
     <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif', color: '#333' }}>
-      <div style={{ border: '2px solid #ccc', padding: '30px', borderRadius: '8px', position: 'relative' }}>
-        <div style={{ position: 'absolute', top: '20px', right: '20px', fontSize: '12px', color: '#999' }}>ORIGINAL</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #eee', paddingBottom: '20px', marginBottom: '20px' }}>
+      <div style={{ border: '2px solid #ccc', padding: '40px 30px 30px', borderRadius: '8px', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '15px', right: '20px', fontSize: '12px', color: '#999', fontWeight: 'bold' }}>ORIGINAL</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid #eee', paddingBottom: '20px', marginBottom: '20px' }}>
           <div>
             <h1 style={{ margin: 0, fontSize: '24px', color: color }}>{displayTitle}</h1>
-            <p style={{ margin: '5px 0', fontSize: '18px', fontWeight: 'bold' }}>TAG Logística</p>
+            <p style={{ margin: '5px 0 0', fontSize: '18px', fontWeight: 'bold' }}>TAG Logística</p>
           </div>
           <div style={{ textAlign: 'right' }}>
             <p style={{ margin: 0 }}><strong>Fecha:</strong> {formatDateForInput(item.fecha)}</p>
-            <p style={{ margin: 0 }}><strong>Viaje Nro:</strong> {viaje.codigo_viaje}</p>
+            <p style={{ margin: '5px 0 0' }}><strong>Viaje Nro:</strong> {viaje.codigo_viaje}</p>
           </div>
         </div>
 
@@ -105,25 +104,20 @@ const PrintReceipt = ({ type, item, viaje }) => {
 };
 
 const PrintDocumentVoucher = ({ type, item, viaje }) => {
-  // Determine dynamic title
-  let displayTitle = 'COMPROBANTE';
-  if (item.numero && item.numero.includes('/')) displayTitle = 'FACTURA'; // Simple heuristic
-  if (type.toLowerCase().includes('remito')) displayTitle = 'REMITO';
-  if (type.toLowerCase().includes('factura')) displayTitle = 'FACTURA';
-  if (type.toLowerCase().includes('orden') || type.toLowerCase().includes('pago')) displayTitle = 'ORDEN DE PAGO';
-  if (type.toLowerCase().includes('cheque')) displayTitle = 'CHEQUE';
+  const displayTitle = type ? type.toUpperCase() : 'COMPROBANTE';
 
   return (
     <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif', color: '#333' }}>
-      <div style={{ border: '2px solid #ccc', padding: '30px', borderRadius: '8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #eee', paddingBottom: '20px', marginBottom: '20px' }}>
+      <div style={{ border: '2px solid #ccc', padding: '40px 30px 30px', borderRadius: '8px', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '15px', right: '20px', fontSize: '12px', color: '#999', fontWeight: 'bold' }}>ORIGINAL</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid #eee', paddingBottom: '20px', marginBottom: '20px' }}>
           <div>
             <h1 style={{ margin: 0, fontSize: '24px', color: 'var(--bg-primary)' }}>{displayTitle}</h1>
-            <p style={{ margin: '5px 0', fontSize: '18px', fontWeight: 'bold' }}>TAG Logística</p>
+            <p style={{ margin: '5px 0 0', fontSize: '18px', fontWeight: 'bold' }}>TAG Logística</p>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <p style={{ margin: 0 }}><strong>Fecha:</strong> {formatDateForInput(item.fecha || item.fecha_emision)}</p>
-            <p style={{ margin: 0 }}><strong>Viaje:</strong> {viaje.codigo_viaje}</p>
+            <p style={{ margin: 0 }}><strong>Fecha:</strong> {formatDateForInput(item.fecha || item.fecha_emision || item.fecha_cobro)}</p>
+            <p style={{ margin: '5px 0 0' }}><strong>Viaje:</strong> {viaje.codigo_viaje}</p>
           </div>
         </div>
 
@@ -137,10 +131,11 @@ const PrintDocumentVoucher = ({ type, item, viaje }) => {
           {item.estado && <p style={{ marginTop: '10px' }}><strong>Estado:</strong> <span className="badge" style={{ textTransform: 'uppercase' }}>{item.estado}</span></p>}
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <h4 style={{ marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '5px' }}>Referencia de Viaje</h4>
+        <div style={{ marginBottom: '40px' }}>
+          <h4 style={{ marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '5px' }}>Información del Viaje</h4>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px' }}>
-            <p><strong>Proveedor:</strong> {getProveedorName(viaje)}</p>
+            <p><strong>Cliente:</strong> {getClienteName(viaje)}</p>
+            <p><strong>Proveedor:</strong> {getProveedorName(viaje) || 'Interno'}</p>
             <p><strong>Ruta:</strong> {viaje.origen} {' → '} {viaje.destino}</p>
             <p><strong>Chofer:</strong> {getChoferName(viaje)}</p>
             <p><strong>Unidad:</strong> {getUnidadLabel(viaje)}</p>
@@ -260,7 +255,7 @@ const FinanceForm = ({ item, viajetoId, onSave, onClose }) => {
           <option value="anticipo">Anticipo</option>
         </select>
       </div>
-      
+
       {type === 'gasto' && (
         <div>
           <label style={labelStyle}>Categoría</label>
@@ -334,9 +329,9 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
       if (subType === 'remito') config = { endpoint: 'remitos', data: remitoData };
       else if (subType === 'factura') {
         if (selectedRemitoIds.length === 0) {
-            alert('Debes seleccionar al menos un remito para la factura');
-            setLoading(false);
-            return;
+          alert('Debes seleccionar al menos un remito para la factura');
+          setLoading(false);
+          return;
         }
         config = { endpoint: 'facturas', data: { ...facturaData, remito_ids: selectedRemitoIds } };
       }
@@ -471,9 +466,9 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
           <div>
             <label style={labelStyle}>Estado</label>
             <select className="input-field" value={ordenPagoData.estado} onChange={e => setOrdenPagoData({ ...ordenPagoData, estado: e.target.value })}>
-                <option value="pendiente">Pendiente</option>
-                <option value="emitida">Emitida</option>
-                <option value="pagada">Pagada</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="emitida">Emitida</option>
+              <option value="pagada">Pagada</option>
             </select>
           </div>
         </>
@@ -567,8 +562,8 @@ const PrintSelectedTable = ({ viajes }) => (
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{trip.origen} {' → '} {trip.destino}</td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{trip.estado.toUpperCase()}</td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>
-              {trip.fletero_id ? `[Tercerizado] ${getFleteroName(trip)}` : `[Propio] Chofer: ${getChoferName(trip)}`}
-              {!trip.fletero_id && <><br /><span style={{ color: '#555', fontSize: '0.65rem' }}>{getUnidadLabel(trip)}</span></>}
+              {trip.proveedor_id ? `[Tercerizado] ${getProveedorName(trip)}` : `[Propio] Chofer: ${getChoferName(trip)}`}
+              {!trip.proveedor_id && <><br /><span style={{ color: '#555', fontSize: '0.65rem' }}>{getUnidadLabel(trip)}</span></>}
             </td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>
               {trip.carga?.tipo_carga || 'General'}
@@ -611,19 +606,11 @@ const PrintTripSheet = ({ viaje }) => (
         </div>
         <div>
           <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Asignación</h3>
-          <p><strong>Proveedor Carga:</strong> {getProveedorName(viaje)}</p>
-          {viaje.fletero_id ? (
-            <>
-              <p><strong>Modalidad:</strong> Transporte Tercerizado</p>
-              <p><strong>Empresa Fletera:</strong> {getFleteroName(viaje)}</p>
-            </>
-          ) : (
-            <>
-              <p><strong>Modalidad:</strong> Propia</p>
-              <p><strong>Unidad Asignada:</strong> {getUnidadLabel(viaje)}</p>
-              <p><strong>Chofer:</strong> {getChoferName(viaje)}</p>
-            </>
-          )}
+          <p><strong>Cliente:</strong> {getClienteName(viaje)}</p>
+          <p><strong>Transporte:</strong> {getProveedorName(viaje) || 'Flota Propia'}</p>
+          <br />
+          <p><strong>Unidad Asignada:</strong> {getUnidadLabel(viaje)}</p>
+          <p><strong>Chofer:</strong> {getChoferName(viaje)}</p>
         </div>
       </div>
 
@@ -681,58 +668,43 @@ const ConfirmModal = ({ message, onConfirm, onClose }) => (
 // ============================================================ 
 // FORM MODAL (Create / Edit)
 // ============================================================
-const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes, fleteros }) => {
+const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, proveedores }) => {
   const isEdit = !!trip;
   const title = isEdit ? `Editar Viaje #${trip.id}` : 'Cargar Nuevo Viaje';
   const d = trip || {};
 
-  const [tipoTransporte, setTipoTransporte] = useState(d.fletero_id ? 'tercerizado' : 'propio');
+  const [esTercerizado, setEsTercerizado] = useState(!!d.proveedor_id);
+  const [clienteId, setClienteId] = useState(d.cliente_id || '');
   const [proveedorId, setProveedorId] = useState(d.proveedor_id || '');
   const [unidadId, setUnidadId] = useState(d.unidad_id || '');
   const [choferId, setChoferId] = useState(d.chofer_id || '');
-  const [fleteroId, setFleteroId] = useState(d.fletero_id || '');
 
   const dateSalida = d.fecha_salida ? d.fecha_salida.split('T')[0] : '';
   const timeSalida = d.hora_salida ? d.hora_salida.substring(11, 16) : '';
   const dateLlegada = d.fecha_llegada ? d.fecha_llegada.split('T')[0] : '';
   const timeLlegada = d.hora_llegada ? d.hora_llegada.substring(11, 16) : '';
 
+  const [precioPactado, setPrecioPactado] = useState(d.precio_pactado || '');
+  const [costoProveedor, setCostoProveedor] = useState(d.costo_proveedor || '');
+
   const [pesoKg, setPesoKg] = useState(d.carga?.peso_kg || '');
   const [bultos, setBultos] = useState(d.carga?.cantidad_bultos || '');
   const [kmRecorrido, setKmRecorrido] = useState(d.km_recorrido || '');
-  const [precioManual, setPrecioManual] = useState(d.precio || '');
-  const [usarManual, setUsarManual] = useState(isEdit);
 
   const [alertMsg, setAlertMsg] = useState(null);
   const [confirmCfg, setConfirmCfg] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const proveedor = proveedores.find(p => p.id === Number(proveedorId));
+  // Filter Assets
+  const filteredUnidades = unidades.filter(u => {
+    if (esTercerizado) return u.proveedor_id === Number(proveedorId);
+    return !u.proveedor_id;
+  });
 
-  // Auto-calculate
-  const calcularPrecio = () => {
-    if (!proveedor) return 0;
-    switch (proveedor.unidad_medida) {
-      case 'por_viaje':
-      case 'viaje': return proveedor.tarifa;
-      case 'por_kg':
-      case 'kg': return (Number(pesoKg) || 0) * proveedor.tarifa;
-      case 'tonelada': return ((Number(pesoKg) || 0) / 1000) * proveedor.tarifa;
-      case 'por_km':
-      case 'km': return (Number(kmRecorrido) || 0) * proveedor.tarifa;
-      case 'por_bulto':
-      case 'bulto': return (Number(bultos) || 0) * proveedor.tarifa;
-      default: return 0;
-    }
-  };
-
-  const precioCalculado = calcularPrecio();
-  const precioFinal = usarManual ? (Number(precioManual) || 0) : precioCalculado;
-
-  // What input does the proveedor need?
-  const necesitaKm = proveedor?.unidad_medida === 'por_km' || proveedor?.unidad_medida === 'km';
-  const necesitaPeso = proveedor?.unidad_medida === 'por_kg' || proveedor?.unidad_medida === 'kg' || proveedor?.unidad_medida === 'tonelada';
-  const necesitaBultos = proveedor?.unidad_medida === 'por_bulto' || proveedor?.unidad_medida === 'bulto';
+  const filteredChoferes = choferes.filter(c => {
+    if (esTercerizado) return c.proveedor_id === Number(proveedorId);
+    return !c.proveedor_id;
+  });
 
   return (
     <div style={{
@@ -748,53 +720,53 @@ const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes,
             <legend style={{ fontSize: '0.875rem', fontWeight: 600, padding: '0 0.5rem', color: 'var(--text-muted)' }}>Datos del Viaje</legend>
 
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'var(--bg-body)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
-                  <input type="radio" name="tipoTrans" checked={tipoTransporte === 'propio'} onChange={() => { setTipoTransporte('propio'); setFleteroId(''); }} /> Propio (Unidad/Chofer)
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
-                  <input type="radio" name="tipoTrans" checked={tipoTransporte === 'tercerizado'} onChange={() => { setTipoTransporte('tercerizado'); setUnidadId(''); setChoferId(''); }} /> Tercerizado (Fletero)
-                </label>
+              <div style={{ flex: '1 1 200px' }}>
+                <label style={labelStyle}>Cliente *</label>
+                <select className="input-field" value={clienteId} onChange={e => setClienteId(e.target.value)} required>
+                  <option value="">Seleccione...</option>
+                  {clientes.map(c => <option key={c.id} value={c.id}>{c.razon_social}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: '1 1 120px', display: 'flex', alignItems: 'flex-end', gap: '0.5rem', paddingBottom: '0.5rem' }}>
+                <input type="checkbox" id="tercerizado" checked={esTercerizado} onChange={e => {
+                  setEsTercerizado(e.target.checked);
+                  if (!e.target.checked) setProveedorId('');
+                  setUnidadId('');
+                  setChoferId('');
+                }} />
+                <label htmlFor="tercerizado" style={{ fontSize: '0.875rem', fontWeight: 600 }}>Tercerizado</label>
+              </div>
+
+              <div style={{ flex: '1 1 200px', opacity: esTercerizado ? 1 : 0.6 }}>
+                <label style={labelStyle}>Proveedor (Empresa) *</label>
+                <select
+                  className="input-field"
+                  value={proveedorId}
+                  onChange={e => { setProveedorId(e.target.value); setUnidadId(''); setChoferId(''); }}
+                  required={esTercerizado}
+                  disabled={!esTercerizado}
+                >
+                  <option value="">{esTercerizado ? 'Seleccione proveedor...' : '— Propio —'}</option>
+                  {proveedores.map(p => <option key={p.id} value={p.id}>{p.razon_social}</option>)}
+                </select>
               </div>
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <div style={{ flex: '1 1 200px' }}>
-                <label style={labelStyle}>Proveedor *</label>
-                <select className="input-field" value={proveedorId} onChange={e => { setProveedorId(e.target.value); setUsarManual(false); }} required>
-                  <option value="">Seleccione...</option>
-                  {proveedores.map(p => <option key={p.id} value={p.id}>{p.razon_social} ({UNIDAD_MEDIDA_LABELS[p.unidad_medida] || p.unidad_medida})</option>)}
+                <label style={labelStyle}>Unidad *</label>
+                <select className="input-field" value={unidadId} onChange={e => setUnidadId(e.target.value)} required>
+                  <option value="">Seleccione unidad...</option>
+                  {filteredUnidades.map(u => <option key={u.id} value={u.id}>{u.marca} {u.modelo} ({u.patente})</option>)}
                 </select>
               </div>
-
-              {tipoTransporte === 'propio' && (
-                <>
-                  <div style={{ flex: '1 1 200px' }}>
-                    <label style={labelStyle}>Unidad *</label>
-                    <select className="input-field" value={unidadId} onChange={e => setUnidadId(e.target.value)} required={tipoTransporte === 'propio'}>
-                      <option value="">Seleccione...</option>
-                      {unidades.map(u => <option key={u.id} value={u.id}>{u.marca} {u.modelo} ({u.patente})</option>)}
-                    </select>
-                  </div>
-                  <div style={{ flex: '1 1 200px' }}>
-                    <label style={labelStyle}>Chofer *</label>
-                    <select className="input-field" value={choferId} onChange={e => setChoferId(e.target.value)} required={tipoTransporte === 'propio'}>
-                      <option value="">— Sin asignar —</option>
-                      {choferes.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.apellido}</option>)}
-                    </select>
-                  </div>
-                </>
-              )}
-
-              {tipoTransporte === 'tercerizado' && (
-                <div style={{ flex: '1 1 200px' }}>
-                  <label style={labelStyle}>Fletero *</label>
-                  <select className="input-field" value={fleteroId} onChange={e => setFleteroId(e.target.value)} required={tipoTransporte === 'tercerizado'}>
-                    <option value="">— Sin fletero —</option>
-                    {fleteros.map(f => <option key={f.id} value={f.id}>{f.razon_social}</option>)}
-                  </select>
-                </div>
-              )}
+              <div style={{ flex: '1 1 200px' }}>
+                <label style={labelStyle}>Chofer *</label>
+                <select className="input-field" value={choferId} onChange={e => setChoferId(e.target.value)} required>
+                  <option value="">Seleccione chofer...</option>
+                  {filteredChoferes.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.apellido}</option>)}
+                </select>
+              </div>
             </div>
           </fieldset>
 
@@ -828,12 +800,10 @@ const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes,
                 <input id="f_h_llegada" type="time" className="input-field" defaultValue={timeLlegada} />
               </div>
 
-              {necesitaKm && (
-                <div style={{ flex: '1 1 140px' }}>
-                  <label style={labelStyle}>Distancia (km) *</label>
-                  <input id="f_km" type="number" className="input-field" placeholder="0" value={kmRecorrido} onChange={e => setKmRecorrido(e.target.value)} />
-                </div>
-              )}
+              <div style={{ flex: '1 1 140px' }}>
+                <label style={labelStyle}>Distancia (km)</label>
+                <input id="f_km" type="number" className="input-field" placeholder="0" value={kmRecorrido} onChange={e => setKmRecorrido(e.target.value)} />
+              </div>
             </div>
           </fieldset>
 
@@ -857,12 +827,12 @@ const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes,
                 </select>
               </div>
               <div style={{ flex: '1 1 120px' }}>
-                <label style={labelStyle}>Peso (kg) {necesitaPeso && '*'}</label>
-                <input type="number" className="input-field" placeholder="0" value={pesoKg} onChange={e => setPesoKg(e.target.value)} style={necesitaPeso ? { borderColor: 'var(--bg-primary)' } : {}} />
+                <label style={labelStyle}>Peso (kg)</label>
+                <input type="number" className="input-field" placeholder="0" value={pesoKg} onChange={e => setPesoKg(e.target.value)} />
               </div>
               <div style={{ flex: '1 1 120px' }}>
-                <label style={labelStyle}>Bultos {necesitaBultos && '*'}</label>
-                <input type="number" className="input-field" placeholder="0" value={bultos} onChange={e => setBultos(e.target.value)} style={necesitaBultos ? { borderColor: 'var(--bg-primary)' } : {}} />
+                <label style={labelStyle}>Bultos</label>
+                <input type="number" className="input-field" placeholder="0" value={bultos} onChange={e => setBultos(e.target.value)} />
               </div>
               <div style={{ flex: '1 1 120px', display: 'flex', alignItems: 'flex-end', gap: '0.5rem', paddingBottom: '0.25rem' }}>
                 <input type="checkbox" id="refri" defaultChecked={d.carga?.requiere_refrigeracion || false} />
@@ -875,43 +845,41 @@ const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes,
           <fieldset style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
             <legend style={{ fontSize: '0.875rem', fontWeight: 600, padding: '0 0.5rem', color: 'var(--text-muted)' }}>Precio y Estado</legend>
 
-            {/* Precio Calculado (si hay proveedor) */}
-            {proveedor && !usarManual && (
-              <div style={{ backgroundColor: 'var(--color-info-bg)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <strong>Precio calculado automáticamente</strong>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.15rem' }}>
-                      {UNIDAD_MEDIDA_LABELS[proveedor.unidad_medida]} — Tarifa: {formatCurrency(proveedor.tarifa)}
-                      {proveedor.unidad_medida === 'por_kg' && pesoKg ? ` × ${Number(pesoKg).toLocaleString()} kg` : ''}
-                      {proveedor.unidad_medida === 'por_km' && kmRecorrido ? ` × ${Number(kmRecorrido).toLocaleString()} km` : ''}
-                      {proveedor.unidad_medida === 'por_bulto' && bultos ? ` × ${Number(bultos).toLocaleString()} bultos` : ''}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-success-text)' }}>{formatCurrency(precioCalculado)}</div>
-                </div>
-              </div>
-            )}
-
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
               <div style={{ flex: '1 1 200px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                  <input type="checkbox" id="manual" checked={usarManual} onChange={e => setUsarManual(e.target.checked)} />
-                  <label htmlFor="manual" style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-muted)' }}>Ingresar precio manual</label>
-                </div>
+                <label style={labelStyle}>Precio Pactado (Cliente) *</label>
                 <div style={{ position: 'relative' }}>
                   <DollarSign size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                   <input
                     type="number"
                     className="input-field"
-                    placeholder={usarManual ? '0' : formatCurrency(precioCalculado)}
-                    style={{ paddingLeft: '2.25rem', opacity: usarManual ? 1 : 0.5 }}
-                    value={usarManual ? precioManual : ''}
-                    onChange={e => setPrecioManual(e.target.value)}
-                    disabled={!usarManual}
+                    placeholder="0.00"
+                    style={{ paddingLeft: '2.25rem' }}
+                    value={precioPactado}
+                    onChange={e => setPrecioPactado(e.target.value)}
+                    required
                   />
                 </div>
               </div>
+
+              {esTercerizado && (
+                <div style={{ flex: '1 1 200px' }}>
+                  <label style={labelStyle}>Costo Proveedor *</label>
+                  <div style={{ position: 'relative' }}>
+                    <DollarSign size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <input
+                      type="number"
+                      className="input-field"
+                      placeholder="0.00"
+                      style={{ paddingLeft: '2.25rem' }}
+                      value={costoProveedor}
+                      onChange={e => setCostoProveedor(e.target.value)}
+                      required={esTercerizado}
+                    />
+                  </div>
+                </div>
+              )}
+
               <div style={{ flex: '1 1 200px' }}>
                 <label style={labelStyle}>Estado</label>
                 <select id="f_estado" className="input-field" defaultValue={d.estado || 'pendiente'}>
@@ -956,14 +924,14 @@ const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes,
                 if (isSaving) return;
                 setIsSaving(true);
                 const payload = {
-                  tipo_transporte: tipoTransporte,
-                  proveedor_id: proveedorId,
-                  unidad_id: tipoTransporte === 'propio' ? (unidadId || null) : null,
-                  chofer_id: tipoTransporte === 'propio' ? (choferId || null) : null,
-                  fletero_id: tipoTransporte === 'tercerizado' ? (fleteroId || null) : null,
+                  cliente_id: clienteId,
+                  proveedor_id: esTercerizado ? (proveedorId || null) : null,
+                  unidad_id: unidadId || null,
+                  chofer_id: choferId || null,
                   origen: document.getElementById('f_origen').value,
                   destino: document.getElementById('f_destino').value,
-                  precio: precioFinal,
+                  precio_pactado: precioPactado || 0,
+                  costo_proveedor: esTercerizado ? (costoProveedor || 0) : 0,
                   km_recorrido: kmRecorrido || 0,
                   fecha_salida: document.getElementById('f_f_salida').value || null,
                   hora_salida: document.getElementById('f_h_salida').value || null,
@@ -1086,9 +1054,10 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
             <div style={{ flex: '1 1 300px' }}>
               <h4 style={subHeaderStyle}><TruckIcon size={14} />Logística</h4>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <InfoLine label="Cliente" value={getClienteName(trip)} />
+                <InfoLine label="Transporte" value={getProveedorName(trip) || 'Flota Propia'} />
                 <InfoLine label="Chofer" value={getChoferName(trip)} />
                 <InfoLine label="Unidad" value={getUnidadLabel(trip)} />
-                <InfoLine label="Fletero" value={getFleteroName(trip) || 'Propio'} />
                 <InfoLine label="Salida" value={trip.fecha_salida ? `${trip.fecha_salida.split('T')[0]} ${trip.hora_salida ? trip.hora_salida.substring(11, 16) : ''}` : '—'} />
                 <InfoLine label="Origen" value={trip.origen} />
                 <InfoLine label="Destino" value={trip.destino} />
@@ -1150,7 +1119,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
                           <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
                             <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: g, subType: 'gasto' })} title="Ver"><Search size={14} /></button>
                             <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'finance', item: g })} title="Editar"><Edit size={14} /></button>
-                            <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('receipt', g, trip)} title="Imprimir"><Printer size={14} /></button>
+                            <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('receipt', 'GASTO', g, trip)} title="Imprimir"><Printer size={14} /></button>
                             <button className="outline" style={{ padding: '0.2rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('gastos', g.id)} title="Eliminar"><Trash2 size={14} /></button>
                           </div>
                         </td>
@@ -1168,7 +1137,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
                           <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
                             <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: an, subType: 'anticipo' })} title="Ver"><Search size={14} /></button>
                             <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'finance', item: an })} title="Editar"><Edit size={14} /></button>
-                            <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('receipt', an, trip)} title="Imprimir"><Printer size={14} /></button>
+                            <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('receipt', 'ANTICIPO', an, trip)} title="Imprimir"><Printer size={14} /></button>
                             <button className="outline" style={{ padding: '0.2rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('anticipos', an.id)} title="Eliminar"><Trash2 size={14} /></button>
                           </div>
                         </td>
@@ -1191,7 +1160,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
                 <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-danger-text)' }}>-{formatCurrency(totalGastos)}</div>
                 <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Anticipos Entregados</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#16a34a' }}>{formatCurrency(totalAnticipos)}</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-success-text)' }}>{formatCurrency(totalAnticipos)}</div>
                 <div style={{ height: '2px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Margen Operativo</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: margen >= 0 ? 'var(--color-success-text)' : 'var(--color-danger-text)' }}>
@@ -1215,19 +1184,17 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
             {trip.remitos && trip.remitos.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {trip.remitos.map(r => (
-                  <div key={r.id} style={{ ...chainContainerStyle, position: 'relative' }}>
-                    <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', display: 'flex', gap: '0.25rem' }}>
-                      <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: r, subType: 'remito' })} title="Ver"><Search size={14} /></button>
-                      <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('document', r, trip)} title="Imprimir"><Printer size={14} /></button>
-                      <button className="outline" style={{ padding: '0.2rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('remitos', r.id)} title="Eliminar"><Trash2 size={14} /></button>
-                    </div>
+                  <div key={r.id} style={{ ...chainContainerStyle }}>
                     <div style={stepStyle}>
                       <div style={stepTitleStyle}><FileText size={14} /> Remito</div>
                       <div style={stepContentStyle}>
                         <strong>{r.numero}</strong>
-                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>{formatDateForInput(r.fecha)}</span>
+                        <span style={{ display: 'block', fontSize: '0.7rem', opacity: 0.7, margin: '0.1rem 0' }}>{formatDateForInput(r.fecha)}</span>
+                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.2rem' }}>
                           <span className={`badge ${r.estado === 'conforme' ? 'success' : 'warning'}`} style={{ fontSize: '0.65rem' }}>{r.estado}</span>
+                          <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: r, subType: 'remito' })} title="Ver Remito"><Search size={12} /></button>
+                          <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', 'REMITO', r, trip)} title="Imprimir Remito"><Printer size={12} /></button>
+                          <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('remitos', r.id)} title="Eliminar Remito"><Trash2 size={12} /></button>
                         </div>
                       </div>
                     </div>
@@ -1238,10 +1205,11 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
                         {r.factura ? (
                           <>
                             <strong>{r.factura.numero}</strong>
-                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                            <span style={{ display: 'block', fontSize: '0.7rem', opacity: 0.7, margin: '0.1rem 0' }}>{formatDateForInput(r.factura.fecha_emision)}</span>
+                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.2rem' }}>
                               <span className={`badge ${r.factura.estado === 'pagada' ? 'success' : 'info'}`} style={{ fontSize: '0.65rem' }}>{r.factura.estado}</span>
                               <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: r.factura, subType: 'factura' })} title="Ver Factura"><Search size={12} /></button>
-                              <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', r.factura, trip)} title="Imprimir Factura"><Printer size={12} /></button>
+                              <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', 'FACTURA', r.factura, trip)} title="Imprimir Factura"><Printer size={12} /></button>
                               <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('facturas', r.factura.id)} title="Eliminar Factura"><Trash2 size={12} /></button>
                             </div>
                           </>
@@ -1255,14 +1223,15 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
                         {r.factura?.orden_pago ? (
                           <>
                             <strong>{r.factura.orden_pago.numero}</strong>
-                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                            <span style={{ display: 'block', fontSize: '0.7rem', opacity: 0.7, margin: '0.1rem 0' }}>{formatDateForInput(r.factura.orden_pago.fecha)}</span>
+                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.2rem' }}>
                               <span className={`badge ${r.factura.orden_pago.estado === 'pagada' ? 'success' : 'info'}`} style={{ fontSize: '0.65rem' }}>{r.factura.orden_pago.estado}</span>
                               <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: r.factura.orden_pago, subType: 'orden-pago' })} title="Ver O.P."><Search size={12} /></button>
-                              <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', r.factura.orden_pago, trip)} title="Imprimir O.P."><Printer size={12} /></button>
+                              <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', 'ORDEN DE PAGO', r.factura.orden_pago, trip)} title="Imprimir O.P."><Printer size={12} /></button>
                               <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('ordenes-pago', r.factura.orden_pago.id)} title="Eliminar O.P."><Trash2 size={12} /></button>
                             </div>
                           </>
-                        ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>S/OP</span>}
+                        ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>Sin orden de pago</span>}
                       </div>
                     </div>
                     <ArrowRight size={20} style={arrowStyle} />
@@ -1270,17 +1239,21 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
                       <div style={stepTitleStyle}><Package size={14} /> Cheques</div>
                       <div style={stepContentStyle}>
                         {r.factura?.orden_pago?.cheques?.length > 0 ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             {r.factura.orden_pago.cheques.map(ch => (
-                              <div key={ch.id} style={{ display: 'flex', gap: '4px', alignItems: 'center', fontSize: '0.7rem' }}>
-                                <span style={{ flex: 1 }}>#{ch.numero}</span>
-                                <button className="outline" style={{ padding: '0', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: ch, subType: 'cheque' })}><Search size={10} /></button>
-                                <button className="outline" style={{ padding: '0', border: 'none' }} onClick={() => onPrint('document', ch, trip)}><Printer size={10} /></button>
-                                <button className="outline" style={{ padding: '0', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('cheques', ch.id)}><Trash2 size={10} /></button>
+                              <div key={ch.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                                <strong>{ch.numero}</strong>
+                                <span style={{ fontSize: '0.7rem', opacity: 0.7, margin: '0.1rem 0' }}>{formatDateForInput(ch.fecha_cobro || ch.fecha_emision)}</span>
+                                <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.2rem' }}>
+                                  <span className={`badge ${ch.estado === 'cobrado' ? 'success' : 'info'}`} style={{ fontSize: '0.65rem' }}>{ch.estado}</span>
+                                  <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: ch, subType: 'cheque' })} title="Ver Cheque"><Search size={12} /></button>
+                                  <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', 'CHEQUE', ch, trip)} title="Imprimir Cheque"><Printer size={12} /></button>
+                                  <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('cheques', ch.id)} title="Eliminar Cheque"><Trash2 size={12} /></button>
+                                </div>
                               </div>
                             ))}
                           </div>
-                        ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>S/CH</span>}
+                        ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>Sin cheque</span>}
                       </div>
                     </div>
                   </div>
@@ -1363,16 +1336,17 @@ const Trips = () => {
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
 
-  const [proveedores, setProveedores] = useState(mockProveedores);
-  const [unidades, setUnidades] = useState(mockUnidades);
-  const [choferes, setChoferes] = useState(mockChoferes);
-  const [fleteros, setFleteros] = useState(mockFleteros);
+  const [clientes, setClientes] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [choferes, setChoferes] = useState([]);
+  const [proveedores, setProveedores] = useState([]);
   const [verArchivados, setVerArchivados] = useState(false);
   const [selectedTrips, setSelectedTrips] = useState([]);
 
   const [printMode, setPrintMode] = useState(null);
   const [tripToPrint, setTripToPrint] = useState(null);
   const [printItem, setPrintItem] = useState(null);
+  const [printSubType, setPrintSubType] = useState(null);
   const [alertMsg, setAlertMsg] = useState(null);
   const [confirmCfg, setConfirmCfg] = useState(null);
 
@@ -1408,7 +1382,7 @@ const Trips = () => {
   const fetchViajes = async (page = currentPage, forceSortBy = sortBy, forceSortDir = sortDir) => {
     setLoading(true);
     try {
-      let url = `http://localhost:8000/api/viajes?page=${page}`;
+      let url = `http://127.0.0.1:8000/api/viajes?page=${page}`;
       if (verArchivados) url += '&archivados=1';
       if (forceSortBy && forceSortDir) {
         url += `&sort_by=${forceSortBy}&sort_dir=${forceSortDir}`;
@@ -1434,16 +1408,16 @@ const Trips = () => {
 
   const fetchOptions = async () => {
     try {
-      const [provRes, uniRes, choRes, fleRes] = await Promise.all([
-        fetch('http://localhost:8000/api/proveedores'),
-        fetch('http://localhost:8000/api/unidades'),
-        fetch('http://localhost:8000/api/choferes'),
-        fetch('http://localhost:8000/api/fleteros')
+      const [cliRes, uniRes, choRes, provRes] = await Promise.all([
+        fetch('http://127.0.0.1:8000/api/clientes'),
+        fetch('http://127.0.0.1:8000/api/unidades'),
+        fetch('http://127.0.0.1:8000/api/choferes'),
+        fetch('http://127.0.0.1:8000/api/proveedores')
       ]);
-      if (provRes.ok) setProveedores(await provRes.json());
+      if (cliRes.ok) setClientes(await cliRes.json());
       if (uniRes.ok) setUnidades(await uniRes.json());
       if (choRes.ok) setChoferes(await choRes.json());
-      if (fleRes.ok) setFleteros(await fleRes.json());
+      if (provRes.ok) setProveedores(await provRes.json());
     } catch (e) {
       console.error("Error fetching options:", e);
     }
@@ -1528,17 +1502,31 @@ const Trips = () => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {selectedTrips.length > 0 && (
-            <button style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#0284c7', color: 'white', borderColor: '#0284c7' }} onClick={() => setPrintMode('table')}>
+            <button style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'white' }} onClick={() => setPrintMode('table')}>
               <Printer size={16} /> Imprimir Resumen ({selectedTrips.length})
             </button>
           )}
-          <button style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => setFormTrip(null)}>
+          <button style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.75rem 1.25rem', borderRadius: 'var(--radius-lg)',
+            boxShadow: '0 4px 6px -1px rgb(var(--bg-primary-rgb) / 0.2)',
+            marginTop: 'auto'
+          }}
+            onClick={() => setFormTrip(null)}>
             <Plus size={18} /> Nuevo Viaje
           </button>
         </div>
       </div>
 
       <div className="card" style={{ display: 'flex', gap: '1rem', alignItems: 'center', padding: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Desde:</span>
+          <input type="date" className="input-field" style={{ width: '150px' }} value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Hasta:</span>
+          <input type="date" className="input-field" style={{ width: '150px' }} value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
+        </div>
         <div style={{ position: 'relative', flex: '1 1 250px' }}>
           <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
@@ -1550,17 +1538,10 @@ const Trips = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Desde:</span>
-          <input type="date" className="input-field" style={{ width: '150px' }} value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Hasta:</span>
-          <input type="date" className="input-field" style={{ width: '150px' }} value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
-        </div>
+
         <div style={{ display: 'flex', alignItems: 'center', borderLeft: '1px solid var(--border-color)', paddingLeft: '1rem' }}>
           <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
-            <input type="checkbox" checked={verArchivados} onChange={(e) => setVerArchivados(e.target.checked)} /> Mostrar Archivados solos
+            <input type="checkbox" checked={verArchivados} onChange={(e) => setVerArchivados(e.target.checked)} /> Ver Archivados
           </label>
         </div>
       </div>
@@ -1572,12 +1553,14 @@ const Trips = () => {
               <tr>
                 <th style={{ width: '40px', textAlign: 'center' }}><input type="checkbox" checked={viajes.length > 0 && selectedTrips.length === viajes.length} onChange={toggleSelectAll} /></th>
                 <SortableHeader title="#" column="id" />
+                <SortableHeader title="Cliente" column="cliente" />
                 <SortableHeader title="Proveedor" column="proveedor" />
                 <SortableHeader title="Ruta" column="ruta" />
                 <SortableHeader title="Unidad" column="unidad" />
                 <SortableHeader title="Chofer" column="chofer" />
                 <SortableHeader title="Estado" column="estado" />
-                <SortableHeader title="Precio" column="precio" style={{ textAlign: 'right' }} />
+                <SortableHeader title="Precio (Cli)" column="precio_pactado" style={{ textAlign: 'right' }} />
+                <SortableHeader title="Costo (Prov)" column="costo_proveedor" style={{ textAlign: 'right' }} />
                 <th style={{ textAlign: 'center' }}>Acciones</th>
               </tr>
             </thead>
@@ -1607,12 +1590,14 @@ const Trips = () => {
                           {trip.codigo_viaje}
                           {trip.deleted_at && <span style={{ display: 'block', fontSize: '0.6rem', color: 'var(--color-danger-text)' }}>ARCHIVADO</span>}
                         </td>
-                        <td>{getProveedorName(trip)}</td>
+                        <td>{getClienteName(trip)}</td>
+                        <td>{getProveedorName(trip) || <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Flota propia</span>}</td>
                         <td>{trip.origen} {' → '} {trip.destino}</td>
                         <td style={{ fontSize: '0.8rem' }}>{getUnidadLabel(trip)}</td>
                         <td>{getChoferName(trip)}</td>
                         <td>{getStatusBadge(trip.estado)}</td>
-                        <td style={{ textAlign: 'right', fontWeight: '500' }}>{formatCurrency(trip.precio)}</td>
+                        <td style={{ textAlign: 'right', fontWeight: '500' }}>{formatCurrency(trip.precio_pactado)}</td>
+                        <td style={{ textAlign: 'right', fontWeight: '500', color: trip.costo_proveedor > 0 ? 'var(--color-danger-text)' : 'inherit' }}>{trip.costo_proveedor > 0 ? formatCurrency(trip.costo_proveedor) : '—'}</td>
                         <td style={{ textAlign: 'center' }}>
                           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                             {!trip.deleted_at ? (
@@ -1629,7 +1614,7 @@ const Trips = () => {
                                 className="outline success"
                                 style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', borderColor: 'var(--color-success-text)', color: 'var(--color-success-text)' }}
                                 onClick={async () => {
-                                  await fetch(`http://localhost:8000/api/viajes/${trip.id}/restore`, { method: 'POST' });
+                                  await fetch(`http://127.0.0.1:8000/api/viajes/${trip.id}/restore`, { method: 'POST' });
                                   fetchViajes();
                                 }}
                                 title="Desarchivar viaje"
@@ -1658,12 +1643,13 @@ const Trips = () => {
 
                       {isExpanded && (
                         <tr style={{ backgroundColor: 'var(--bg-hover)' }}>
-                          <td colSpan="9" style={{ padding: '1rem' }}>
+                          <td colSpan="12" style={{ padding: '1rem' }}>
                             <TripDetail
                               trip={trip}
                               onRefresh={() => fetchViajes(currentPage)}
-                              onPrint={(mode, item, viaje) => {
+                              onPrint={(mode, subType, item, viaje) => {
                                 setPrintMode(mode);
+                                setPrintSubType(subType);
                                 setTripToPrint(viaje);
                                 setPrintItem(item);
                               }}
@@ -1730,7 +1716,7 @@ const Trips = () => {
       </div>
 
       {formTrip !== undefined && (
-        <TripFormModal trip={formTrip} onClose={() => setFormTrip(undefined)} onSave={fetchViajes} proveedores={proveedores} unidades={unidades} choferes={choferes} fleteros={fleteros} />
+        <TripFormModal trip={formTrip} onClose={() => setFormTrip(undefined)} onSave={fetchViajes} clientes={clientes} unidades={unidades} choferes={choferes} proveedores={proveedores} />
       )}
 
       {printMode === 'table' && selectedTrips.length > 0 && (
@@ -1747,13 +1733,13 @@ const Trips = () => {
 
       {printMode === 'receipt' && tripToPrint && printItem && (
         <PrintPortal>
-          <PrintReceipt type="Anticipo/Gasto" item={printItem} viaje={tripToPrint} />
+          <PrintReceipt type={printSubType} item={printItem} viaje={tripToPrint} />
         </PrintPortal>
       )}
 
       {printMode === 'document' && tripToPrint && printItem && (
         <PrintPortal>
-          <PrintDocumentVoucher type="Comprobante" item={printItem} viaje={tripToPrint} />
+          <PrintDocumentVoucher type={printSubType} item={printItem} viaje={tripToPrint} />
         </PrintPortal>
       )}
 
