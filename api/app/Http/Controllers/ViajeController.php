@@ -11,16 +11,20 @@ class ViajeController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Viaje::select('viajes.*')->with(['proveedor', 'unidad', 'chofer', 'fletero', 'carga', 'gastos', 'anticipos', 'remitos.factura']);
+        $query = Viaje::select('viajes.*')->with([
+            'proveedor', 'unidad', 'chofer', 'fletero', 'carga', 'gastos', 'anticipos', 
+            'remitos.factura.ordenPago.cheques'
+        ]);
         
         if ($request->boolean('archivados')) {
             $query->onlyTrashed();
         }
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('codigo_viaje', 'like', "%{$search}%")
+            $cleanSearch = preg_replace('/^[PT]-0*/i', '', $search);
+            $query->where(function ($q) use ($search, $cleanSearch) {
+                $q->where('viajes.id', 'like', "%{$cleanSearch}%")
                   ->orWhere('origen', 'like', "%{$search}%")
                   ->orWhere('destino', 'like', "%{$search}%")
                   ->orWhereHas('chofer', function ($cq) use ($search) {
@@ -33,25 +37,26 @@ class ViajeController extends Controller
             });
         }
 
-        if ($request->has('fecha_desde')) {
+        if ($request->filled('fecha_desde')) {
             $query->whereDate('fecha_salida', '>=', $request->get('fecha_desde'));
         }
 
-        if ($request->has('fecha_hasta')) {
+        if ($request->filled('fecha_hasta')) {
             $query->whereDate('fecha_salida', '<=', $request->get('fecha_hasta'));
         }
         
-        if ($request->has('sort_by') && $request->has('sort_dir')) {
+        if ($request->filled('sort_by') && $request->filled('sort_dir')) {
             $sortBy = $request->get('sort_by');
             $sortDir = strtolower($request->get('sort_dir'));
             
             if ($sortBy === 'estado' && in_array($sortDir, ['pendiente', 'en_curso', 'finalizado', 'cancelado'])) {
-                // Para estado, ordenamos para que el estado seleccionado aparezca primero
                 $query->orderByRaw("CASE WHEN estado = ? THEN 0 ELSE 1 END", [$sortDir])
                       ->orderBy('viajes.id', 'desc');
             } else {
                 $dir = $sortDir === 'asc' ? 'asc' : 'desc';
-                if ($sortBy === 'proveedor') {
+                if ($sortBy === 'id') {
+                    $query->orderBy('viajes.id', $dir);
+                } elseif ($sortBy === 'proveedor') {
                     $query->leftJoin('proveedores', 'viajes.proveedor_id', '=', 'proveedores.id')
                           ->orderBy('proveedores.razon_social', $dir);
                 } elseif ($sortBy === 'chofer') {

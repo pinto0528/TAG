@@ -5,6 +5,11 @@ import { Plus, ChevronDown, Edit, DollarSign, Package, FileText, Truck as TruckI
 
 const formatCurrency = (amount) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount || 0);
 
+const formatDateForInput = (dateStr) => {
+  if (!dateStr) return '';
+  return dateStr.split('T')[0];
+};
+
 const getStatusBadge = (status) => {
   switch (status) {
     case 'finalizado': return <span className="badge success">Finalizado</span>;
@@ -46,336 +51,481 @@ const PrintPortal = ({ children }) => {
   return createPortal(children, el);
 };
 
-const PrintReceipt = ({ type, item, viaje }) => (
-    <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif' }}>
-        <div style={{ border: '2px solid black', padding: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid black', pb: '10px', mb: '20px' }}>
-                <div>
-                    <h1 style={{ margin: 0, fontSize: '24px' }}>COMPROBANTE DE {type.toUpperCase()}</h1>
-                    <p style={{ margin: '5px 0' }}>Transporte y Logística TAG</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                    <p style={{ margin: 0 }}><strong>Fecha:</strong> {item.fecha}</p>
-                    <p style={{ margin: 0 }}><strong>Viaje Nro:</strong> {viaje.codigo_viaje}</p>
-                </div>
-            </div>
+const PrintReceipt = ({ type, item, viaje }) => {
+  const isAnticipo = type.toLowerCase().includes('anticipo') || item.metodo_pago;
+  // User requested to remove colors
+  const color = '#333';
+  const displayTitle = isAnticipo ? 'COMPROBANTE DE ANTICIPO' : 'COMPROBANTE DE GASTO';
 
-            <div style={{ marginBottom: '20px' }}>
-                <p><strong>Concepto:</strong> {item.concepto || item.tipo}</p>
-                <p><strong>Monto:</strong> <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatCurrency(item.monto)}</span></p>
-                {item.metodo_pago && <p><strong>Método de Pago:</strong> {item.metodo_pago}</p>}
-            </div>
-
-            <div style={{ marginBottom: '40px' }}>
-                <h4 style={{ marginBottom: '10px', borderBottom: '1px solid #ccc' }}>Detalles del Viaje</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px' }}>
-                    <p><strong>Chofer:</strong> {getChoferName(viaje)}</p>
-                    <p><strong>Unidad:</strong> {getUnidadLabel(viaje)}</p>
-                    <p><strong>Origen:</strong> {viaje.origen}</p>
-                    <p><strong>Destino:</strong> {viaje.destino}</p>
-                </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '60px' }}>
-                <div style={{ textAlign: 'center', width: '200px', borderTop: '1px solid black', paddingTop: '10px' }}>
-                    <p style={{ margin: 0, fontSize: '12px' }}>Firma Autorizada</p>
-                </div>
-                <div style={{ textAlign: 'center', width: '200px', borderTop: '1px solid black', paddingTop: '10px' }}>
-                    <p style={{ margin: 0, fontSize: '12px' }}>Firma Recibí</p>
-                </div>
-            </div>
+  return (
+    <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif', color: '#333' }}>
+      <div style={{ border: '2px solid #ccc', padding: '30px', borderRadius: '8px', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '20px', right: '20px', fontSize: '12px', color: '#999' }}>ORIGINAL</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #eee', paddingBottom: '20px', marginBottom: '20px' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '24px', color: color }}>{displayTitle}</h1>
+            <p style={{ margin: '5px 0', fontSize: '18px', fontWeight: 'bold' }}>TAG Logística</p>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ margin: 0 }}><strong>Fecha:</strong> {formatDateForInput(item.fecha)}</p>
+            <p style={{ margin: 0 }}><strong>Viaje Nro:</strong> {viaje.codigo_viaje}</p>
+          </div>
         </div>
-    </div>
-);
 
-const PrintDocumentVoucher = ({ type, item, viaje }) => (
-    <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif' }}>
-        <div style={{ border: '2px solid black', padding: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid black', pb: '10px', mb: '20px' }}>
-                <div>
-                    <h1 style={{ margin: 0, fontSize: '24px' }}>{type.toUpperCase()}</h1>
-                    <p style={{ margin: '5px 0' }}>TAG - Gestión de Documentación</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                    <p style={{ margin: 0 }}><strong>Fecha:</strong> {item.fecha || item.fecha_emision}</p>
-                    <p style={{ margin: 0 }}><strong>Viaje:</strong> {viaje.codigo_viaje}</p>
-                </div>
-            </div>
-
-            <div style={{ marginBottom: '30px' }}>
-                <p><strong>Número:</strong> {item.numero || 'S/N'}</p>
-                {item.monto_total && <p><strong>Monto Total:</strong> {formatCurrency(item.monto_total)}</p>}
-                {item.descripcion && <p><strong>Descripción:</strong> {item.descripcion}</p>}
-                <p><strong>Estado:</strong> {item.estado}</p>
-            </div>
-
-            <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ marginBottom: '10px', borderBottom: '1px solid #ccc' }}>Referencia de Viaje</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px' }}>
-                    <p><strong>Proveedor:</strong> {getProveedorName(viaje)}</p>
-                    <p><strong>Ruta:</strong> {viaje.origen} {' → '} {viaje.destino}</p>
-                </div>
-            </div>
+        <div style={{ marginBottom: '30px', backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '4px' }}>
+          <p style={{ fontSize: '16px', marginBottom: '10px' }}><strong>Concepto:</strong> {item.concepto || item.tipo}</p>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', color: color, margin: '15px 0' }}>
+            {formatCurrency(item.monto)}
+          </div>
+          {item.metodo_pago && <p><strong>Método de Pago:</strong> {item.metodo_pago}</p>}
+          {item.notas && <p><strong>Observaciones:</strong> {item.notas}</p>}
         </div>
+
+        <div style={{ marginBottom: '40px' }}>
+          <h4 style={{ marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '5px' }}>Información del Viaje</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px' }}>
+            <p><strong>Chofer:</strong> {getChoferName(viaje)}</p>
+            <p><strong>Unidad:</strong> {getUnidadLabel(viaje)}</p>
+            <p><strong>Origen:</strong> {viaje.origen}</p>
+            <p><strong>Destino:</strong> {viaje.destino}</p>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '80px' }}>
+          <div style={{ textAlign: 'center', width: '220px', borderTop: '1px solid #999', paddingTop: '10px' }}>
+            <p style={{ margin: 0, fontSize: '12px' }}>Firma Autorizada</p>
+          </div>
+          <div style={{ textAlign: 'center', width: '220px', borderTop: '1px solid #999', paddingTop: '10px' }}>
+            <p style={{ margin: 0, fontSize: '12px' }}>Firma Recibí</p>
+          </div>
+        </div>
+      </div>
     </div>
-);
+  );
+};
+
+const PrintDocumentVoucher = ({ type, item, viaje }) => {
+  // Determine dynamic title
+  let displayTitle = 'COMPROBANTE';
+  if (item.numero && item.numero.includes('/')) displayTitle = 'FACTURA'; // Simple heuristic
+  if (type.toLowerCase().includes('remito')) displayTitle = 'REMITO';
+  if (type.toLowerCase().includes('factura')) displayTitle = 'FACTURA';
+  if (type.toLowerCase().includes('orden') || type.toLowerCase().includes('pago')) displayTitle = 'ORDEN DE PAGO';
+  if (type.toLowerCase().includes('cheque')) displayTitle = 'CHEQUE';
+
+  return (
+    <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif', color: '#333' }}>
+      <div style={{ border: '2px solid #ccc', padding: '30px', borderRadius: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #eee', paddingBottom: '20px', marginBottom: '20px' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '24px', color: 'var(--bg-primary)' }}>{displayTitle}</h1>
+            <p style={{ margin: '5px 0', fontSize: '18px', fontWeight: 'bold' }}>TAG Logística</p>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ margin: 0 }}><strong>Fecha:</strong> {formatDateForInput(item.fecha || item.fecha_emision)}</p>
+            <p style={{ margin: 0 }}><strong>Viaje:</strong> {viaje.codigo_viaje}</p>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '30px', backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '4px' }}>
+          <p><strong>Número:</strong> <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{item.numero || 'S/N'}</span></p>
+          {item.monto_total && <p style={{ fontSize: '20px', marginTop: '10px' }}><strong>Monto Total:</strong> {formatCurrency(item.monto_total)}</p>}
+          {item.monto && <p style={{ fontSize: '20px', marginTop: '10px' }}><strong>Monto:</strong> {formatCurrency(item.monto)}</p>}
+          {item.banco && <p style={{ marginTop: '10px' }}><strong>Banco:</strong> {item.banco}</p>}
+          {item.descripcion && <p style={{ marginTop: '10px' }}><strong>Descripción:</strong> {item.descripcion}</p>}
+          {item.beneficiario && <p style={{ marginTop: '10px' }}><strong>Beneficiario:</strong> {item.beneficiario}</p>}
+          {item.estado && <p style={{ marginTop: '10px' }}><strong>Estado:</strong> <span className="badge" style={{ textTransform: 'uppercase' }}>{item.estado}</span></p>}
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <h4 style={{ marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '5px' }}>Referencia de Viaje</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px' }}>
+            <p><strong>Proveedor:</strong> {getProveedorName(viaje)}</p>
+            <p><strong>Ruta:</strong> {viaje.origen} {' → '} {viaje.destino}</p>
+            <p><strong>Chofer:</strong> {getChoferName(viaje)}</p>
+            <p><strong>Unidad:</strong> {getUnidadLabel(viaje)}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ============================================================ 
 // SUB-FORM COMPONENTS
 // ============================================================
 
 const SubFormModal = ({ title, onClose, children }) => (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
-        <div className="card" style={{ width: '90%', maxWidth: '500px', padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{title}</h3>
-                <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
-            </div>
-            {children}
-        </div>
+  <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+    <div className="card" style={{ width: '90%', maxWidth: '500px', padding: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{title}</h3>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
+      </div>
+      {children}
     </div>
+  </div>
 );
 
-const GastoForm = ({ gasto, viajetoId, onSave, onClose }) => {
-    const [formData, setFormData] = useState(gasto || { viaje_id: viajetoId, tipo: 'Combustible', concepto: '', monto: 0, fecha: new Date().toISOString().split('T')[0], notas: '' });
-    const [loading, setLoading] = useState(false);
+const ViewDocument = ({ item, type }) => {
+  const fields = [];
+  if (type === 'gasto' || type === 'anticipo') {
+    fields.push({ label: 'Concepto', value: item.concepto });
+    fields.push({ label: 'Monto', value: formatCurrency(item.monto) });
+    fields.push({ label: 'Fecha', value: formatDateForInput(item.fecha) });
+    if (item.tipo) fields.push({ label: 'Categoría', value: item.tipo });
+    if (item.metodo_pago) fields.push({ label: 'Método Pago', value: item.metodo_pago });
+    if (item.notas) fields.push({ label: 'Notas', value: item.notas });
+  } else if (type === 'remito') {
+    fields.push({ label: 'Número', value: item.numero });
+    fields.push({ label: 'Fecha', value: formatDateForInput(item.fecha) });
+    fields.push({ label: 'Estado', value: item.estado });
+    if (item.descripcion) fields.push({ label: 'Descripción', value: item.descripcion });
+  } else if (type === 'factura') {
+    fields.push({ label: 'Número', value: `${item.tipo} ${item.punto_venta}-${item.numero}` });
+    fields.push({ label: 'Monto Total', value: formatCurrency(item.monto_total) });
+    fields.push({ label: 'Fecha Emisión', value: formatDateForInput(item.fecha_emision) });
+    fields.push({ label: 'Estado', value: item.estado });
+  } else if (type === 'orden-pago') {
+    fields.push({ label: 'Número', value: item.numero });
+    fields.push({ label: 'Monto', value: formatCurrency(item.monto_total) });
+    fields.push({ label: 'Fecha', value: formatDateForInput(item.fecha) });
+    fields.push({ label: 'Estado', value: item.estado });
+  } else if (type === 'cheque') {
+    fields.push({ label: 'Número', value: item.numero });
+    fields.push({ label: 'Banco', value: item.banco });
+    fields.push({ label: 'Monto', value: formatCurrency(item.monto) });
+    fields.push({ label: 'Fecha Cobro', value: formatDateForInput(item.fecha_cobro) });
+    fields.push({ label: 'Beneficiario', value: item.beneficiario });
+    fields.push({ label: 'Estado', value: item.estado });
+  }
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            const url = gasto ? `http://localhost:8000/api/gastos/${gasto.id}` : 'http://localhost:8000/api/gastos';
-            const method = gasto ? 'PUT' : 'POST';
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-            if (res.ok) onSave();
-            else alert('Error al guardar gasto');
-        } catch (e) { console.error(e); }
-        finally { setLoading(false); }
-    };
-
-    return (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Tipo</label>
-                <select className="input-field" value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })}>
-                    <option>Combustible</option>
-                    <option>Peaje</option>
-                    <option>Mantenimiento</option>
-                    <option>Viáticos</option>
-                    <option>Seguro</option>
-                    <option>Otros</option>
-                </select>
-            </div>
-            <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Concepto</label>
-                <input className="input-field" value={formData.concepto} onChange={e => setFormData({ ...formData, concepto: e.target.value })} required />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Monto</label>
-                    <input type="number" className="input-field" value={formData.monto} onChange={e => setFormData({ ...formData, monto: e.target.value })} required />
-                </div>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fecha</label>
-                    <input type="date" className="input-field" value={formData.fecha} onChange={e => setFormData({ ...formData, fecha: e.target.value })} required />
-                </div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-                <button type="button" className="outline" onClick={onClose}>Cancelar</button>
-                <button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Guardar Gasto'}</button>
-            </div>
-        </form>
-    );
+  return (
+    <div style={{ display: 'grid', gap: '0.8rem' }}>
+      {fields.map((f, idx) => (
+        <div key={idx} style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.4rem' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{f.label}</div>
+          <div style={{ fontWeight: 500 }}>{f.value || '—'}</div>
+        </div>
+      ))}
+    </div>
+  );
 };
 
-const AnticipoForm = ({ anticipo, viajetoId, onSave, onClose }) => {
-    const [formData, setFormData] = useState(anticipo || { viaje_id: viajetoId, concepto: 'Adelanto Chofer', monto: 0, fecha: new Date().toISOString().split('T')[0], metodo_pago: 'Efectivo', notas: '' });
-    const [loading, setLoading] = useState(false);
+const FinanceForm = ({ item, viajetoId, onSave, onClose }) => {
+  const [type, setType] = useState(item ? (item.metodo_pago ? 'anticipo' : 'gasto') : 'gasto');
+  const [formData, setFormData] = useState(item ? {
+    ...item,
+    fecha: formatDateForInput(item.fecha)
+  } : {
+    viaje_id: viajetoId,
+    tipo: 'Combustible', // para gasto
+    concepto: '',
+    monto: 0,
+    fecha: new Date().toISOString().split('T')[0],
+    metodo_pago: 'Efectivo', // para anticipo
+    notas: ''
+  });
+  const [loading, setLoading] = useState(false);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            const url = anticipo ? `http://localhost:8000/api/anticipos/${anticipo.id}` : 'http://localhost:8000/api/anticipos';
-            const method = anticipo ? 'PUT' : 'POST';
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-            if (res.ok) onSave();
-            else alert('Error al guardar anticipo');
-        } catch (e) { console.error(e); }
-        finally { setLoading(false); }
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const endpoint = type === 'gasto' ? 'gastos' : 'anticipos';
+      const url = item ? `http://localhost:8000/api/${endpoint}/${item.id}` : `http://localhost:8000/api/${endpoint}`;
+      const method = item ? 'PUT' : 'POST';
 
-    return (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Concepto</label>
-                <input className="input-field" value={formData.concepto} onChange={e => setFormData({ ...formData, concepto: e.target.value })} required />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Monto</label>
-                    <input type="number" className="input-field" value={formData.monto} onChange={e => setFormData({ ...formData, monto: e.target.value })} required />
-                </div>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fecha</label>
-                    <input type="date" className="input-field" value={formData.fecha} onChange={e => setFormData({ ...formData, fecha: e.target.value })} required />
-                </div>
-            </div>
-            <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Método de Pago</label>
-                <select className="input-field" value={formData.metodo_pago} onChange={e => setFormData({ ...formData, metodo_pago: e.target.value })}>
-                    <option>Efectivo</option>
-                    <option>Transferencia</option>
-                    <option>Cheque</option>
-                </select>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-                <button type="button" className="outline" onClick={onClose}>Cancelar</button>
-                <button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Guardar Anticipo'}</button>
-            </div>
-        </form>
-    );
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, viaje_id: viajetoId })
+      });
+
+      if (res.ok) onSave();
+      else alert('Error al guardar item financiero');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div>
+        <label style={labelStyle}>Tipo de Movimiento</label>
+        <select className="input-field" value={type} onChange={e => setType(e.target.value)} disabled={!!item}>
+          <option value="gasto">Gasto</option>
+          <option value="anticipo">Anticipo</option>
+        </select>
+      </div>
+      
+      {type === 'gasto' && (
+        <div>
+          <label style={labelStyle}>Categoría</label>
+          <select className="input-field" value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })}>
+            <option>Combustible</option>
+            <option>Peaje</option>
+            <option>Mantenimiento</option>
+            <option>Viáticos</option>
+            <option>Seguro</option>
+            <option>Otros</option>
+          </select>
+        </div>
+      )}
+
+      <div>
+        <label style={labelStyle}>Concepto</label>
+        <input className="input-field" value={formData.concepto} onChange={e => setFormData({ ...formData, concepto: e.target.value })} required placeholder="Ej. Pago Combustible YPF" />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <div>
+          <label style={labelStyle}>Monto</label>
+          <input type="number" className="input-field" value={formData.monto} onChange={e => setFormData({ ...formData, monto: e.target.value })} required />
+        </div>
+        <div>
+          <label style={labelStyle}>Fecha</label>
+          <input type="date" className="input-field" value={formData.fecha} onChange={e => setFormData({ ...formData, fecha: e.target.value })} required />
+        </div>
+      </div>
+
+      {type === 'anticipo' && (
+        <div>
+          <label style={labelStyle}>Método de Pago</label>
+          <select className="input-field" value={formData.metodo_pago} onChange={e => setFormData({ ...formData, metodo_pago: e.target.value })}>
+            <option>Efectivo</option>
+            <option>Transferencia</option>
+            <option>Cheque</option>
+          </select>
+        </div>
+      )}
+
+      <div>
+        <label style={labelStyle}>Notas / Observaciones</label>
+        <textarea className="input-field" value={formData.notas} onChange={e => setFormData({ ...formData, notas: e.target.value })} rows={2} />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+        <button type="button" className="outline" onClick={onClose}>Cancelar</button>
+        <button type="submit" disabled={loading}>{loading ? 'Guardando...' : `Guardar ${type === 'gasto' ? 'Gasto' : 'Anticipo'}`}</button>
+      </div>
+    </form>
+  );
 };
 
-const RemitoForm = ({ viajetoId, onSave, onClose }) => {
-    const [formData, setFormData] = useState({ viaje_id: viajetoId, numero: '', fecha: new Date().toISOString().split('T')[0], descripcion: '', estado: 'conforme', notas: '' });
-    const [loading, setLoading] = useState(false);
+const DocumentationForm = ({ trip, onSave, onClose }) => {
+  const [subType, setSubType] = useState('remito');
+  const [loading, setLoading] = useState(false);
+  const [selectedRemitoIds, setSelectedRemitoIds] = useState([]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            const res = await fetch('http://localhost:8000/api/remitos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-            if (res.ok) onSave();
-            else alert('Error al guardar remito');
-        } catch (e) { console.error(e); }
-        finally { setLoading(false); }
-    };
+  // States for different types
+  const [remitoData, setRemitoData] = useState({ viaje_id: trip.id, numero: '', fecha: new Date().toISOString().split('T')[0], descripcion: '', estado: 'conforme' });
+  const [facturaData, setFacturaData] = useState({ viaje_id: trip.id, numero: '', tipo: 'A', punto_venta: '', fecha_emision: new Date().toISOString().split('T')[0], monto_neto: 0, iva: 0, monto_total: 0, estado: 'pendiente' });
+  const [ordenPagoData, setOrdenPagoData] = useState({ factura_id: '', numero: '', fecha: new Date().toISOString().split('T')[0], monto_total: 0, estado: 'pendiente' });
+  const [chequeData, setChequeData] = useState({ orden_pago_id: '', numero: '', banco: '', fecha_emision: new Date().toISOString().split('T')[0], fecha_cobro: '', monto: 0, beneficiario: '', estado: 'pendiente' });
 
-    return (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      let config = { endpoint: '', data: {} };
+      if (subType === 'remito') config = { endpoint: 'remitos', data: remitoData };
+      else if (subType === 'factura') {
+        if (selectedRemitoIds.length === 0) {
+            alert('Debes seleccionar al menos un remito para la factura');
+            setLoading(false);
+            return;
+        }
+        config = { endpoint: 'facturas', data: { ...facturaData, remito_ids: selectedRemitoIds } };
+      }
+      else if (subType === 'orden-pago') config = { endpoint: 'ordenes-pago', data: ordenPagoData };
+      else if (subType === 'cheque') config = { endpoint: 'cheques', data: chequeData };
+
+      const res = await fetch(`http://localhost:8000/api/${config.endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config.data)
+      });
+
+      if (res.ok) onSave();
+      else {
+        const err = await res.json();
+        alert('Error al guardar: ' + JSON.stringify(err.errors || err.message));
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
+
+  const freeRemitos = trip.remitos?.filter(r => !r.factura_id) || [];
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div>
+        <label style={labelStyle}>Tipo de Documento</label>
+        <select className="input-field" value={subType} onChange={e => setSubType(e.target.value)}>
+          <option value="remito">Remito</option>
+          <option value="factura">Factura</option>
+          <option value="orden-pago">Orden de Pago</option>
+          <option value="cheque">Cheque</option>
+        </select>
+      </div>
+
+      {subType === 'remito' && (
+        <>
+          <div>
+            <label style={labelStyle}>Número de Remito</label>
+            <input className="input-field" value={remitoData.numero} onChange={e => setRemitoData({ ...remitoData, numero: e.target.value })} required />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Número de Remito</label>
-                <input className="input-field" value={formData.numero} onChange={e => setFormData({ ...formData, numero: e.target.value })} required />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fecha</label>
-                    <input type="date" className="input-field" value={formData.fecha} onChange={e => setFormData({ ...formData, fecha: e.target.value })} required />
-                </div>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Estado</label>
-                    <select className="input-field" value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })}>
-                        <option value="pendiente">Pendiente</option>
-                        <option value="conforme">Conforme</option>
-                        <option value="rechazado">Rechazado</option>
-                    </select>
-                </div>
-            </div>
-            <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Descripción / Notas</label>
-                <textarea className="input-field" value={formData.descripcion} onChange={e => setFormData({ ...formData, descripcion: e.target.value })} rows={3} />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-                <button type="button" className="outline" onClick={onClose}>Cancelar</button>
-                <button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Cargar Remito'}</button>
-            </div>
-        </form>
-    );
-};
-
-const FacturaForm = ({ viajetoId, onSave, onClose }) => {
-    const [formData, setFormData] = useState({ viaje_id: viajetoId, numero: '', tipo: 'A', punto_venta: '', fecha_emision: new Date().toISOString().split('T')[0], monto_neto: 0, iva: 0, monto_total: 0, estado: 'pendiente', notas: '' });
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        const total = parseFloat(formData.monto_neto || 0) + parseFloat(formData.iva || 0);
-        setFormData(prev => ({ ...prev, monto_total: total }));
-    }, [formData.monto_neto, formData.iva]);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            const res = await fetch('http://localhost:8000/api/facturas', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-            if (res.ok) onSave();
-            else {
-                const err = await res.json();
-                alert('Error al guardar factura: ' + JSON.stringify(err.errors || err.message));
-            }
-        } catch (e) { console.error(e); }
-        finally { setLoading(false); }
-    };
-
-    return (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Tipo</label>
-                    <select className="input-field" value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })}>
-                        <option>A</option>
-                        <option>B</option>
-                        <option>C</option>
-                    </select>
-                </div>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Punto de Venta</label>
-                    <input className="input-field" value={formData.punto_venta} onChange={e => setFormData({ ...formData, punto_venta: e.target.value })} placeholder="0001" />
-                </div>
+              <label style={labelStyle}>Fecha</label>
+              <input type="date" className="input-field" value={remitoData.fecha} onChange={e => setRemitoData({ ...remitoData, fecha: e.target.value })} required />
             </div>
             <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Número de Factura</label>
-                <input className="input-field" value={formData.numero} onChange={e => setFormData({ ...formData, numero: e.target.value })} required placeholder="0001-00000123" />
+              <label style={labelStyle}>Estado</label>
+              <select className="input-field" value={remitoData.estado} onChange={e => setRemitoData({ ...remitoData, estado: e.target.value })}>
+                <option value="pendiente">Pendiente</option>
+                <option value="conforme">Conforme</option>
+                <option value="rechazado">Rechazado</option>
+              </select>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Fecha Emisión</label>
-                    <input type="date" className="input-field" value={formData.fecha_emision} onChange={e => setFormData({ ...formData, fecha_emision: e.target.value })} required />
-                </div>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Estado</label>
-                    <select className="input-field" value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })}>
-                        <option value="pendiente">Pendiente</option>
-                        <option value="pagada">Pagada</option>
-                    </select>
-                </div>
+          </div>
+        </>
+      )}
+
+      {subType === 'factura' && (
+        <>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <label style={labelStyle}>Remitos Asociados (Seleccionar 1 o más)</label>
+            <div style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '0.5rem', backgroundColor: 'var(--bg-body)' }}>
+              {freeRemitos.length > 0 ? freeRemitos.map(r => (
+                <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', padding: '0.2rem 0' }}>
+                  <input type="checkbox" checked={selectedRemitoIds.includes(r.id)} onChange={e => {
+                    if (e.target.checked) setSelectedRemitoIds([...selectedRemitoIds, r.id]);
+                    else setSelectedRemitoIds(selectedRemitoIds.filter(id => id !== r.id));
+                  }} />
+                  Remito Nro: {r.numero} ({formatDateForInput(r.fecha)})
+                </label>
+              )) : <span style={{ fontSize: '0.8rem', fontStyle: 'italic' }}>No hay remitos pendientes en este viaje.</span>}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Neto</label>
-                    <input type="number" className="input-field" value={formData.monto_neto} onChange={e => setFormData({ ...formData, monto_neto: e.target.value })} required />
-                </div>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>IVA</label>
-                    <input type="number" className="input-field" value={formData.iva} onChange={e => setFormData({ ...formData, iva: e.target.value })} required />
-                </div>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>Total</label>
-                    <input type="number" className="input-field" value={formData.monto_total} readOnly style={{ backgroundColor: 'var(--bg-body)' }} />
-                </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={labelStyle}>Tipo</label>
+              <select className="input-field" value={facturaData.tipo} onChange={e => setFacturaData({ ...facturaData, tipo: e.target.value })}>
+                <option>A</option><option>B</option><option>C</option>
+              </select>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-                <button type="button" className="outline" onClick={onClose}>Cancelar</button>
-                <button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Cargar Factura'}</button>
+            <div>
+              <label style={labelStyle}>Punto de Venta</label>
+              <input className="input-field" value={facturaData.punto_venta} onChange={e => setFacturaData({ ...facturaData, punto_venta: e.target.value })} placeholder="0001" />
             </div>
-        </form>
-    );
+          </div>
+          <div>
+            <label style={labelStyle}>Número de Factura</label>
+            <input className="input-field" value={facturaData.numero} onChange={e => setFacturaData({ ...facturaData, numero: e.target.value })} required />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={labelStyle}>Total</label>
+              <input type="number" className="input-field" value={facturaData.monto_total} onChange={e => setFacturaData({ ...facturaData, monto_total: e.target.value })} required />
+            </div>
+            <div>
+              <label style={labelStyle}>Fecha</label>
+              <input type="date" className="input-field" value={facturaData.fecha_emision} onChange={e => setFacturaData({ ...facturaData, fecha_emision: e.target.value })} required />
+            </div>
+          </div>
+        </>
+      )}
+
+      {subType === 'orden-pago' && (
+        <>
+          <div>
+            <label style={labelStyle}>Vincular Factura</label>
+            <select className="input-field" value={ordenPagoData.factura_id} onChange={e => setOrdenPagoData({ ...ordenPagoData, factura_id: e.target.value })} required>
+              <option value="">Seleccionar factura...</option>
+              {trip.remitos?.filter(r => r.factura).reduce((acc, r) => {
+                if (!acc.find(f => f.id === r.factura.id)) acc.push(r.factura);
+                return acc;
+              }, []).map(f => (
+                <option key={f.id} value={f.id}>Factura {f.numero}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Número de Orden</label>
+            <input className="input-field" value={ordenPagoData.numero} onChange={e => setOrdenPagoData({ ...ordenPagoData, numero: e.target.value })} required />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={labelStyle}>Monto</label>
+              <input type="number" className="input-field" value={ordenPagoData.monto_total} onChange={e => setOrdenPagoData({ ...ordenPagoData, monto_total: e.target.value })} required />
+            </div>
+            <div>
+              <label style={labelStyle}>Fecha</label>
+              <input type="date" className="input-field" value={ordenPagoData.fecha} onChange={e => setOrdenPagoData({ ...ordenPagoData, fecha: e.target.value })} required />
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Estado</label>
+            <select className="input-field" value={ordenPagoData.estado} onChange={e => setOrdenPagoData({ ...ordenPagoData, estado: e.target.value })}>
+                <option value="pendiente">Pendiente</option>
+                <option value="emitida">Emitida</option>
+                <option value="pagada">Pagada</option>
+            </select>
+          </div>
+        </>
+      )}
+
+      {subType === 'cheque' && (
+        <>
+          <div>
+            <label style={labelStyle}>Vincular Orden de Pago</label>
+            <select className="input-field" value={chequeData.orden_pago_id} onChange={e => setChequeData({ ...chequeData, orden_pago_id: e.target.value })} required>
+              <option value="">Seleccionar O.P...</option>
+              {trip.remitos?.filter(r => r.factura?.orden_pago).reduce((acc, r) => {
+                if (!acc.find(op => op.id === r.factura.orden_pago.id)) acc.push(r.factura.orden_pago);
+                return acc;
+              }, []).map(op => (
+                <option key={op.id} value={op.id}>OP {op.numero}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={labelStyle}>Banco</label>
+              <input className="input-field" value={chequeData.banco} onChange={e => setChequeData({ ...chequeData, banco: e.target.value })} required />
+            </div>
+            <div>
+              <label style={labelStyle}>Número</label>
+              <input className="input-field" value={chequeData.numero} onChange={e => setChequeData({ ...chequeData, numero: e.target.value })} required />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={labelStyle}>Monto</label>
+              <input type="number" className="input-field" value={chequeData.monto} onChange={e => setChequeData({ ...chequeData, monto: e.target.value })} required />
+            </div>
+            <div>
+              <label style={labelStyle}>F. Cobro</label>
+              <input type="date" className="input-field" value={chequeData.fecha_cobro} onChange={e => setChequeData({ ...chequeData, fecha_cobro: e.target.value })} required />
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Beneficiario</label>
+            <input className="input-field" value={chequeData.beneficiario} onChange={e => setChequeData({ ...chequeData, beneficiario: e.target.value })} />
+          </div>
+        </>
+      )}
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+        <button type="button" className="outline" onClick={onClose}>Cancelar</button>
+        <button type="submit" disabled={loading}>{loading ? 'Guardando...' : `Cargar ${subType.replace('-', ' ')}`}</button>
+      </div>
+    </form>
+  );
 };
 
 const PrintSelectedTable = ({ viajes }) => (
@@ -406,25 +556,25 @@ const PrintSelectedTable = ({ viajes }) => (
         </tr>
       </thead>
       <tbody>
-        {viajes.sort((a,b) => new Date(a.fecha_salida) - new Date(b.fecha_salida)).map(trip => (
+        {viajes.sort((a, b) => new Date(a.fecha_salida) - new Date(b.fecha_salida)).map(trip => (
           <tr key={trip.id}>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem', whiteSpace: 'nowrap' }}><strong>{trip.codigo_viaje}</strong></td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>
-              Sal: {trip.fecha_salida ? trip.fecha_salida.split('T')[0] : 'S/D'} {trip.hora_salida ? trip.hora_salida.substring(11,16) : ''}<br/>
-              Lle: {trip.fecha_llegada ? trip.fecha_llegada.split('T')[0] : 'S/D'} {trip.hora_llegada ? trip.hora_llegada.substring(11,16) : ''}
+              Sal: {trip.fecha_salida ? trip.fecha_salida.split('T')[0] : 'S/D'} {trip.hora_salida ? trip.hora_salida.substring(11, 16) : ''}<br />
+              Lle: {trip.fecha_llegada ? trip.fecha_llegada.split('T')[0] : 'S/D'} {trip.hora_llegada ? trip.hora_llegada.substring(11, 16) : ''}
             </td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{getProveedorName(trip)}</td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{trip.origen} {' → '} {trip.destino}</td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{trip.estado.toUpperCase()}</td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>
               {trip.fletero_id ? `[Tercerizado] ${getFleteroName(trip)}` : `[Propio] Chofer: ${getChoferName(trip)}`}
-              {!trip.fletero_id && <><br/><span style={{ color: '#555', fontSize: '0.65rem' }}>{getUnidadLabel(trip)}</span></>}
+              {!trip.fletero_id && <><br /><span style={{ color: '#555', fontSize: '0.65rem' }}>{getUnidadLabel(trip)}</span></>}
             </td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>
-               {trip.carga?.tipo_carga || 'General'}
-               <span style={{ display: 'block', color: '#555', fontSize: '0.65rem' }}>
-                 P: {trip.carga?.peso_kg ? `${trip.carga.peso_kg}kg` : 'S/D'} | B: {trip.carga?.cantidad_bultos || 'S/D'} | Refri: {trip.carga?.requiere_refrigeracion ? 'SÍ' : 'NO'}
-               </span>
+              {trip.carga?.tipo_carga || 'General'}
+              <span style={{ display: 'block', color: '#555', fontSize: '0.65rem' }}>
+                P: {trip.carga?.peso_kg ? `${trip.carga.peso_kg}kg` : 'S/D'} | B: {trip.carga?.cantidad_bultos || 'S/D'} | Refri: {trip.carga?.requiere_refrigeracion ? 'SÍ' : 'NO'}
+              </span>
             </td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem', maxWidth: '200px', wordWrap: 'break-word' }}>{trip.observaciones || '—'}</td>
           </tr>
@@ -454,26 +604,26 @@ const PrintTripSheet = ({ viaje }) => (
           <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Logística</h3>
           <p><strong>Origen:</strong> {viaje.origen}</p>
           <p><strong>Destino:</strong> {viaje.destino}</p>
-          <br/>
-          <br/>
-          <p><strong>Fecha Salida:</strong> {viaje.fecha_salida ? viaje.fecha_salida.split('T')[0] : 'S/D'} {viaje.hora_salida ? viaje.hora_salida.substring(11,16) : ''}</p>
-          <p><strong>Fecha Llegada:</strong> {viaje.fecha_llegada ? viaje.fecha_llegada.split('T')[0] : 'S/D'} {viaje.hora_llegada ? viaje.hora_llegada.substring(11,16) : ''}</p>
+          <br />
+          <br />
+          <p><strong>Fecha Salida:</strong> {viaje.fecha_salida ? viaje.fecha_salida.split('T')[0] : 'S/D'} {viaje.hora_salida ? viaje.hora_salida.substring(11, 16) : ''}</p>
+          <p><strong>Fecha Llegada:</strong> {viaje.fecha_llegada ? viaje.fecha_llegada.split('T')[0] : 'S/D'} {viaje.hora_llegada ? viaje.hora_llegada.substring(11, 16) : ''}</p>
         </div>
         <div>
-           <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Asignación</h3>
-           <p><strong>Proveedor Carga:</strong> {getProveedorName(viaje)}</p>
-           {viaje.fletero_id ? (
-             <>
-               <p><strong>Modalidad:</strong> Transporte Tercerizado</p>
-               <p><strong>Empresa Fletera:</strong> {getFleteroName(viaje)}</p>
-             </>
-           ) : (
-             <>
-               <p><strong>Modalidad:</strong> Propia</p>
-               <p><strong>Unidad Asignada:</strong> {getUnidadLabel(viaje)}</p>
-               <p><strong>Chofer:</strong> {getChoferName(viaje)}</p>
-             </>
-           )}
+          <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Asignación</h3>
+          <p><strong>Proveedor Carga:</strong> {getProveedorName(viaje)}</p>
+          {viaje.fletero_id ? (
+            <>
+              <p><strong>Modalidad:</strong> Transporte Tercerizado</p>
+              <p><strong>Empresa Fletera:</strong> {getFleteroName(viaje)}</p>
+            </>
+          ) : (
+            <>
+              <p><strong>Modalidad:</strong> Propia</p>
+              <p><strong>Unidad Asignada:</strong> {getUnidadLabel(viaje)}</p>
+              <p><strong>Chofer:</strong> {getChoferName(viaje)}</p>
+            </>
+          )}
         </div>
       </div>
 
@@ -780,25 +930,25 @@ const TripFormModal = ({ trip, onClose, onSave, proveedores, unidades, choferes,
 
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginTop: '0.5rem' }}>
             <div>
-               {isEdit && !d.deleted_at && (
-                 <button type="button" className="outline danger" style={{ color: 'var(--color-danger-text)', borderColor: 'var(--color-danger-text)' }} onClick={() => {
-                    setConfirmCfg({
-                      message: '¿Seguro que deseas archivar este viaje? Ya no aparecerá en el listado activo.',
-                      action: async () => {
-                         await fetch(`http://localhost:8000/api/viajes/${d.id}`, { method: 'DELETE' });
-                         onSave();
-                         onClose();
-                      }
-                    });
-                 }}>Archivar Viaje</button>
-               )}
-               {isEdit && !!d.deleted_at && (
-                 <button type="button" className="outline success" style={{ color: 'var(--color-success-text)', borderColor: 'var(--color-success-text)' }} onClick={async () => {
-                   await fetch(`http://localhost:8000/api/viajes/${d.id}/restore`, { method: 'POST' });
-                   onSave();
-                   onClose();
-                 }}>Restaurar Viaje</button>
-               )}
+              {isEdit && !d.deleted_at && (
+                <button type="button" className="outline danger" style={{ color: 'var(--color-danger-text)', borderColor: 'var(--color-danger-text)' }} onClick={() => {
+                  setConfirmCfg({
+                    message: '¿Seguro que deseas archivar este viaje? Ya no aparecerá en el listado activo.',
+                    action: async () => {
+                      await fetch(`http://localhost:8000/api/viajes/${d.id}`, { method: 'DELETE' });
+                      onSave();
+                      onClose();
+                    }
+                  });
+                }}>Archivar Viaje</button>
+              )}
+              {isEdit && !!d.deleted_at && (
+                <button type="button" className="outline success" style={{ color: 'var(--color-success-text)', borderColor: 'var(--color-success-text)' }} onClick={async () => {
+                  await fetch(`http://localhost:8000/api/viajes/${d.id}/restore`, { method: 'POST' });
+                  onSave();
+                  onClose();
+                }}>Restaurar Viaje</button>
+              )}
             </div>
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button type="button" className="outline" onClick={onClose}>Cancelar</button>
@@ -872,21 +1022,32 @@ const labelStyle = { display: 'block', marginBottom: '0.25rem', fontSize: '0.8re
 // ============================================================ 
 // EXPANDED ROW DETAIL (TABBED)
 // ============================================================
-const TripDetail = ({ trip, onRefresh, onPrint }) => {
-  const [activeTab, setActiveTab] = useState('resumen');
-  const [modalCfg, setModalCfg] = useState(null); // { type: 'gasto'|'anticipo'|'remito'|'factura', item: null|object }
+const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
+  // Tab persistence using localStorage
+  const storageKey = `activeTab_${trip.id}`;
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem(storageKey) || 'resumen');
+
+  useEffect(() => {
+    localStorage.setItem(storageKey, activeTab);
+  }, [activeTab, storageKey]);
+
+  const [modalCfg, setModalCfg] = useState(null); // { type: 'finance'|'documentation'|'view', item: null|object }
 
   const totalGastos = trip.gastos?.reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
   const totalAnticipos = trip.anticipos?.reduce((a, an) => a + parseFloat(an.monto), 0) || 0;
   const margen = (trip.precio || 0) - totalGastos;
 
-  const handleDelete = async (endpoint, id) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
-    try {
-        const res = await fetch(`http://localhost:8000/api/${endpoint}/${id}`, { method: 'DELETE' });
-        if (res.ok) onRefresh();
-        else alert('Error al eliminar');
-    } catch (e) { console.error(e); }
+  const handleDelete = (endpoint, id) => {
+    setConfirmCfg({
+      message: '¿Estás seguro de que deseas eliminar este registro?',
+      action: async () => {
+        try {
+          const res = await fetch(`http://localhost:8000/api/${endpoint}/${id}`, { method: 'DELETE' });
+          if (res.ok) onRefresh();
+          else alert('Error al eliminar');
+        } catch (e) { console.error(e); }
+      }
+    });
   };
 
   return (
@@ -963,8 +1124,7 @@ const TripDetail = ({ trip, onRefresh, onPrint }) => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                 <h4 style={{ ...subHeaderStyle, marginBottom: 0 }}><DollarSign size={14} />Desglose de Gastos y Anticipos</h4>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                   <button className="outline success" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => setModalCfg({ type: 'anticipo', item: null })}>+ Anticipo</button>
-                   <button className="outline" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => setModalCfg({ type: 'gasto', item: null })}>+ Gasto</button>
+                  <button style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => setModalCfg({ type: 'finance', item: null })}>+ Cargar Movimiento</button>
                 </div>
               </div>
               <div style={{ overflowX: 'auto' }}>
@@ -981,39 +1141,41 @@ const TripDetail = ({ trip, onRefresh, onPrint }) => {
                     {trip.gastos?.map(g => (
                       <tr key={g.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                         <td style={{ padding: '0.65rem 0' }}>
-                            <span className="badge" style={{ backgroundColor: 'var(--bg-body)', fontSize: '0.65rem', mr: '0.5rem' }}>{g.tipo}</span>
-                            {g.concepto}
+                          <span className="badge" style={{ backgroundColor: 'var(--bg-body)', fontSize: '0.65rem', marginRight: '0.5rem' }}>{g.tipo}</span>
+                          {g.concepto}
                         </td>
-                        <td>{g.fecha}</td>
+                        <td>{formatDateForInput(g.fecha)}</td>
                         <td style={{ textAlign: 'right', fontWeight: 500, color: 'var(--color-danger-text)' }}>{formatCurrency(g.monto)}</td>
                         <td style={{ textAlign: 'right' }}>
-                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
-                                <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'gasto', item: g })} title="Editar"><Edit size={14} /></button>
-                                <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('receipt', g, trip)} title="Imprimir"><Printer size={14} /></button>
-                                <button className="outline" style={{ padding: '0.2rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('gastos', g.id)} title="Eliminar"><Trash2 size={14} /></button>
-                            </div>
+                          <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                            <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: g, subType: 'gasto' })} title="Ver"><Search size={14} /></button>
+                            <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'finance', item: g })} title="Editar"><Edit size={14} /></button>
+                            <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('receipt', g, trip)} title="Imprimir"><Printer size={14} /></button>
+                            <button className="outline" style={{ padding: '0.2rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('gastos', g.id)} title="Eliminar"><Trash2 size={14} /></button>
+                          </div>
                         </td>
                       </tr>
                     ))}
                     {trip.anticipos?.map(an => (
                       <tr key={`an-${an.id}`} style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(34, 197, 94, 0.05)' }}>
                         <td style={{ padding: '0.65rem 0' }}>
-                            <span className="badge success" style={{ fontSize: '0.65rem', mr: '0.5rem' }}>Anticipo</span>
-                            {an.concepto}
+                          <span className="badge success" style={{ fontSize: '0.65rem', marginRight: '0.5rem' }}>Anticipo</span>
+                          {an.concepto}
                         </td>
-                        <td>{an.fecha}</td>
+                        <td>{formatDateForInput(an.fecha)}</td>
                         <td style={{ textAlign: 'right', fontWeight: 500, color: 'var(--color-success-text)' }}>-{formatCurrency(an.monto)}</td>
                         <td style={{ textAlign: 'right' }}>
-                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
-                                <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'anticipo', item: an })} title="Editar"><Edit size={14} /></button>
-                                <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('receipt', an, trip)} title="Imprimir"><Printer size={14} /></button>
-                                <button className="outline" style={{ padding: '0.2rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('anticipos', an.id)} title="Eliminar"><Trash2 size={14} /></button>
-                            </div>
+                          <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                            <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: an, subType: 'anticipo' })} title="Ver"><Search size={14} /></button>
+                            <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'finance', item: an })} title="Editar"><Edit size={14} /></button>
+                            <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('receipt', an, trip)} title="Imprimir"><Printer size={14} /></button>
+                            <button className="outline" style={{ padding: '0.2rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('anticipos', an.id)} title="Eliminar"><Trash2 size={14} /></button>
+                          </div>
                         </td>
                       </tr>
                     ))}
                     {(!trip.gastos?.length && !trip.anticipos?.length) && (
-                        <tr><td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Sin registros financieros.</td></tr>
+                      <tr><td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Sin registros financieros.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1044,46 +1206,84 @@ const TripDetail = ({ trip, onRefresh, onPrint }) => {
         {activeTab === 'documentacion' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <h4 style={{ ...subHeaderStyle, marginBottom: 0 }}><FileText size={14} />Trazabilidad de Documentación</h4>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                   <button className="outline" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => setModalCfg({ type: 'factura', item: null })}>+ Factura</button>
-                   <button className="outline" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => setModalCfg({ type: 'remito', item: null })}>+ Remito</button>
-                </div>
+              <h4 style={{ ...subHeaderStyle, marginBottom: 0 }}><FileText size={14} />Trazabilidad de Documentación</h4>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => setModalCfg({ type: 'documentation', item: null })}>+ Cargar Documento</button>
+              </div>
             </div>
 
             {trip.remitos && trip.remitos.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {trip.remitos.map(r => (
-                    <div key={r.id} style={{ ...chainContainerStyle, position: 'relative' }}>
-                        <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', display: 'flex', gap: '0.25rem' }}>
-                             <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('document', r, trip)} title="Imprimir"><Printer size={14} /></button>
-                             <button className="outline" style={{ padding: '0.2rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('remitos', r.id)} title="Eliminar"><Trash2 size={14} /></button>
-                        </div>
-                        <div style={stepStyle}>
-                            <div style={stepTitleStyle}><FileText size={14} /> Remito</div>
-                            <div style={stepContentStyle}>
-                                <strong>{r.numero}</strong>
-                                <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>{r.fecha}</span>
-                                <span className={`badge ${r.estado === 'conforme' ? 'success' : 'warning'}`} style={{ fontSize: '0.65rem' }}>{r.estado}</span>
-                            </div>
-                        </div>
-                        <ArrowRight size={20} style={arrowStyle} />
-                        <div style={{ ...stepStyle, opacity: r.factura ? 1 : 0.4 }}>
-                            <div style={stepTitleStyle}><FileText size={14} /> Factura</div>
-                            <div style={stepContentStyle}>
-                                {r.factura ? (
-                                    <>
-                                        <strong>{r.factura.numero}</strong>
-                                        <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>{r.factura.fecha_emision}</span>
-                                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                                            <span className={`badge ${r.factura.estado === 'pagada' ? 'success' : 'info'}`} style={{ fontSize: '0.65rem' }}>{r.factura.estado}</span>
-                                            <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('facturas', r.factura.id)} title="Eliminar Factura"><Trash2 size={12} /></button>
-                                        </div>
-                                    </>
-                                ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>Sin factura vinculada</span>}
-                            </div>
-                        </div>
+                  <div key={r.id} style={{ ...chainContainerStyle, position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', display: 'flex', gap: '0.25rem' }}>
+                      <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: r, subType: 'remito' })} title="Ver"><Search size={14} /></button>
+                      <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('document', r, trip)} title="Imprimir"><Printer size={14} /></button>
+                      <button className="outline" style={{ padding: '0.2rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('remitos', r.id)} title="Eliminar"><Trash2 size={14} /></button>
                     </div>
+                    <div style={stepStyle}>
+                      <div style={stepTitleStyle}><FileText size={14} /> Remito</div>
+                      <div style={stepContentStyle}>
+                        <strong>{r.numero}</strong>
+                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>{formatDateForInput(r.fecha)}</span>
+                          <span className={`badge ${r.estado === 'conforme' ? 'success' : 'warning'}`} style={{ fontSize: '0.65rem' }}>{r.estado}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <ArrowRight size={20} style={arrowStyle} />
+                    <div style={{ ...stepStyle, opacity: r.factura ? 1 : 0.4 }}>
+                      <div style={stepTitleStyle}><FileText size={14} /> Factura</div>
+                      <div style={stepContentStyle}>
+                        {r.factura ? (
+                          <>
+                            <strong>{r.factura.numero}</strong>
+                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                              <span className={`badge ${r.factura.estado === 'pagada' ? 'success' : 'info'}`} style={{ fontSize: '0.65rem' }}>{r.factura.estado}</span>
+                              <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: r.factura, subType: 'factura' })} title="Ver Factura"><Search size={12} /></button>
+                              <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', r.factura, trip)} title="Imprimir Factura"><Printer size={12} /></button>
+                              <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('facturas', r.factura.id)} title="Eliminar Factura"><Trash2 size={12} /></button>
+                            </div>
+                          </>
+                        ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>Sin factura</span>}
+                      </div>
+                    </div>
+                    <ArrowRight size={20} style={arrowStyle} />
+                    <div style={{ ...stepStyle, opacity: r.factura?.orden_pago ? 1 : 0.4 }}>
+                      <div style={stepTitleStyle}><DollarSign size={14} /> O. Pago</div>
+                      <div style={stepContentStyle}>
+                        {r.factura?.orden_pago ? (
+                          <>
+                            <strong>{r.factura.orden_pago.numero}</strong>
+                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                              <span className={`badge ${r.factura.orden_pago.estado === 'pagada' ? 'success' : 'info'}`} style={{ fontSize: '0.65rem' }}>{r.factura.orden_pago.estado}</span>
+                              <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: r.factura.orden_pago, subType: 'orden-pago' })} title="Ver O.P."><Search size={12} /></button>
+                              <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', r.factura.orden_pago, trip)} title="Imprimir O.P."><Printer size={12} /></button>
+                              <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('ordenes-pago', r.factura.orden_pago.id)} title="Eliminar O.P."><Trash2 size={12} /></button>
+                            </div>
+                          </>
+                        ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>S/OP</span>}
+                      </div>
+                    </div>
+                    <ArrowRight size={20} style={arrowStyle} />
+                    <div style={{ ...stepStyle, opacity: r.factura?.orden_pago?.cheques?.length ? 1 : 0.4 }}>
+                      <div style={stepTitleStyle}><Package size={14} /> Cheques</div>
+                      <div style={stepContentStyle}>
+                        {r.factura?.orden_pago?.cheques?.length > 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            {r.factura.orden_pago.cheques.map(ch => (
+                              <div key={ch.id} style={{ display: 'flex', gap: '4px', alignItems: 'center', fontSize: '0.7rem' }}>
+                                <span style={{ flex: 1 }}>#{ch.numero}</span>
+                                <button className="outline" style={{ padding: '0', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: ch, subType: 'cheque' })}><Search size={10} /></button>
+                                <button className="outline" style={{ padding: '0', border: 'none' }} onClick={() => onPrint('document', ch, trip)}><Printer size={10} /></button>
+                                <button className="outline" style={{ padding: '0', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('cheques', ch.id)}><Trash2 size={10} /></button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>S/CH</span>}
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sin remitos cargados.</p>}
@@ -1092,29 +1292,25 @@ const TripDetail = ({ trip, onRefresh, onPrint }) => {
       </div>
 
       {/* Sub-form Modals */}
-      {modalCfg?.type === 'gasto' && (
-        <SubFormModal title={modalCfg.item ? 'Editar Gasto' : 'Nuevo Gasto'} onClose={() => setModalCfg(null)}>
-            <GastoForm viajetoId={trip.id} gasto={modalCfg.item} onSave={() => { setModalCfg(null); onRefresh(); }} onClose={() => setModalCfg(null)} />
+      {modalCfg?.type === 'view' && (
+        <SubFormModal title={`Detalles de ${modalCfg.subType.replace('-', ' ')}`} onClose={() => setModalCfg(null)}>
+          <ViewDocument item={modalCfg.item} type={modalCfg.subType} />
         </SubFormModal>
       )}
-      {modalCfg?.type === 'anticipo' && (
-        <SubFormModal title={modalCfg.item ? 'Editar Anticipo' : 'Nuevo Anticipo'} onClose={() => setModalCfg(null)}>
-            <AnticipoForm viajetoId={trip.id} anticipo={modalCfg.item} onSave={() => { setModalCfg(null); onRefresh(); }} onClose={() => setModalCfg(null)} />
+      {modalCfg?.type === 'finance' && (
+        <SubFormModal title={modalCfg.item ? 'Editar Movimiento' : 'Nuevo Movimiento'} onClose={() => setModalCfg(null)}>
+          <FinanceForm viajetoId={trip.id} item={modalCfg.item} onSave={() => { setModalCfg(null); onRefresh(); }} onClose={() => setModalCfg(null)} />
         </SubFormModal>
       )}
-      {modalCfg?.type === 'remito' && (
-        <SubFormModal title="Nuevo Remito" onClose={() => setModalCfg(null)}>
-            <RemitoForm viajetoId={trip.id} onSave={() => { setModalCfg(null); onRefresh(); }} onClose={() => setModalCfg(null)} />
-        </SubFormModal>
-      )}
-      {modalCfg?.type === 'factura' && (
-        <SubFormModal title="Nueva Factura" onClose={() => setModalCfg(null)}>
-            <FacturaForm viajetoId={trip.id} onSave={() => { setModalCfg(null); onRefresh(); }} onClose={() => setModalCfg(null)} />
+      {modalCfg?.type === 'documentation' && (
+        <SubFormModal title="Cargar Documentación" onClose={() => setModalCfg(null)}>
+          <DocumentationForm trip={trip} onSave={() => { setModalCfg(null); onRefresh(); }} onClose={() => setModalCfg(null)} />
         </SubFormModal>
       )}
     </div>
   );
 };
+
 
 // Styles for Tabs
 const tabButtonStyle = (isActive) => ({
@@ -1177,18 +1373,20 @@ const Trips = () => {
   const [printMode, setPrintMode] = useState(null);
   const [tripToPrint, setTripToPrint] = useState(null);
   const [printItem, setPrintItem] = useState(null);
+  const [alertMsg, setAlertMsg] = useState(null);
+  const [confirmCfg, setConfirmCfg] = useState(null);
 
   useEffect(() => {
     if (printMode) {
       const t = setTimeout(() => {
         window.print();
       }, 300);
-      
+
       const handleAfterPrint = () => {
         setPrintMode(null);
         setTripToPrint(null);
       };
-      
+
       window.addEventListener('afterprint', handleAfterPrint);
       return () => {
         clearTimeout(t);
@@ -1198,12 +1396,12 @@ const Trips = () => {
   }, [printMode]);
 
   const toggleSelectAll = (e) => {
-    if(e.target.checked) setSelectedTrips(viajes.map(v => v.id));
+    if (e.target.checked) setSelectedTrips(viajes.map(v => v.id));
     else setSelectedTrips([]);
   };
 
   const toggleTripSelection = (id) => {
-    if(selectedTrips.includes(id)) setSelectedTrips(selectedTrips.filter(tId => tId !== id));
+    if (selectedTrips.includes(id)) setSelectedTrips(selectedTrips.filter(tId => tId !== id));
     else setSelectedTrips([...selectedTrips, id]);
   };
 
@@ -1274,24 +1472,24 @@ const Trips = () => {
     let newSortDir = null;
 
     if (column === 'estado') {
-       const estados = ['pendiente', 'en_curso', 'finalizado', 'cancelado', null];
-       if (sortBy === 'estado' && sortDir) {
-          const currentIndex = estados.indexOf(sortDir);
-          newSortDir = estados[currentIndex + 1] || null;
-       } else {
-          newSortDir = 'pendiente';
-       }
-       if (!newSortDir) newSortBy = null;
+      const estados = ['pendiente', 'en_curso', 'finalizado', 'cancelado', null];
+      if (sortBy === 'estado' && sortDir) {
+        const currentIndex = estados.indexOf(sortDir);
+        newSortDir = estados[currentIndex + 1] || null;
+      } else {
+        newSortDir = 'pendiente';
+      }
+      if (!newSortDir) newSortBy = null;
     } else {
-       if (sortBy === column) {
-          if (sortDir === 'asc') newSortDir = 'desc';
-          else if (sortDir === 'desc') { newSortBy = null; newSortDir = null; }
-          else newSortDir = 'asc';
-       } else {
-          newSortDir = 'asc';
-       }
+      if (sortBy === column) {
+        if (sortDir === 'asc') newSortDir = 'desc';
+        else if (sortDir === 'desc') { newSortBy = null; newSortDir = null; }
+        else newSortDir = 'asc';
+      } else {
+        newSortDir = 'asc';
+      }
     }
-    
+
     setSortBy(newSortBy);
     setSortDir(newSortDir);
     setCurrentPage(1);
@@ -1299,22 +1497,22 @@ const Trips = () => {
   };
 
   const SortableHeader = ({ title, column, style }) => {
-     const isActive = sortBy === column;
-     return (
-       <th onClick={() => handleSort(column)} style={{ cursor: 'pointer', userSelect: 'none', ...style }}>
-         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: style?.textAlign === 'right' ? 'flex-end' : 'flex-start' }}>
-           {title}
-           {isActive && column !== 'estado' && (
-             sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
-           )}
-           {isActive && column === 'estado' && (
-             <span style={{ fontSize: '0.65rem', backgroundColor: 'var(--bg-primary)', color: 'white', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>
-               {sortDir.toUpperCase()}
-             </span>
-           )}
-         </div>
-       </th>
-     );
+    const isActive = sortBy === column;
+    return (
+      <th onClick={() => handleSort(column)} style={{ cursor: 'pointer', userSelect: 'none', ...style }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: style?.textAlign === 'right' ? 'flex-end' : 'flex-start' }}>
+          {title}
+          {isActive && column !== 'estado' && (
+            sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+          )}
+          {isActive && column === 'estado' && (
+            <span style={{ fontSize: '0.65rem', backgroundColor: 'var(--bg-primary)', color: 'white', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>
+              {sortDir.toUpperCase()}
+            </span>
+          )}
+        </div>
+      </th>
+    );
   };
 
   return (
@@ -1343,10 +1541,10 @@ const Trips = () => {
       <div className="card" style={{ display: 'flex', gap: '1rem', alignItems: 'center', padding: '1rem', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: '1 1 250px' }}>
           <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input 
-            type="text" 
-            className="input-field" 
-            placeholder="Buscar por código, ruta, chofer..." 
+          <input
+            type="text"
+            className="input-field"
+            placeholder="Buscar por código, ruta, chofer..."
             style={{ paddingLeft: '2.5rem' }}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -1373,7 +1571,7 @@ const Trips = () => {
             <thead>
               <tr>
                 <th style={{ width: '40px', textAlign: 'center' }}><input type="checkbox" checked={viajes.length > 0 && selectedTrips.length === viajes.length} onChange={toggleSelectAll} /></th>
-                <th>#</th>
+                <SortableHeader title="#" column="id" />
                 <SortableHeader title="Proveedor" column="proveedor" />
                 <SortableHeader title="Ruta" column="ruta" />
                 <SortableHeader title="Unidad" column="unidad" />
@@ -1427,17 +1625,17 @@ const Trips = () => {
                                 <Edit size={14} />
                               </button>
                             ) : (
-                               <button
+                              <button
                                 className="outline success"
                                 style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', borderColor: 'var(--color-success-text)', color: 'var(--color-success-text)' }}
                                 onClick={async () => {
-                                   await fetch(`http://localhost:8000/api/viajes/${trip.id}/restore`, { method: 'POST' });
-                                   fetchViajes();
+                                  await fetch(`http://localhost:8000/api/viajes/${trip.id}/restore`, { method: 'POST' });
+                                  fetchViajes();
                                 }}
                                 title="Desarchivar viaje"
                               >
                                 Restaurar
-                               </button>
+                              </button>
                             )}
                             <button
                               className="outline"
@@ -1461,7 +1659,16 @@ const Trips = () => {
                       {isExpanded && (
                         <tr style={{ backgroundColor: 'var(--bg-hover)' }}>
                           <td colSpan="9" style={{ padding: '1rem' }}>
-                            <TripDetail trip={trip} onRefresh={() => fetchViajes(currentPage)} onPrint={(type, item, t) => { setTripToPrint(t); setPrintMode(type); setPrintItem(item); }} />
+                            <TripDetail
+                              trip={trip}
+                              onRefresh={() => fetchViajes(currentPage)}
+                              onPrint={(mode, item, viaje) => {
+                                setPrintMode(mode);
+                                setTripToPrint(viaje);
+                                setPrintItem(item);
+                              }}
+                              setConfirmCfg={setConfirmCfg}
+                            />
                           </td>
                         </tr>
                       )}
@@ -1472,7 +1679,7 @@ const Trips = () => {
             </tbody>
           </table>
         </div>
-        
+
         {/* Paginación */}
         {totalPages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderTop: '1px solid var(--border-color)', backgroundColor: 'var(--bg-body)' }}>
@@ -1480,43 +1687,43 @@ const Trips = () => {
               Mostrando página <strong>{currentPage}</strong> de <strong>{totalPages}</strong> (Total: {totalRecords} viajes)
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-               <button 
-                 className="outline" 
-                 style={{ padding: '0.4rem 0.5rem', display: 'flex' }}
-                 disabled={currentPage <= 1 || loading} 
-                 onClick={() => { setCurrentPage(c => c - 1); fetchViajes(currentPage - 1, sortBy, sortDir); }}
-               >
-                 <ChevronLeft size={16} />
-               </button>
-               
-               {[...Array(totalPages)].map((_, i) => {
-                 const pageNum = i + 1;
-                 if (pageNum === 1 || pageNum === totalPages || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)) {
-                   return (
-                     <button
-                       key={pageNum}
-                       className={currentPage === pageNum ? "" : "outline"}
-                       style={{ padding: '0.2rem 0.75rem', minWidth: '32px' }}
-                       disabled={currentPage === pageNum || loading}
-                       onClick={() => { setCurrentPage(pageNum); fetchViajes(pageNum, sortBy, sortDir); }}
-                     >
-                       {pageNum}
-                     </button>
-                   );
-                 } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
-                   return <span key={pageNum} style={{ color: 'var(--text-muted)' }}>...</span>;
-                 }
-                 return null;
-               })}
+              <button
+                className="outline"
+                style={{ padding: '0.4rem 0.5rem', display: 'flex' }}
+                disabled={currentPage <= 1 || loading}
+                onClick={() => { setCurrentPage(c => c - 1); fetchViajes(currentPage - 1, sortBy, sortDir); }}
+              >
+                <ChevronLeft size={16} />
+              </button>
 
-               <button 
-                 className="outline" 
-                 style={{ padding: '0.4rem 0.5rem', display: 'flex' }}
-                 disabled={currentPage >= totalPages || loading} 
-                 onClick={() => { setCurrentPage(c => c + 1); fetchViajes(currentPage + 1, sortBy, sortDir); }}
-               >
-                 <ChevronRight size={16} />
-               </button>
+              {[...Array(totalPages)].map((_, i) => {
+                const pageNum = i + 1;
+                if (pageNum === 1 || pageNum === totalPages || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)) {
+                  return (
+                    <button
+                      key={pageNum}
+                      className={currentPage === pageNum ? "" : "outline"}
+                      style={{ padding: '0.2rem 0.75rem', minWidth: '32px' }}
+                      disabled={currentPage === pageNum || loading}
+                      onClick={() => { setCurrentPage(pageNum); fetchViajes(pageNum, sortBy, sortDir); }}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                  return <span key={pageNum} style={{ color: 'var(--text-muted)' }}>...</span>;
+                }
+                return null;
+              })}
+
+              <button
+                className="outline"
+                style={{ padding: '0.4rem 0.5rem', display: 'flex' }}
+                disabled={currentPage >= totalPages || loading}
+                onClick={() => { setCurrentPage(c => c + 1); fetchViajes(currentPage + 1, sortBy, sortDir); }}
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
         )}
@@ -1527,28 +1734,31 @@ const Trips = () => {
       )}
 
       {printMode === 'table' && selectedTrips.length > 0 && (
-         <PrintPortal>
-            <PrintSelectedTable viajes={viajes.filter(v => selectedTrips.includes(v.id))} />
-         </PrintPortal>
+        <PrintPortal>
+          <PrintSelectedTable viajes={viajes.filter(v => selectedTrips.includes(v.id))} />
+        </PrintPortal>
       )}
 
       {printMode === 'sheet' && tripToPrint && (
-         <PrintPortal>
-            <PrintTripSheet viaje={tripToPrint} />
-         </PrintPortal>
+        <PrintPortal>
+          <PrintTripSheet viaje={tripToPrint} />
+        </PrintPortal>
       )}
 
       {printMode === 'receipt' && tripToPrint && printItem && (
-         <PrintPortal>
-            <PrintReceipt type="Anticipo/Gasto" item={printItem} viaje={tripToPrint} />
-         </PrintPortal>
+        <PrintPortal>
+          <PrintReceipt type="Anticipo/Gasto" item={printItem} viaje={tripToPrint} />
+        </PrintPortal>
       )}
 
       {printMode === 'document' && tripToPrint && printItem && (
-         <PrintPortal>
-            <PrintDocumentVoucher type="Comprobante" item={printItem} viaje={tripToPrint} />
-         </PrintPortal>
+        <PrintPortal>
+          <PrintDocumentVoucher type="Comprobante" item={printItem} viaje={tripToPrint} />
+        </PrintPortal>
       )}
+
+      {alertMsg && <AlertModal message={alertMsg} onClose={() => setAlertMsg(null)} />}
+      {confirmCfg && <ConfirmModal message={confirmCfg.message} onConfirm={confirmCfg.action} onClose={() => setConfirmCfg(null)} />}
     </div>
   );
 };

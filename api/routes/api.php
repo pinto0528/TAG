@@ -26,3 +26,5 @@ Route::apiResource('gastos', \App\Http\Controllers\GastoController::class)->only
 Route::apiResource('anticipos', \App\Http\Controllers\AnticipoController::class)->only(['store', 'update', 'destroy']);
 Route::apiResource('remitos', \App\Http\Controllers\RemitoController::class)->only(['store', 'destroy']);
 Route::apiResource('facturas', \App\Http\Controllers\FacturaController::class)->only(['store', 'destroy']);
+Route::apiResource('ordenes-pago', \App\Http\Controllers\OrdenPagoController::class)->only(['store', 'update', 'destroy']);
+Route::apiResource('cheques', \App\Http\Controllers\ChequeController::class)->only(['store', 'update', 'destroy']);
