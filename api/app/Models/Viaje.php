@@ -39,6 +39,9 @@ class Viaje extends Model
         'precio_pactado',
         'costo_proveedor',
         'km_recorrido',
+        'tipo_tarifa',
+        'tarifa_valor',
+        'tarifa_base',
         'observaciones',
         'created_by',
         'updated_by',
@@ -53,6 +56,8 @@ class Viaje extends Model
             'precio_pactado' => 'decimal:2',
             'costo_proveedor' => 'decimal:2',
             'km_recorrido' => 'integer',
+            'tarifa_valor' => 'decimal:2',
+            'tarifa_base' => 'decimal:2',
         ];
     }
 

@@ -547,6 +547,7 @@ const PrintSelectedTable = ({ viajes }) => (
           <th style={{ borderBottom: '2px solid black', padding: '0.4rem', textAlign: 'left' }}>Estado</th>
           <th style={{ borderBottom: '2px solid black', padding: '0.4rem', textAlign: 'left' }}>Asignación a Cargo</th>
           <th style={{ borderBottom: '2px solid black', padding: '0.4rem', textAlign: 'left' }}>Info de Carga</th>
+          <th style={{ borderBottom: '2px solid black', padding: '0.4rem', textAlign: 'right' }}>Tarifa / Precio</th>
           <th style={{ borderBottom: '2px solid black', padding: '0.4rem', textAlign: 'left' }}>Observaciones</th>
         </tr>
       </thead>
@@ -568,8 +569,12 @@ const PrintSelectedTable = ({ viajes }) => (
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>
               {trip.carga?.tipo_carga || 'General'}
               <span style={{ display: 'block', color: '#555', fontSize: '0.65rem' }}>
-                P: {trip.carga?.peso_kg ? `${trip.carga.peso_kg}kg` : 'S/D'} | B: {trip.carga?.cantidad_bultos || 'S/D'} | Refri: {trip.carga?.requiere_refrigeracion ? 'SÍ' : 'NO'}
+                P: {trip.carga?.peso_kg ? `${trip.carga.peso_kg}kg` : 'S/D'} | B: {trip.carga?.cantidad_bultos || 'S/D'}
               </span>
+            </td>
+            <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem', textAlign: 'right' }}>
+              <div style={{ fontWeight: 'bold' }}>{formatCurrency(trip.precio_pactado)}</div>
+              <div style={{ fontSize: '0.6rem', color: '#666' }}>{trip.tarifa_base} x {formatCurrency(trip.tarifa_valor)}</div>
             </td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem', maxWidth: '200px', wordWrap: 'break-word' }}>{trip.observaciones || '—'}</td>
           </tr>
@@ -614,12 +619,18 @@ const PrintTripSheet = ({ viaje }) => (
         </div>
       </div>
 
-      <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Detalles de Carga</h3>
-      <div style={{ display: 'flex', gap: '3rem', marginBottom: '2rem' }}>
+      <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Detalles de Carga y Tarifa</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
         <p><strong>Tipo:</strong> {viaje.carga?.tipo_carga || 'General'}</p>
         <p><strong>Peso:</strong> {viaje.carga?.peso_kg ? `${viaje.carga.peso_kg} Kg` : '—'}</p>
         <p><strong>Bultos:</strong> {viaje.carga?.cantidad_bultos || '—'}</p>
         <p><strong>Refrigeración:</strong> {viaje.carga?.requiere_refrigeracion ? 'SÍ' : 'NO'}</p>
+      </div>
+      <div style={{ backgroundColor: '#f5f5f5', padding: '1rem', borderRadius: '4px', marginBottom: '2rem' }}>
+        <p style={{ margin: 0 }}><strong>Esquema de Tarifa:</strong> {UNIDAD_MEDIDA_LABELS[viaje.tipo_tarifa] || 'Tarifa pactada'}</p>
+        <p style={{ margin: '0.5rem 0 0 0', fontSize: '1.2rem' }}>
+          <strong>Valor:</strong> {formatCurrency(viaje.tarifa_valor)} x {viaje.tarifa_base} = <span style={{ fontWeight: 'bold' }}>{formatCurrency(viaje.precio_pactado)}</span>
+        </p>
       </div>
 
       <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Observaciones e Instrucciones</h3>
@@ -691,9 +702,29 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
   const [bultos, setBultos] = useState(d.carga?.cantidad_bultos || '');
   const [kmRecorrido, setKmRecorrido] = useState(d.km_recorrido || '');
 
+  // Tariff System
+  const [tipoTarifa, setTipoTarifa] = useState(d.tipo_tarifa || 'fija');
+  const [tarifaValor, setTarifaValor] = useState(d.tarifa_valor || '');
+  const [tarifaBase, setTarifaBase] = useState(d.tarifa_base || (d.tipo_tarifa === 'fija' ? '1.00' : ''));
+
   const [alertMsg, setAlertMsg] = useState(null);
   const [confirmCfg, setConfirmCfg] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Auto-calculation logic
+  useEffect(() => {
+    if (tipoTarifa === 'fija') setTarifaBase('1.00');
+    else if (tipoTarifa === 'tonelada') setTarifaBase(pesoKg > 0 ? (pesoKg / 1000).toFixed(2) : '');
+    else if (tipoTarifa === 'bulto') setTarifaBase(bultos || '');
+    else if (tipoTarifa === 'km') setTarifaBase(kmRecorrido || '');
+  }, [tipoTarifa, pesoKg, bultos, kmRecorrido]);
+
+  useEffect(() => {
+    if (tarifaValor && tarifaBase) {
+      const calc = (Number(tarifaValor) * Number(tarifaBase)).toFixed(2);
+      setPrecioPactado(calc);
+    }
+  }, [tarifaValor, tarifaBase]);
 
   // Filter Assets
   const filteredUnidades = unidades.filter(u => {
@@ -845,16 +876,63 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
           <fieldset style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
             <legend style={{ fontSize: '0.875rem', fontWeight: 600, padding: '0 0.5rem', color: 'var(--text-muted)' }}>Precio y Estado</legend>
 
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', width: '100%', marginBottom: '1rem' }}>
+              <div>
+                <label style={labelStyle}>Tipo de Tarifa</label>
+                <select 
+                  className="input-field" 
+                  value={tipoTarifa} 
+                  onChange={e => setTipoTarifa(e.target.value)}
+                >
+                  <option value="fija">Fija por viaje</option>
+                  <option value="tonelada">Por tonelada</option>
+                  <option value="bulto">Por bulto</option>
+                  <option value="km">Por km recorrido</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Tarifa Unitario ($)</label>
+                <div style={{ position: 'relative' }}>
+                  <DollarSign size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input
+                    type="number"
+                    className="input-field"
+                    style={{ paddingLeft: '2.25rem' }}
+                    placeholder="0.00"
+                    value={tarifaValor}
+                    onChange={e => setTarifaValor(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle}>
+                  {tipoTarifa === 'fija' ? 'Base (Fija)' : 
+                   tipoTarifa === 'tonelada' ? 'Cantidad (Toneladas)' :
+                   tipoTarifa === 'bulto' ? 'Cantidad (Bultos)' : 'Cantidad (Kilómetros)'}
+                </label>
+                <input
+                  type="number"
+                  className="input-field"
+                  value={tarifaBase}
+                  onChange={e => setTarifaBase(e.target.value)}
+                  disabled={tipoTarifa === 'fija'}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end', width: '100%' }}>
               <div style={{ flex: '1 1 200px' }}>
-                <label style={labelStyle}>Precio Pactado (Cliente) *</label>
+                <label style={labelStyle}>Precio Pactado (Cálculo Final) *</label>
                 <div style={{ position: 'relative' }}>
                   <DollarSign size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                   <input
                     type="number"
                     className="input-field"
                     placeholder="0.00"
-                    style={{ paddingLeft: '2.25rem' }}
+                    style={{ paddingLeft: '2.25rem', backgroundColor: 'rgba(0,0,0,0.02)', fontWeight: 'bold' }}
                     value={precioPactado}
                     onChange={e => setPrecioPactado(e.target.value)}
                     required
@@ -933,6 +1011,9 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                   precio_pactado: precioPactado || 0,
                   costo_proveedor: esTercerizado ? (costoProveedor || 0) : 0,
                   km_recorrido: kmRecorrido || 0,
+                  tipo_tarifa: tipoTarifa,
+                  tarifa_valor: tarifaValor || 0,
+                  tarifa_base: tarifaBase || 0,
                   fecha_salida: document.getElementById('f_f_salida').value || null,
                   hora_salida: document.getElementById('f_h_salida').value || null,
                   fecha_llegada: document.getElementById('f_f_llegada').value || null,
@@ -1075,8 +1156,16 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
                   <InfoLine label="Tipo" value={trip.carga.tipo_carga} />
                   <InfoLine label="Peso Bruto" value={trip.carga.peso_kg ? `${trip.carga.peso_kg.toLocaleString()} kg` : '—'} />
                   {trip.carga.cantidad_bultos && <InfoLine label="Bultos" value={trip.carga.cantidad_bultos} />}
+                  
+                  <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: 600 }}>TARIFA ACORDADA</div>
+                    <div style={{ fontSize: '0.85rem' }}>
+                      <strong>{UNIDAD_MEDIDA_LABELS[trip.tipo_tarifa] || 'Tarifa'}:</strong> {formatCurrency(trip.tarifa_valor)} x {trip.tarifa_base}
+                    </div>
+                  </div>
+
                   {trip.carga.requiere_refrigeracion && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0ea5e9', fontWeight: 500, fontSize: '0.8rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0ea5e9', fontWeight: 500, fontSize: '0.8rem', marginTop: '0.5rem' }}>
                       <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0ea5e9' }}></div> Frío Requerido
                     </div>
                   )}
