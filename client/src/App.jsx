@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
-import { Truck, Bell, Search, LogOut, Eye, EyeOff, Layout } from 'lucide-react';
+import { Truck, Bell, Search, LogOut, Eye, EyeOff, Layout, Users, Briefcase } from 'lucide-react';
 import './App.css';
 
 import Trips from './pages/Trips';
 import Resources from './pages/Resources';
+import Clients from './pages/Clients';
+import Providers from './pages/Providers';
 import Login from './pages/Login';
 
 const Header = ({ onLogout, theme, toggleTheme }) => {
@@ -57,6 +59,8 @@ const Navigation = () => {
   const navItems = [
     { path: '/trips', label: 'Viajes', icon: Truck },
     { path: '/resources', label: 'Recursos', icon: Layout },
+    { path: '/clients', label: 'Clientes', icon: Users },
+    { path: '/providers', label: 'Proveedores', icon: Briefcase },
   ];
 
   return (
@@ -112,6 +116,8 @@ function App() {
               <Route path="/" element={<Navigate to="/trips" replace />} />
               <Route path="/trips" element={<Trips />} />
               <Route path="/resources" element={<Resources />} />
+              <Route path="/clients" element={<Clients />} />
+              <Route path="/providers" element={<Providers />} />
               <Route path="*" element={<Navigate to="/trips" replace />} />
             </Routes>
           </div>
