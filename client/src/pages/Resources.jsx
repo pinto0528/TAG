@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Truck, Plus, Edit, Trash2, Search, X, Check, AlertCircle } from 'lucide-react';
+import API_BASE_URL from '../apiConfig';
 
-const API_BASE_URL = 'http://localhost:8000/api';
 
 const Resources = () => {
     const [activeTab, setActiveTab] = useState('choferes'); // 'choferes' or 'unidades'

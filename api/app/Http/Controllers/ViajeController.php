@@ -104,6 +104,11 @@ class ViajeController extends Controller
             'observaciones' => 'nullable|string',
             'estado' => 'nullable|string',
             
+            // Tarifa
+            'tipo_tarifa' => 'nullable|string',
+            'tarifa_valor' => 'nullable|numeric|min:0',
+            'tarifa_base' => 'nullable|numeric|min:0',
+            
             // Carga
             'carga.descripcion' => 'nullable|string',
             'carga.tipo_carga' => 'nullable|string',
@@ -131,6 +136,9 @@ class ViajeController extends Controller
             'precio_pactado' => $validated['precio_pactado'],
             'costo_proveedor' => $validated['costo_proveedor'] ?? 0,
             'km_recorrido' => $validated['km_recorrido'] ?? 0,
+            'tipo_tarifa' => $validated['tipo_tarifa'] ?? null,
+            'tarifa_valor' => $validated['tarifa_valor'] ?? null,
+            'tarifa_base' => $validated['tarifa_base'] ?? null,
             'observaciones' => $validated['observaciones'] ?? null,
         ]);
 
@@ -168,6 +176,18 @@ class ViajeController extends Controller
             'hora_llegada' => 'nullable|string',
             'observaciones' => 'nullable|string',
             'estado' => 'nullable|string',
+            
+            // Tarifa
+            'tipo_tarifa' => 'nullable|string',
+            'tarifa_valor' => 'nullable|numeric|min:0',
+            'tarifa_base' => 'nullable|numeric|min:0',
+            
+            // Carga
+            'carga.descripcion' => 'nullable|string',
+            'carga.tipo_carga' => 'nullable|string',
+            'carga.peso_kg' => 'nullable|numeric|min:0',
+            'carga.cantidad_bultos' => 'nullable|integer|min:0',
+            'carga.requiere_refrigeracion' => 'nullable|boolean',
         ]);
 
         if (empty($validated['estado'])) {
@@ -189,6 +209,9 @@ class ViajeController extends Controller
             'precio_pactado' => $validated['precio_pactado'],
             'costo_proveedor' => $validated['costo_proveedor'] ?? 0,
             'km_recorrido' => $validated['km_recorrido'] ?? 0,
+            'tipo_tarifa' => $validated['tipo_tarifa'] ?? null,
+            'tarifa_valor' => $validated['tarifa_valor'] ?? null,
+            'tarifa_base' => $validated['tarifa_base'] ?? null,
             'observaciones' => $validated['observaciones'] ?? null,
         ]);
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { mockViajes, mockProveedores, mockChoferes, mockUnidades, mockFleteros, mockFacturas, mockOrdenesPago, mockCheques } from '../data/mockData';
+import API_BASE_URL from '../apiConfig';
 import { Plus, ChevronDown, Edit, DollarSign, Package, FileText, Truck as TruckIcon, ArrowRight, CheckCircle2, Clock, Printer, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Trash2, X, Search } from 'lucide-react';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount || 0);
@@ -228,7 +228,7 @@ const FinanceForm = ({ item, viajetoId, onSave, onClose }) => {
     setLoading(true);
     try {
       const endpoint = type === 'gasto' ? 'gastos' : 'anticipos';
-      const url = item ? `http://localhost:8000/api/${endpoint}/${item.id}` : `http://localhost:8000/api/${endpoint}`;
+      const url = item ? `${API_BASE_URL}/${endpoint}/${item.id}` : `${API_BASE_URL}/${endpoint}`;
       const method = item ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -338,7 +338,7 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
       else if (subType === 'orden-pago') config = { endpoint: 'ordenes-pago', data: ordenPagoData };
       else if (subType === 'cheque') config = { endpoint: 'cheques', data: chequeData };
 
-      const res = await fetch(`http://localhost:8000/api/${config.endpoint}`, {
+      const res = await fetch(`${API_BASE_URL}/${config.endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config.data)
@@ -981,7 +981,7 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                   setConfirmCfg({
                     message: '¿Seguro que deseas archivar este viaje? Ya no aparecerá en el listado activo.',
                     action: async () => {
-                      await fetch(`http://localhost:8000/api/viajes/${d.id}`, { method: 'DELETE' });
+                      await fetch(`${API_BASE_URL}/viajes/${d.id}`, { method: 'DELETE' });
                       onSave();
                       onClose();
                     }
@@ -990,7 +990,7 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
               )}
               {isEdit && !!d.deleted_at && (
                 <button type="button" className="outline success" style={{ color: 'var(--color-success-text)', borderColor: 'var(--color-success-text)' }} onClick={async () => {
-                  await fetch(`http://localhost:8000/api/viajes/${d.id}/restore`, { method: 'POST' });
+                  await fetch(`${API_BASE_URL}/viajes/${d.id}/restore`, { method: 'POST' });
                   onSave();
                   onClose();
                 }}>Restaurar Viaje</button>
@@ -1030,7 +1030,7 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                 };
                 try {
                   const isUpdate = d.id !== undefined;
-                  const url = isUpdate ? `http://localhost:8000/api/viajes/${d.id}` : 'http://localhost:8000/api/viajes';
+                  const url = isUpdate ? `${API_BASE_URL}/viajes/${d.id}` : `${API_BASE_URL}/viajes`;
                   const res = await fetch(url, {
                     method: isUpdate ? 'PUT' : 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -1084,14 +1084,14 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
 
   const totalGastos = trip.gastos?.reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
   const totalAnticipos = trip.anticipos?.reduce((a, an) => a + parseFloat(an.monto), 0) || 0;
-  const margen = (trip.precio || 0) - totalGastos;
+  const margen = (parseFloat(trip.precio_pactado) || 0) - totalGastos;
 
   const handleDelete = (endpoint, id) => {
     setConfirmCfg({
       message: '¿Estás seguro de que deseas eliminar este registro?',
       action: async () => {
         try {
-          const res = await fetch(`http://localhost:8000/api/${endpoint}/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, { method: 'DELETE' });
           if (res.ok) onRefresh();
           else alert('Error al eliminar');
         } catch (e) { console.error(e); }
@@ -1243,7 +1243,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
             <div style={{ flex: '1 1 200px' }}>
               <div style={{ backgroundColor: 'var(--bg-body)', padding: '1.5rem', borderRadius: 'var(--radius-md)', textAlign: 'center', border: '1px solid var(--border-color)' }}>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Precio Acordado</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatCurrency(trip.precio)}</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatCurrency(trip.precio_pactado)}</div>
                 <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Gastos Totales</div>
                 <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-danger-text)' }}>-{formatCurrency(totalGastos)}</div>
@@ -1471,7 +1471,7 @@ const Trips = () => {
   const fetchViajes = async (page = currentPage, forceSortBy = sortBy, forceSortDir = sortDir) => {
     setLoading(true);
     try {
-      let url = `http://127.0.0.1:8000/api/viajes?page=${page}`;
+      let url = `${API_BASE_URL}/viajes?page=${page}`;
       if (verArchivados) url += '&archivados=1';
       if (forceSortBy && forceSortDir) {
         url += `&sort_by=${forceSortBy}&sort_dir=${forceSortDir}`;
@@ -1498,10 +1498,10 @@ const Trips = () => {
   const fetchOptions = async () => {
     try {
       const [cliRes, uniRes, choRes, provRes] = await Promise.all([
-        fetch('http://127.0.0.1:8000/api/clientes'),
-        fetch('http://127.0.0.1:8000/api/unidades'),
-        fetch('http://127.0.0.1:8000/api/choferes'),
-        fetch('http://127.0.0.1:8000/api/proveedores')
+        fetch(`${API_BASE_URL}/clientes`),
+        fetch(`${API_BASE_URL}/unidades`),
+        fetch(`${API_BASE_URL}/choferes`),
+        fetch(`${API_BASE_URL}/proveedores`)
       ]);
       if (cliRes.ok) setClientes(await cliRes.json());
       if (uniRes.ok) setUnidades(await uniRes.json());
@@ -1703,7 +1703,7 @@ const Trips = () => {
                                 className="outline success"
                                 style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', borderColor: 'var(--color-success-text)', color: 'var(--color-success-text)' }}
                                 onClick={async () => {
-                                  await fetch(`http://127.0.0.1:8000/api/viajes/${trip.id}/restore`, { method: 'POST' });
+                                  await fetch(`${API_BASE_URL}/viajes/${trip.id}/restore`, { method: 'POST' });
                                   fetchViajes();
                                 }}
                                 title="Desarchivar viaje"

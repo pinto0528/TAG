@@ -1,5 +1,6 @@
 /api/vendor
 /api/.env
+/api/.env.production
 /client/node_modules
 /client/dist
 .DS_Store
