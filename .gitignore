@@ -3,4 +3,8 @@
 /api/.env.production
 /client/node_modules
 /client/dist
+/client/.env.production
 .DS_Store
+deploy.ps1
+deploy.php
+release.zip
