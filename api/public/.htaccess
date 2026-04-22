@@ -18,8 +18,15 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Send Requests To Front Controller...
+    # Si el archivo o carpeta existe, servirlo directamente
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
+    
+    # Si la ruta empieza con api/, manejar con Laravel
+    RewriteRule ^api/ index.php [L]
+
+    # Para todo lo demas (rutas de React), servir index.html
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.html [L]
 </IfModule>
