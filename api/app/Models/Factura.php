@@ -6,12 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Factura extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'facturas';
 
     protected $fillable = [
+        'viaje_id',
         'numero',
         'tipo',
         'punto_venta',
@@ -36,12 +40,17 @@ class Factura extends Model
         ];
     }
 
+    public function viaje(): BelongsTo
+    {
+        return $this->belongsTo(Viaje::class);
+    }
+
     public function remitos(): HasMany
     {
         return $this->hasMany(Remito::class);
     }
 
-    public function ordenPago(): HasOne
+    public function orden_pago(): HasOne
     {
         return $this->hasOne(OrdenPago::class);
     }

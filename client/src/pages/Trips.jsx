@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { mockViajes, mockProveedores, mockChoferes, mockUnidades, mockFleteros, mockFacturas, mockOrdenesPago, mockCheques } from '../data/mockData';
+import API_BASE_URL from '../apiConfig';
 import { Plus, ChevronDown, Edit, DollarSign, Package, FileText, Truck as TruckIcon, ArrowRight, CheckCircle2, Clock, Printer, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Trash2, X, Search } from 'lucide-react';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount || 0);
@@ -228,12 +228,15 @@ const FinanceForm = ({ item, viajetoId, onSave, onClose }) => {
     setLoading(true);
     try {
       const endpoint = type === 'gasto' ? 'gastos' : 'anticipos';
-      const url = item ? `http://localhost:8000/api/${endpoint}/${item.id}` : `http://localhost:8000/api/${endpoint}`;
+      const url = item ? `${API_BASE_URL}/${endpoint}/${item.id}` : `${API_BASE_URL}/${endpoint}`;
       const method = item ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ ...formData, viaje_id: viajetoId })
       });
 
@@ -338,10 +341,13 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
       else if (subType === 'orden-pago') config = { endpoint: 'ordenes-pago', data: ordenPagoData };
       else if (subType === 'cheque') config = { endpoint: 'cheques', data: chequeData };
 
-      const res = await fetch(`http://localhost:8000/api/${config.endpoint}`, {
+      const res = await fetch(`${API_BASE_URL}/${config.endpoint}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config.data)
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ ...config.data, viaje_id: trip.id })
       });
 
       if (res.ok) onSave();
@@ -879,9 +885,9 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', width: '100%', marginBottom: '1rem' }}>
               <div>
                 <label style={labelStyle}>Tipo de Tarifa</label>
-                <select 
-                  className="input-field" 
-                  value={tipoTarifa} 
+                <select
+                  className="input-field"
+                  value={tipoTarifa}
                   onChange={e => setTipoTarifa(e.target.value)}
                 >
                   <option value="fija">Fija por viaje</option>
@@ -908,9 +914,9 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
 
               <div>
                 <label style={labelStyle}>
-                  {tipoTarifa === 'fija' ? 'Base (Fija)' : 
-                   tipoTarifa === 'tonelada' ? 'Cantidad (Toneladas)' :
-                   tipoTarifa === 'bulto' ? 'Cantidad (Bultos)' : 'Cantidad (Kilómetros)'}
+                  {tipoTarifa === 'fija' ? 'Base (Fija)' :
+                    tipoTarifa === 'tonelada' ? 'Cantidad (Toneladas)' :
+                      tipoTarifa === 'bulto' ? 'Cantidad (Bultos)' : 'Cantidad (Kilómetros)'}
                 </label>
                 <input
                   type="number"
@@ -977,23 +983,37 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginTop: '0.5rem' }}>
             <div>
               {isEdit && !d.deleted_at && (
-                <button type="button" className="outline danger" style={{ color: 'var(--color-danger-text)', borderColor: 'var(--color-danger-text)' }} onClick={() => {
-                  setConfirmCfg({
-                    message: '¿Seguro que deseas archivar este viaje? Ya no aparecerá en el listado activo.',
-                    action: async () => {
-                      await fetch(`http://localhost:8000/api/viajes/${d.id}`, { method: 'DELETE' });
-                      onSave();
-                      onClose();
-                    }
-                  });
-                }}>Archivar Viaje</button>
+                <button
+                  type="button"
+                  className="outline"
+                  style={{ color: 'var(--color-danger-text)', borderColor: 'var(--color-danger-text)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                  onClick={() => {
+                    setConfirmCfg({
+                      message: '¿Seguro que deseas archivar este viaje? Ya no aparecerá en el listado activo.',
+                      action: async () => {
+                        await fetch(`${API_BASE_URL}/viajes/${d.id}`, { method: 'DELETE' });
+                        onSave();
+                        onClose();
+                      }
+                    });
+                  }}
+                >
+                  <Trash2 size={16} /> Archivar Viaje
+                </button>
               )}
               {isEdit && !!d.deleted_at && (
-                <button type="button" className="outline success" style={{ color: 'var(--color-success-text)', borderColor: 'var(--color-success-text)' }} onClick={async () => {
-                  await fetch(`http://localhost:8000/api/viajes/${d.id}/restore`, { method: 'POST' });
-                  onSave();
-                  onClose();
-                }}>Restaurar Viaje</button>
+                <button
+                  type="button"
+                  className="outline"
+                  style={{ color: 'var(--color-success-text)', borderColor: 'var(--color-success-text)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                  onClick={async () => {
+                    await fetch(`${API_BASE_URL}/viajes/${d.id}/restore`, { method: 'POST' });
+                    onSave();
+                    onClose();
+                  }}
+                >
+                  <RefreshCw size={16} /> Restaurar Viaje
+                </button>
               )}
             </div>
             <div style={{ display: 'flex', gap: '1rem' }}>
@@ -1030,7 +1050,7 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                 };
                 try {
                   const isUpdate = d.id !== undefined;
-                  const url = isUpdate ? `http://localhost:8000/api/viajes/${d.id}` : 'http://localhost:8000/api/viajes';
+                  const url = isUpdate ? `${API_BASE_URL}/viajes/${d.id}` : `${API_BASE_URL}/viajes`;
                   const res = await fetch(url, {
                     method: isUpdate ? 'PUT' : 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -1071,7 +1091,7 @@ const labelStyle = { display: 'block', marginBottom: '0.25rem', fontSize: '0.8re
 // ============================================================ 
 // EXPANDED ROW DETAIL (TABBED)
 // ============================================================
-const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
+const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) => {
   // Tab persistence using localStorage
   const storageKey = `activeTab_${trip.id}`;
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem(storageKey) || 'resumen');
@@ -1084,16 +1104,19 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
 
   const totalGastos = trip.gastos?.reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
   const totalAnticipos = trip.anticipos?.reduce((a, an) => a + parseFloat(an.monto), 0) || 0;
-  const margen = (trip.precio || 0) - totalGastos;
+  const margen = parseFloat(trip.precio_pactado) || 0; // Gastos and anticipos don't affect margin for now
 
   const handleDelete = (endpoint, id) => {
     setConfirmCfg({
       message: '¿Estás seguro de que deseas eliminar este registro?',
       action: async () => {
         try {
-          const res = await fetch(`http://localhost:8000/api/${endpoint}/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, {
+            method: 'DELETE',
+            headers: { 'Accept': 'application/json' }
+          });
           if (res.ok) onRefresh();
-          else alert('Error al eliminar');
+          else setAlertMsg('Error al eliminar');
         } catch (e) { console.error(e); }
       }
     });
@@ -1103,7 +1126,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
     <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
 
       {/* Detail Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(0,0,0,0.02)' }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(252, 252, 255, 1)' }}>
         <button
           className={activeTab === 'resumen' ? 'tab-active' : 'tab-inactive'}
           onClick={() => setActiveTab('resumen')}
@@ -1156,7 +1179,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
                   <InfoLine label="Tipo" value={trip.carga.tipo_carga} />
                   <InfoLine label="Peso Bruto" value={trip.carga.peso_kg ? `${trip.carga.peso_kg.toLocaleString()} kg` : '—'} />
                   {trip.carga.cantidad_bultos && <InfoLine label="Bultos" value={trip.carga.cantidad_bultos} />}
-                  
+
                   <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: 600 }}>TARIFA ACORDADA</div>
                     <div style={{ fontSize: '0.85rem' }}>
@@ -1206,7 +1229,6 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
                         <td style={{ textAlign: 'right', fontWeight: 500, color: 'var(--color-danger-text)' }}>{formatCurrency(g.monto)}</td>
                         <td style={{ textAlign: 'right' }}>
                           <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
-                            <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: g, subType: 'gasto' })} title="Ver"><Search size={14} /></button>
                             <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'finance', item: g })} title="Editar"><Edit size={14} /></button>
                             <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('receipt', 'GASTO', g, trip)} title="Imprimir"><Printer size={14} /></button>
                             <button className="outline" style={{ padding: '0.2rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('gastos', g.id)} title="Eliminar"><Trash2 size={14} /></button>
@@ -1224,7 +1246,6 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
                         <td style={{ textAlign: 'right', fontWeight: 500, color: 'var(--color-success-text)' }}>-{formatCurrency(an.monto)}</td>
                         <td style={{ textAlign: 'right' }}>
                           <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
-                            <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: an, subType: 'anticipo' })} title="Ver"><Search size={14} /></button>
                             <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'finance', item: an })} title="Editar"><Edit size={14} /></button>
                             <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => onPrint('receipt', 'ANTICIPO', an, trip)} title="Imprimir"><Printer size={14} /></button>
                             <button className="outline" style={{ padding: '0.2rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('anticipos', an.id)} title="Eliminar"><Trash2 size={14} /></button>
@@ -1243,18 +1264,13 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
             <div style={{ flex: '1 1 200px' }}>
               <div style={{ backgroundColor: 'var(--bg-body)', padding: '1.5rem', borderRadius: 'var(--radius-md)', textAlign: 'center', border: '1px solid var(--border-color)' }}>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Precio Acordado</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatCurrency(trip.precio)}</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--bg-primary)' }}>{formatCurrency(trip.precio_pactado)}</div>
                 <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Gastos Totales</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-danger-text)' }}>-{formatCurrency(totalGastos)}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Gastos Registrados</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-danger-text)' }}>{formatCurrency(totalGastos)}</div>
                 <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Anticipos Entregados</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-success-text)' }}>{formatCurrency(totalAnticipos)}</div>
-                <div style={{ height: '2px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Margen Operativo</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: margen >= 0 ? 'var(--color-success-text)' : 'var(--color-danger-text)' }}>
-                  {formatCurrency(margen)}
-                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Anticipos Registrados</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-success-text)' }}>{formatCurrency(totalAnticipos)}</div>
               </div>
             </div>
           </div>
@@ -1280,7 +1296,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
                         <strong>{r.numero}</strong>
                         <span style={{ display: 'block', fontSize: '0.7rem', opacity: 0.7, margin: '0.1rem 0' }}>{formatDateForInput(r.fecha)}</span>
                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.2rem' }}>
-                          <span className={`badge ${r.estado === 'conforme' ? 'success' : 'warning'}`} style={{ fontSize: '0.65rem' }}>{r.estado}</span>
+                          <span className={`badge ${r.estado === 'conforme' ? 'success' : (r.estado === 'pendiente' ? 'warning' : 'info')}`} style={{ fontSize: '0.65rem' }}>{r.estado}</span>
                           <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: r, subType: 'remito' })} title="Ver Remito"><Search size={12} /></button>
                           <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', 'REMITO', r, trip)} title="Imprimir Remito"><Printer size={12} /></button>
                           <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('remitos', r.id)} title="Eliminar Remito"><Trash2 size={12} /></button>
@@ -1296,7 +1312,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
                             <strong>{r.factura.numero}</strong>
                             <span style={{ display: 'block', fontSize: '0.7rem', opacity: 0.7, margin: '0.1rem 0' }}>{formatDateForInput(r.factura.fecha_emision)}</span>
                             <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.2rem' }}>
-                              <span className={`badge ${r.factura.estado === 'pagada' ? 'success' : 'info'}`} style={{ fontSize: '0.65rem' }}>{r.factura.estado}</span>
+                              <span className={`badge ${r.factura.estado === 'pagada' ? 'success' : (r.factura.estado === 'pendiente' ? 'warning' : 'info')}`} style={{ fontSize: '0.65rem' }}>{r.factura.estado}</span>
                               <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: r.factura, subType: 'factura' })} title="Ver Factura"><Search size={12} /></button>
                               <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', 'FACTURA', r.factura, trip)} title="Imprimir Factura"><Printer size={12} /></button>
                               <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('facturas', r.factura.id)} title="Eliminar Factura"><Trash2 size={12} /></button>
@@ -1314,7 +1330,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
                             <strong>{r.factura.orden_pago.numero}</strong>
                             <span style={{ display: 'block', fontSize: '0.7rem', opacity: 0.7, margin: '0.1rem 0' }}>{formatDateForInput(r.factura.orden_pago.fecha)}</span>
                             <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.2rem' }}>
-                              <span className={`badge ${r.factura.orden_pago.estado === 'pagada' ? 'success' : 'info'}`} style={{ fontSize: '0.65rem' }}>{r.factura.orden_pago.estado}</span>
+                              <span className={`badge ${r.factura.orden_pago.estado === 'pagada' ? 'success' : (r.factura.orden_pago.estado === 'pendiente' ? 'warning' : 'info')}`} style={{ fontSize: '0.65rem' }}>{r.factura.orden_pago.estado}</span>
                               <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: r.factura.orden_pago, subType: 'orden-pago' })} title="Ver O.P."><Search size={12} /></button>
                               <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', 'ORDEN DE PAGO', r.factura.orden_pago, trip)} title="Imprimir O.P."><Printer size={12} /></button>
                               <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('ordenes-pago', r.factura.orden_pago.id)} title="Eliminar O.P."><Trash2 size={12} /></button>
@@ -1334,7 +1350,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg }) => {
                                 <strong>{ch.numero}</strong>
                                 <span style={{ fontSize: '0.7rem', opacity: 0.7, margin: '0.1rem 0' }}>{formatDateForInput(ch.fecha_cobro || ch.fecha_emision)}</span>
                                 <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.2rem' }}>
-                                  <span className={`badge ${ch.estado === 'cobrado' ? 'success' : 'info'}`} style={{ fontSize: '0.65rem' }}>{ch.estado}</span>
+                                  <span className={`badge ${ch.estado === 'cobrado' ? 'success' : (ch.estado === 'pendiente' ? 'warning' : 'info')}`} style={{ fontSize: '0.65rem' }}>{ch.estado}</span>
                                   <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: ch, subType: 'cheque' })} title="Ver Cheque"><Search size={12} /></button>
                                   <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', 'CHEQUE', ch, trip)} title="Imprimir Cheque"><Printer size={12} /></button>
                                   <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('cheques', ch.id)} title="Eliminar Cheque"><Trash2 size={12} /></button>
@@ -1471,7 +1487,7 @@ const Trips = () => {
   const fetchViajes = async (page = currentPage, forceSortBy = sortBy, forceSortDir = sortDir) => {
     setLoading(true);
     try {
-      let url = `http://127.0.0.1:8000/api/viajes?page=${page}`;
+      let url = `${API_BASE_URL}/viajes?page=${page}`;
       if (verArchivados) url += '&archivados=1';
       if (forceSortBy && forceSortDir) {
         url += `&sort_by=${forceSortBy}&sort_dir=${forceSortDir}`;
@@ -1498,10 +1514,10 @@ const Trips = () => {
   const fetchOptions = async () => {
     try {
       const [cliRes, uniRes, choRes, provRes] = await Promise.all([
-        fetch('http://127.0.0.1:8000/api/clientes'),
-        fetch('http://127.0.0.1:8000/api/unidades'),
-        fetch('http://127.0.0.1:8000/api/choferes'),
-        fetch('http://127.0.0.1:8000/api/proveedores')
+        fetch(`${API_BASE_URL}/clientes`),
+        fetch(`${API_BASE_URL}/unidades`),
+        fetch(`${API_BASE_URL}/choferes`),
+        fetch(`${API_BASE_URL}/proveedores`)
       ]);
       if (cliRes.ok) setClientes(await cliRes.json());
       if (uniRes.ok) setUnidades(await uniRes.json());
@@ -1656,9 +1672,11 @@ const Trips = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="9" style={{ textAlign: 'center', padding: '3rem' }}>
-                    <div className="spinner" style={{ margin: '0 auto 1rem auto' }}></div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Cargando viajes...</div>
+                  <td colSpan="11" style={{ textAlign: 'center', padding: '4rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <div className="spinner"></div>
+                      <p style={{ marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>Cargando viajes...</p>
+                    </div>
                   </td>
                 </tr>
               ) : viajes.length === 0 ? (
@@ -1703,7 +1721,7 @@ const Trips = () => {
                                 className="outline success"
                                 style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', borderColor: 'var(--color-success-text)', color: 'var(--color-success-text)' }}
                                 onClick={async () => {
-                                  await fetch(`http://127.0.0.1:8000/api/viajes/${trip.id}/restore`, { method: 'POST' });
+                                  await fetch(`${API_BASE_URL}/viajes/${trip.id}/restore`, { method: 'POST' });
                                   fetchViajes();
                                 }}
                                 title="Desarchivar viaje"
@@ -1743,6 +1761,7 @@ const Trips = () => {
                                 setPrintItem(item);
                               }}
                               setConfirmCfg={setConfirmCfg}
+                              setAlertMsg={setAlertMsg}
                             />
                           </td>
                         </tr>

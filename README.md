@@ -13,7 +13,7 @@ TAG Logística es una prueba de concepto (PoC) en arquitectura Monorepo que divi
 
 ## Montaje Fácil (Para una PC Nueva)
 
-Se ha configurado un script especial `start.bat` inteligente. Ideal para lanzar rápidamente el proyecto enfrente del cliente en cualquier ordenador sin configurar herramientas de dependencia engorrosas a pie.
+Se ha configurado un script especial `start.bat` inteligente. Ideal para lanzar rápidamente el proyecto enfrente del cliente en cualquier ordenador sin configurar herramientas de dependencia a mano.
 
 ### Requisitos Iniciales:
 1. Tener [Git](https://git-scm.com/) instalado.

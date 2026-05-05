@@ -7,14 +7,29 @@ use Illuminate\Http\Request;
 
 class AnticipoController extends Controller
 {
+    public function index(Request $request)
+    {
+        $query = Anticipo::query();
+
+        if ($request->boolean('archivados')) {
+            $query->onlyTrashed();
+        }
+
+        if ($request->has('viaje_id')) {
+            $query->where('viaje_id', $request->get('viaje_id'));
+        }
+
+        return response()->json($query->orderBy('fecha', 'desc')->get());
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
             'viaje_id' => 'required|exists:viajes,id',
-            'concepto' => 'required|string',
             'monto' => 'required|numeric|min:0',
             'fecha' => 'required|date',
             'metodo_pago' => 'nullable|string',
+            'concepto' => 'nullable|string',
             'notas' => 'nullable|string',
         ]);
 
@@ -23,13 +38,21 @@ class AnticipoController extends Controller
         return response()->json($anticipo, 201);
     }
 
-    public function update(Request $request, Anticipo $anticipo)
+    public function show($id)
     {
+        $anticipo = Anticipo::withTrashed()->findOrFail($id);
+        return response()->json($anticipo);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $anticipo = Anticipo::withTrashed()->findOrFail($id);
+
         $validated = $request->validate([
-            'concepto' => 'sometimes|required|string',
             'monto' => 'sometimes|required|numeric|min:0',
             'fecha' => 'sometimes|required|date',
             'metodo_pago' => 'nullable|string',
+            'concepto' => 'nullable|string',
             'notas' => 'nullable|string',
         ]);
 
@@ -38,9 +61,17 @@ class AnticipoController extends Controller
         return response()->json($anticipo);
     }
 
-    public function destroy(Anticipo $anticipo)
+    public function destroy($id)
     {
+        $anticipo = Anticipo::findOrFail($id);
         $anticipo->delete();
-        return response()->json(null, 204);
+        return response()->json(['message' => 'Anticipo archivado']);
+    }
+
+    public function restore($id)
+    {
+        $anticipo = Anticipo::withTrashed()->findOrFail($id);
+        $anticipo->restore();
+        return response()->json(['message' => 'Anticipo restaurado']);
     }
 }

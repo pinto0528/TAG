@@ -7,6 +7,21 @@ use Illuminate\Http\Request;
 
 class GastoController extends Controller
 {
+    public function index(Request $request)
+    {
+        $query = Gasto::query();
+
+        if ($request->boolean('archivados')) {
+            $query->onlyTrashed();
+        }
+
+        if ($request->has('viaje_id')) {
+            $query->where('viaje_id', $request->get('viaje_id'));
+        }
+
+        return response()->json($query->orderBy('fecha', 'desc')->get());
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -23,8 +38,16 @@ class GastoController extends Controller
         return response()->json($gasto, 201);
     }
 
-    public function update(Request $request, Gasto $gasto)
+    public function show($id)
     {
+        $gasto = Gasto::withTrashed()->findOrFail($id);
+        return response()->json($gasto);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $gasto = Gasto::withTrashed()->findOrFail($id);
+
         $validated = $request->validate([
             'tipo' => 'sometimes|required|string',
             'concepto' => 'nullable|string',
@@ -38,9 +61,17 @@ class GastoController extends Controller
         return response()->json($gasto);
     }
 
-    public function destroy(Gasto $gasto)
+    public function destroy($id)
     {
+        $gasto = Gasto::findOrFail($id);
         $gasto->delete();
-        return response()->json(null, 204);
+        return response()->json(['message' => 'Gasto archivado']);
+    }
+
+    public function restore($id)
+    {
+        $gasto = Gasto::withTrashed()->findOrFail($id);
+        $gasto->restore();
+        return response()->json(['message' => 'Gasto restaurado']);
     }
 }

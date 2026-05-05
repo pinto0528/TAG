@@ -203,6 +203,10 @@ button.outline:hover {
   100% { transform: rotate(360deg); }
 }
 
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
 /* Warm / Eye-Care Theme (Earthier, Lower-contrast, Muted Sepia) */
 [data-theme="warm"] {
   --bg-body: #d4cec4;

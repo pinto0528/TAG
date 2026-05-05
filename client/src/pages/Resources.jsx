@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Truck, Plus, Edit, Trash2, Search, X, Check, AlertCircle } from 'lucide-react';
+import API_BASE_URL from '../apiConfig';
 
-const API_BASE_URL = 'http://localhost:8000/api';
 
 const Resources = () => {
     const [activeTab, setActiveTab] = useState('choferes'); // 'choferes' or 'unidades'
@@ -14,6 +14,8 @@ const Resources = () => {
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [showArchived, setShowArchived] = useState(false);
+    const [alertMsg, setAlertMsg] = useState(null);
+    const [confirmCfg, setConfirmCfg] = useState(null);
 
     // Fetch data
     const fetchData = async () => {
@@ -69,7 +71,7 @@ const Resources = () => {
                 fetchData();
             } else {
                 const err = await res.json();
-                alert('Error al guardar: ' + JSON.stringify(err.errors || err.message));
+                setAlertMsg('Error al guardar: ' + JSON.stringify(err.errors || err.message));
             }
         } catch (error) {
             console.error('Error saving:', error);
@@ -77,14 +79,21 @@ const Resources = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('¿Seguro que deseas archivar este elemento?')) return;
-        const endpoint = activeTab === 'choferes' ? 'choferes' : 'unidades';
-        try {
-            const res = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, { method: 'DELETE' });
-            if (res.ok) fetchData();
-        } catch (error) {
-            console.error('Error deleting:', error);
-        }
+        setConfirmCfg({
+            message: '¿Está seguro de que desea archivar este elemento? Ya no aparecerá en el listado activo.',
+            action: async () => {
+                const endpoint = activeTab === 'choferes' ? 'choferes' : 'unidades';
+                try {
+                    const res = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, { 
+                        method: 'DELETE',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (res.ok) fetchData();
+                } catch (error) {
+                    console.error('Error deleting:', error);
+                }
+            }
+        });
     };
 
     const handleRestore = async (id) => {
@@ -201,8 +210,9 @@ const Resources = () => {
             </div>
 
             {loading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem', flex: 1, minHeight: '300px' }}>
                     <div className="spinner"></div>
+                    <p style={{ marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>Cargando recursos...</p>
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
@@ -212,8 +222,6 @@ const Resources = () => {
                             item={item}
                             type={activeTab}
                             onEdit={(item) => { setEditingItem(item); setShowModal(true); }}
-                            onDelete={handleDelete}
-                            onRestore={handleRestore}
                             onToggleActive={handleToggleActive}
                         />
                     ))}
@@ -235,11 +243,15 @@ const Resources = () => {
                         type={activeTab}
                         initialData={editingItem}
                         onSave={handleSave}
+                        onDelete={handleDelete}
+                        onRestore={handleRestore}
                         onCancel={() => setShowModal(false)}
                         selectedContext={selectedContext}
                     />
                 </Modal>
             )}
+            {alertMsg && <AlertModal message={alertMsg} onClose={() => setAlertMsg(null)} />}
+            {confirmCfg && <ConfirmModal message={confirmCfg.message} onConfirm={confirmCfg.action} onClose={() => setConfirmCfg(null)} />}
         </div>
     );
 };
@@ -276,13 +288,7 @@ const ItemCard = ({ item, type, onEdit, onDelete, onRestore, onToggleActive }) =
                 </div>
                 <div style={{ display: 'flex', gap: '0.25rem' }}>
                     {!isArchived && (
-                        <>
-                            <button className="outline" style={{ padding: '0.4rem', border: 'none' }} onClick={() => onEdit(item)}><Edit size={16} /></button>
-                            <button className="outline" style={{ padding: '0.4rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => onDelete(item.id)}><Trash2 size={16} /></button>
-                        </>
-                    )}
-                    {isArchived && (
-                        <button className="outline" style={{ padding: '0.4rem', fontSize: '0.75rem' }} onClick={() => onRestore(item.id)}>Restaurar</button>
+                        <button className="outline" style={{ padding: '0.4rem', border: 'none' }} onClick={() => onEdit(item)} title="Editar"><Edit size={16} /></button>
                     )}
                 </div>
             </div>
@@ -354,13 +360,15 @@ const Modal = ({ title, onClose, children }) => (
     </div>
 );
 
-const Form = ({ type, initialData, onSave, onCancel, selectedContext }) => {
+const Form = ({ type, initialData, onSave, onDelete, onRestore, onCancel, selectedContext }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState(initialData || {
         activo: true,
         tipo: type === 'unidades' ? 'Camión' : undefined,
         proveedor_id: selectedContext === 'propio' ? null : selectedContext
     });
+
+    const isEdit = !!initialData;
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -479,16 +487,40 @@ const Form = ({ type, initialData, onSave, onCancel, selectedContext }) => {
                 <label htmlFor="activo" style={{ fontSize: '0.875rem' }}>Recurso Activo</label>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-                <button type="button" className="outline" onClick={onCancel}>Cancelar</button>
-                <button type="submit" disabled={isSaving} style={{ opacity: isSaving ? 0.7 : 1 }}>
-                    {isSaving ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px' }}></div>
-                            Guardando...
-                        </div>
-                    ) : 'Guardar'}
-                </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+                <div>
+                    {isEdit && !initialData.deleted_at && (
+                        <button 
+                            type="button" 
+                            className="outline" 
+                            style={{ color: 'var(--color-danger-text)', borderColor: 'var(--color-danger-text)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                            onClick={() => { onDelete(initialData.id); onCancel(); }}
+                        >
+                            <Trash2 size={16} /> Archivar {type === 'choferes' ? 'Chofer' : 'Unidad'}
+                        </button>
+                    )}
+                    {isEdit && !!initialData.deleted_at && (
+                        <button 
+                            type="button" 
+                            className="outline" 
+                            style={{ color: 'var(--color-success-text)', borderColor: 'var(--color-success-text)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                            onClick={() => { onRestore(initialData.id); onCancel(); }}
+                        >
+                            <RefreshCw size={16} /> Restaurar {type === 'choferes' ? 'Chofer' : 'Unidad'}
+                        </button>
+                    )}
+                </div>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button type="button" className="outline" onClick={onCancel}>Cancelar</button>
+                    <button type="submit" disabled={isSaving} style={{ opacity: isSaving ? 0.7 : 1 }}>
+                        {isSaving ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px' }}></div>
+                                Guardando...
+                            </div>
+                        ) : (isEdit ? 'Actualizar' : 'Guardar')}
+                    </button>
+                </div>
             </div>
         </form>
     );
@@ -506,3 +538,28 @@ const isNearExpiry = (dateStr) => {
 };
 
 export default Resources;
+
+const AlertModal = ({ message, onClose }) => (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+      <div className="card" style={{ maxWidth: '400px', width: '90%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--color-danger-text)' }}>Atención</h3>
+        <p style={{ margin: 0, fontSize: '0.9rem' }}>{message}</p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+          <button onClick={onClose}>Aceptar</button>
+        </div>
+      </div>
+    </div>
+  );
+  
+  const ConfirmModal = ({ message, onConfirm, onClose }) => (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+      <div className="card" style={{ maxWidth: '400px', width: '90%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Confirmar Acción</h3>
+        <p style={{ margin: 0, fontSize: '0.9rem' }}>{message}</p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
+          <button className="outline" onClick={onClose}>Cancelar</button>
+          <button className="danger" onClick={() => { onConfirm(); onClose(); }}>Confirmar</button>
+        </div>
+      </div>
+    </div>
+  );

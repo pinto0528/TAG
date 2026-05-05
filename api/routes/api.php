@@ -5,22 +5,40 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ViajeController;
 use App\Http\Controllers\UnidadController;
 use App\Http\Controllers\ChoferController;
+use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ProveedorController;
+use App\Http\Controllers\GastoController;
+use App\Http\Controllers\AnticipoController;
+use App\Http\Controllers\RemitoController;
+use App\Http\Controllers\FacturaController;
+use App\Http\Controllers\OrdenPagoController;
+use App\Http\Controllers\ChequeController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::apiResource('viajes', ViajeController::class);
-Route::post('/viajes/{id}/restore', [ViajeController::class, 'restore']);
+// Resources with Restore capability
+$resources = [
+    'viajes' => ViajeController::class,
+    'unidades' => UnidadController::class,
+    'choferes' => ChoferController::class,
+    'clientes' => ClienteController::class,
+    'proveedores' => ProveedorController::class,
+    'gastos' => GastoController::class,
+    'anticipos' => AnticipoController::class,
+    'remitos' => RemitoController::class,
+    'facturas' => FacturaController::class,
+    'ordenes-pago' => OrdenPagoController::class,
+    'cheques' => ChequeController::class,
+];
 
-Route::apiResource('unidades', UnidadController::class);
-Route::post('/unidades/{id}/restore', [UnidadController::class, 'restore']);
+foreach ($resources as $name => $controller) {
+    Route::apiResource($name, $controller);
+    Route::post("/{$name}/{id}/restore", [$controller, 'restore']);
+}
 
-Route::apiResource('choferes', ChoferController::class);
-Route::post('/choferes/{id}/restore', [ChoferController::class, 'restore']);
-
-Route::get('/clientes', function () { return \App\Models\Cliente::all(); });
-Route::get('/proveedores', function () { return \App\Models\Proveedor::with(['unidades', 'choferes'])->get(); });
+// Debug & Extra routes
 Route::get('/debug-viajes', function () { 
     $start = microtime(true);
     $data = \App\Models\Viaje::all();
@@ -31,10 +49,3 @@ Route::get('/debug-viajes', function () {
         'data' => $data
     ]);
 });
-
-Route::apiResource('gastos', \App\Http\Controllers\GastoController::class)->only(['store', 'update', 'destroy']);
-Route::apiResource('anticipos', \App\Http\Controllers\AnticipoController::class)->only(['store', 'update', 'destroy']);
-Route::apiResource('remitos', \App\Http\Controllers\RemitoController::class)->only(['store', 'destroy']);
-Route::apiResource('facturas', \App\Http\Controllers\FacturaController::class)->only(['store', 'destroy']);
-Route::apiResource('ordenes-pago', \App\Http\Controllers\OrdenPagoController::class)->only(['store', 'update', 'destroy']);
-Route::apiResource('cheques', \App\Http\Controllers\ChequeController::class)->only(['store', 'update', 'destroy']);

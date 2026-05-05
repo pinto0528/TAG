@@ -212,4 +212,4 @@ unset($__defined_vars, $__key, $__value); ?>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </div>
 </div>
-<?php /**PATH /app/vendor/laravel/framework/src/Illuminate/Foundation/Providers/../resources/exceptions/renderer/components/previous-exceptions.blade.php ENDPATH**/ ?>
+<?php /**PATH /app/vendor/laravel/framework/src/Illuminate/Foundation/resources/exceptions/renderer/components/previous-exceptions.blade.php ENDPATH**/ ?>

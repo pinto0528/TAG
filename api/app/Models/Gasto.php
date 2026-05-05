@@ -4,18 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Gasto extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'gastos';
 
     protected $fillable = [
         'viaje_id',
-        'tipo',
         'concepto',
         'monto',
         'fecha',
-        'comprobante',
+        'tipo',
         'notas',
         'created_by',
     ];
