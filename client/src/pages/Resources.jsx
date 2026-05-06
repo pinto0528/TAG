@@ -84,7 +84,7 @@ const Resources = () => {
             action: async () => {
                 const endpoint = activeTab === 'choferes' ? 'choferes' : 'unidades';
                 try {
-                    const res = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, { 
+                    const res = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, {
                         method: 'DELETE',
                         headers: { 'Accept': 'application/json' }
                     });
@@ -159,7 +159,7 @@ const Resources = () => {
                             onChange={(e) => setSelectedContext(e.target.value)}
                         >
                             <option value="propio">Flota Propia (TAG)</option>
-                            <optgroup label="Proveedores / Fleteros">
+                            <optgroup label="Proveedores">
                                 {proveedores.map(p => (
                                     <option key={p.id} value={p.id}>{p.razon_social}</option>
                                 ))}
@@ -490,9 +490,9 @@ const Form = ({ type, initialData, onSave, onDelete, onRestore, onCancel, select
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
                 <div>
                     {isEdit && !initialData.deleted_at && (
-                        <button 
-                            type="button" 
-                            className="outline" 
+                        <button
+                            type="button"
+                            className="outline"
                             style={{ color: 'var(--color-danger-text)', borderColor: 'var(--color-danger-text)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                             onClick={() => { onDelete(initialData.id); onCancel(); }}
                         >
@@ -500,9 +500,9 @@ const Form = ({ type, initialData, onSave, onDelete, onRestore, onCancel, select
                         </button>
                     )}
                     {isEdit && !!initialData.deleted_at && (
-                        <button 
-                            type="button" 
-                            className="outline" 
+                        <button
+                            type="button"
+                            className="outline"
                             style={{ color: 'var(--color-success-text)', borderColor: 'var(--color-success-text)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                             onClick={() => { onRestore(initialData.id); onCancel(); }}
                         >
@@ -541,25 +541,25 @@ export default Resources;
 
 const AlertModal = ({ message, onClose }) => (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
-      <div className="card" style={{ maxWidth: '400px', width: '90%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--color-danger-text)' }}>Atención</h3>
-        <p style={{ margin: 0, fontSize: '0.9rem' }}>{message}</p>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-          <button onClick={onClose}>Aceptar</button>
+        <div className="card" style={{ maxWidth: '400px', width: '90%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--color-danger-text)' }}>Atención</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem' }}>{message}</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                <button onClick={onClose}>Aceptar</button>
+            </div>
         </div>
-      </div>
     </div>
-  );
-  
-  const ConfirmModal = ({ message, onConfirm, onClose }) => (
+);
+
+const ConfirmModal = ({ message, onConfirm, onClose }) => (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
-      <div className="card" style={{ maxWidth: '400px', width: '90%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Confirmar Acción</h3>
-        <p style={{ margin: 0, fontSize: '0.9rem' }}>{message}</p>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
-          <button className="outline" onClick={onClose}>Cancelar</button>
-          <button className="danger" onClick={() => { onConfirm(); onClose(); }}>Confirmar</button>
+        <div className="card" style={{ maxWidth: '400px', width: '90%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Confirmar Acción</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem' }}>{message}</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
+                <button className="outline" onClick={onClose}>Cancelar</button>
+                <button className="danger" onClick={() => { onConfirm(); onClose(); }}>Confirmar</button>
+            </div>
         </div>
-      </div>
     </div>
-  );
+);

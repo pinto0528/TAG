@@ -9,6 +9,16 @@ Sistema de gestion para una empresa de logistica y transporte. Permite la admini
 - **Viajes**: Modulo central que gestiona la operacion, incluyendo datos de carga, rutas, tarifas y estados.
 - **Documentacion y Finanzas**: Seguimiento completo de la cadena documental (Remitos -> Facturas -> Órdenes de Pago -> Cheques) y movimientos financieros (Gastos y Anticipos).
 
+### 2026-05-06
+- **[VIAJES]** Inclusión de detalles de Gastos y Anticipos en la Hoja de Ruta impresa.
+- **[VIAJES]** Ajuste de estilos en el detalle de viajes para compatibilidad con el modo Protección Visual.
+- **[SETTLEMENTS]** Refactorización del módulo de Liquidaciones: Renombre de archivos y componentes a inglés (`Settlements`).
+- **[SETTLEMENTS]** Inclusión de totales de Gastos y Anticipos por viaje en previsualización e impresión.
+- **[SETTLEMENTS]** Implementación de rango de fechas por defecto (semana actual) en el asistente de creación.
+- **[SETTLEMENTS]** Preparación de lógica para validación de viajes ya liquidados (flag de control).
+- **[DEPLOY]** Creación de `DEPLOYMENT_GUIDE.md` y `pre-deploy.bat` para despliegue en Hosting Compartido (DonWeb).
+- **[PERFORMANCE]** Investigación y diagnóstico del cuello de botella en la carga de datos (artisan serve concurrency).
+
 ### 2026-05-05
 - **[UI/UX]** Reemplazo de alertas nativas (`confirm`/`alert`) por modales personalizados.
 - **[UI/UX]** Unificación de spinners de carga en todos los módulos.

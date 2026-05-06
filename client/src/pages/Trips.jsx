@@ -605,44 +605,82 @@ const PrintTripSheet = ({ viaje }) => (
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
         <div>
           <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Logística</h3>
-          <p><strong>Origen:</strong> {viaje.origen}</p>
-          <p><strong>Destino:</strong> {viaje.destino}</p>
-          <br />
-          <br />
-          <p><strong>Fecha Salida:</strong> {viaje.fecha_salida ? viaje.fecha_salida.split('T')[0] : 'S/D'} {viaje.hora_salida ? viaje.hora_salida.substring(11, 16) : ''}</p>
-          <p><strong>Fecha Llegada:</strong> {viaje.fecha_llegada ? viaje.fecha_llegada.split('T')[0] : 'S/D'} {viaje.hora_llegada ? viaje.hora_llegada.substring(11, 16) : ''}</p>
+          <p style={{ margin: '0 0 0.3rem 0' }}><strong>Origen:</strong> {viaje.origen}</p>
+          <p style={{ margin: '0 0 0.3rem 0' }}><strong>Destino:</strong> {viaje.destino}</p>
+          <p style={{ margin: '0.5rem 0 0.3rem 0' }}><strong>Fecha Salida:</strong> {viaje.fecha_salida ? viaje.fecha_salida.split('T')[0] : 'S/D'} {viaje.hora_salida ? viaje.hora_salida.substring(11, 16) : ''}</p>
+          <p style={{ margin: '0 0 0.3rem 0' }}><strong>Fecha Llegada:</strong> {viaje.fecha_llegada ? viaje.fecha_llegada.split('T')[0] : 'S/D'} {viaje.hora_llegada ? viaje.hora_llegada.substring(11, 16) : ''}</p>
         </div>
         <div>
           <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Asignación</h3>
-          <p><strong>Cliente:</strong> {getClienteName(viaje)}</p>
-          <p><strong>Transporte:</strong> {getProveedorName(viaje) || 'Flota Propia'}</p>
-          <br />
-          <p><strong>Unidad Asignada:</strong> {getUnidadLabel(viaje)}</p>
-          <p><strong>Chofer:</strong> {getChoferName(viaje)}</p>
+          <p style={{ margin: '0 0 0.3rem 0' }}><strong>Cliente:</strong> {getClienteName(viaje)}</p>
+          <p style={{ margin: '0 0 0.3rem 0' }}><strong>Transporte:</strong> {getProveedorName(viaje) || 'Flota Propia'}</p>
+          <p style={{ margin: '0.5rem 0 0.3rem 0' }}><strong>Unidad Asignada:</strong> {getUnidadLabel(viaje)}</p>
+          <p style={{ margin: '0 0 0.3rem 0' }}><strong>Chofer:</strong> {getChoferName(viaje)}</p>
         </div>
       </div>
 
       <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Detalles de Carga y Tarifa</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
-        <p><strong>Tipo:</strong> {viaje.carga?.tipo_carga || 'General'}</p>
-        <p><strong>Peso:</strong> {viaje.carga?.peso_kg ? `${viaje.carga.peso_kg} Kg` : '—'}</p>
-        <p><strong>Bultos:</strong> {viaje.carga?.cantidad_bultos || '—'}</p>
-        <p><strong>Refrigeración:</strong> {viaje.carga?.requiere_refrigeracion ? 'SÍ' : 'NO'}</p>
+        <p style={{ margin: 0 }}><strong>Tipo:</strong> {viaje.carga?.tipo_carga || 'General'}</p>
+        <p style={{ margin: 0 }}><strong>Peso:</strong> {viaje.carga?.peso_kg ? `${viaje.carga.peso_kg} Kg` : '—'}</p>
+        <p style={{ margin: 0 }}><strong>Bultos:</strong> {viaje.carga?.cantidad_bultos || '—'}</p>
+        <p style={{ margin: 0 }}><strong>Refrigeración:</strong> {viaje.carga?.requiere_refrigeracion ? 'SÍ' : 'NO'}</p>
       </div>
-      <div style={{ backgroundColor: '#f5f5f5', padding: '1rem', borderRadius: '4px', marginBottom: '2rem' }}>
+      <div style={{ backgroundColor: '#f5f5f5', padding: '0.75rem', borderRadius: '4px', marginBottom: '1.5rem' }}>
         <p style={{ margin: 0 }}><strong>Esquema de Tarifa:</strong> {UNIDAD_MEDIDA_LABELS[viaje.tipo_tarifa] || 'Tarifa pactada'}</p>
-        <p style={{ margin: '0.5rem 0 0 0', fontSize: '1.2rem' }}>
+        <p style={{ margin: '0.25rem 0 0 0', fontSize: '1.1rem' }}>
           <strong>Valor:</strong> {formatCurrency(viaje.tarifa_valor)} x {viaje.tarifa_base} = <span style={{ fontWeight: 'bold' }}>{formatCurrency(viaje.precio_pactado)}</span>
         </p>
       </div>
 
-      <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Observaciones e Instrucciones</h3>
-      <p style={{ minHeight: '60px' }}>{viaje.observaciones || 'Sin indicaciones especiales.'}</p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
+        <div>
+          <h4 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Gastos de Viaje</h4>
+          <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #ccc' }}>
+                <th style={{ textAlign: 'left', padding: '0.2rem' }}>Concepto</th>
+                <th style={{ textAlign: 'right', padding: '0.2rem' }}>Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {viaje.gastos?.length > 0 ? viaje.gastos.map(g => (
+                <tr key={g.id} style={{ borderBottom: '1px solid #eee' }}>
+                  <td style={{ padding: '0.2rem' }}>{g.concepto || g.tipo}</td>
+                  <td style={{ padding: '0.2rem', textAlign: 'right' }}>{formatCurrency(g.monto)}</td>
+                </tr>
+              )) : <tr><td colSpan="2" style={{ color: '#999', padding: '0.2rem' }}>Sin gastos registrados</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h4 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Anticipos Entregados</h4>
+          <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #ccc' }}>
+                <th style={{ textAlign: 'left', padding: '0.2rem' }}>Concepto</th>
+                <th style={{ textAlign: 'right', padding: '0.2rem' }}>Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {viaje.anticipos?.length > 0 ? viaje.anticipos.map(a => (
+                <tr key={a.id} style={{ borderBottom: '1px solid #eee' }}>
+                  <td style={{ padding: '0.2rem' }}>{a.concepto || a.metodo_pago}</td>
+                  <td style={{ padding: '0.2rem', textAlign: 'right' }}>{formatCurrency(a.monto)}</td>
+                </tr>
+              )) : <tr><td colSpan="2" style={{ color: '#999', padding: '0.2rem' }}>Sin anticipos registrados</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-      <div style={{ marginTop: '4rem', display: 'flex', justifyContent: 'space-around', paddingTop: '2rem' }}>
+      <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '0.5rem' }}>Observaciones e Instrucciones</h3>
+      <p style={{ minHeight: '40px', fontSize: '0.9rem' }}>{viaje.observaciones || 'Sin indicaciones especiales.'}</p>
+
+      <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'space-around', paddingTop: '1rem' }}>
         <div style={{ textAlign: 'center', width: '200px' }}>
           <div style={{ borderTop: '1px solid black', paddingTop: '0.5rem' }}>Firma Chofer / Encargado</div>
         </div>
@@ -1126,7 +1164,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
     <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
 
       {/* Detail Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(252, 252, 255, 1)' }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-body)' }}>
         <button
           className={activeTab === 'resumen' ? 'tab-active' : 'tab-inactive'}
           onClick={() => setActiveTab('resumen')}
@@ -1243,7 +1281,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
                           {an.concepto}
                         </td>
                         <td>{formatDateForInput(an.fecha)}</td>
-                        <td style={{ textAlign: 'right', fontWeight: 500, color: 'var(--color-success-text)' }}>-{formatCurrency(an.monto)}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 500, color: 'var(--color-success-text)' }}>{formatCurrency(an.monto)}</td>
                         <td style={{ textAlign: 'right' }}>
                           <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
                             <button className="outline" style={{ padding: '0.2rem', border: 'none' }} onClick={() => setModalCfg({ type: 'finance', item: an })} title="Editar"><Edit size={14} /></button>

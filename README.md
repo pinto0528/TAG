@@ -1,84 +1,41 @@
-# TAG Logística - Core System
+# TAG Logística - Sistema de Gestión Integral
 
-TAG Logística es una prueba de concepto (PoC) en arquitectura Monorepo que divide el sistema de gestión de transporte en una interfaz fluida de React sobre un motor API respaldado por Laravel.
-
-## Arquitectura
-
-- **Frontend (`/client`)**: React 18, Vite, Lucide-React V2, CSS nativo con Eye-Care Support (Modos Visuales).
-- **Backend (`/api`)**: Laravel 11. Soporte PHP moderno y abstracción modular de base de datos.
-- **Base de Datos**: MySQL 8.0 (Containerizada).
-- **Virtualización**: Se administra el ecosistema integral usando contenedores a través de `docker-compose`.
+**TAG Logística** es una plataforma diseñada para centralizar y optimizar la operativa diaria de empresas de transporte y logística. El sistema permite gestionar desde la asignación de recursos hasta la trazabilidad financiera y documental de cada viaje, proporcionando una solución integral para el control de la flota y la administración comercial.
 
 ---
 
-## Montaje Fácil (Para una PC Nueva)
+## Módulos Principales
 
-Se ha configurado un script especial `start.bat` inteligente. Ideal para lanzar rápidamente el proyecto enfrente del cliente en cualquier ordenador sin configurar herramientas de dependencia a mano.
+### 1. Gestión de Operaciones (Viajes)
+El corazón del sistema. Permite el seguimiento en tiempo real de cada operación:
+*   **Planificación**: Registro de origen, destino, fechas, horarios y asignación de carga.
+*   **Asignación de Recursos**: Vinculación dinámica de choferes y unidades (propios o tercerizados).
+*   **Tarifario Flexible**: Soporte para múltiples esquemas de cobro (por km, bulto, tonelada o tarifa plana).
+*   **Trazabilidad Documental**: Flujo completo desde el remito hasta el pago (Remito -> Factura -> Orden de Pago -> Cheques).
 
-### Requisitos Iniciales:
-1. Tener [Git](https://git-scm.com/) instalado.
-2. Tener [Docker Desktop](https://www.docker.com/products/docker-desktop) instalado y **abierto/funcionando**.
+### 2. Administración de Recursos
+Control detallado de los activos y personal involucrado:
+*   **Unidades**: Gestión de camiones y acoplados, incluyendo seguimiento de vencimientos de VTV y Seguros.
+*   **Choferes**: Administración de legajos, contactos y control de licencias (LINTI).
+*   **Proveedores (Fleteros)**: Gestión de transporte tercerizado para operaciones de red.
 
-### Ejecución:
-Si recibe este proyecto vacío, lo único que necesita hacer es doble clic en:
-`start.bat`
+### 3. Finanzas y Liquidaciones
+Control riguroso de los flujos de dinero asociados a la operación:
+*   **Gastos y Anticipos**: Registro de movimientos financieros directos por viaje para un control de caja preciso.
+*   **Módulo de Liquidaciones (Settlements)**: Herramienta avanzada para el cierre de períodos con choferes y proveedores. Permite filtrar viajes realizados, calcular saldos y generar documentos de liquidación profesionales.
 
-El propio script automatizado detectará carencias e inciará:
-1. Una clonación del repositorio central de GitHub (si el ordenador no tiene los archivos).
-2. Verificará y bajará mediante contenedores aislados las dependencias de Node.js (`npm install`).
-3. Verificará dependencias de PHP (`composer install`).
-4. Duplicará variables de entorno de ejemplo (`.env.example` -> `.env`).
-5. Activará el ecosistema subyacente.
-6. Aplicará la estructura en la base de datos MySQL (Levantará las `migrations`).
-
----
-
-## Montaje Manual (Alternativa / macOS y Linux)
-
-Si el instalador automatizado para Windows no resulta adecuado para su distribución o prefiere levantar los servicios artesanalmente:
-
-**1. Clone la raíz:**
-```bash
-git clone <URL_REPOSITORIO_GITHUB> tag
-cd tag
-```
-
-**2. Descargue Dependencias del Frontend:**
-```bash
-cd client
-npm install
-cd ..
-```
-
-**3. Descargue Dependencias del API y cree la config:**
-```bash
-cd api
-composer install
-cp .env.example .env
-cd ..
-```
-
-**4. Orquestar Contenedores:**
-```bash
-# Lanzar MySQL, API Base y Front Node en backgrpund ("-d")
-docker-compose up -d --build
-```
-
-**5. Inicialización Fundamental Interna de Laravel:**
-Una vez en ejecución los contenedores, ejecutar la inyección de migración y la clave core:
-```bash
-docker-compose exec api php artisan key:generate
-docker-compose exec api php artisan migrate
-```
+### 4. Documentación e Impresión
+Generación de documentos listos para la operación física:
+*   **Hojas de Ruta**: Impresión optimizada (A4) con todos los detalles logísticos y financieros del viaje.
+*   **Comprobantes**: Generación de vouchers para gastos, anticipos y documentos de liquidación en formatos profesionales (Portrait/Landscape).
 
 ---
 
-## Entradas Rápidas (Puntos de Acceso)
+## Tecnologías Utilizadas
 
-Finalizado el montaje dispondrá en su ambiente local de los siguientes ecosistemas de uso:
+*   **Frontend**: React 18 con Vite, utilizando un sistema de diseño propio basado en CSS nativo y una interfaz optimizada para largas jornadas de trabajo (Soporte para Modo Protección Visual).
+*   **Backend**: API REST robusta desarrollada en Laravel 11, garantizando integridad de datos y escalabilidad.
+*   **Base de Datos**: MySQL con soporte para eliminación lógica (Soft Deletes) y auditoría de registros.
 
-- **Frontend (Sistema para Usuarios finales)**: [http://localhost:5173](http://localhost:5173)
-- **Backend (API JSON Core Server)**: [http://localhost:8000](http://localhost:8000)
-
-> **Nota para Simulaciones Demo (PoC):** \
-> El Login integrado en el Frontend actualmente carece de barreras Criptográficas reales. Permite acceder escribiendo cualquier set de caracteres en ambos campos a modo de demostración inmediata sin forzar al expositor a recordar un password.
+---
+*Este sistema ha sido desarrollado para transformar la complejidad logística en procesos simples, trazables y eficientes.*

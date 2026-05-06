@@ -7,7 +7,7 @@ import Trips from './pages/Trips';
 import Resources from './pages/Resources';
 import Clients from './pages/Clients';
 import Providers from './pages/Providers';
-import Liquidaciones from './pages/Liquidaciones';
+import Settlements from './pages/Settlements';
 import Login from './pages/Login';
 
 const Header = ({ onLogout, theme, toggleTheme }) => {
@@ -62,7 +62,7 @@ const Navigation = () => {
     { path: '/resources', label: 'Recursos', icon: Layout },
     { path: '/clients', label: 'Clientes', icon: Users },
     { path: '/providers', label: 'Proveedores', icon: Briefcase },
-    { path: '/liquidaciones', label: 'Liquidaciones', icon: FileText },
+    { path: '/settlements', label: 'Liquidaciones', icon: FileText },
   ];
 
   return (
@@ -120,7 +120,7 @@ function App() {
               <Route path="/resources" element={<Resources />} />
               <Route path="/clients" element={<Clients />} />
               <Route path="/providers" element={<Providers />} />
-              <Route path="/liquidaciones" element={<Liquidaciones />} />
+              <Route path="/settlements" element={<Settlements />} />
               <Route path="*" element={<Navigate to="/trips" replace />} />
             </Routes>
           </div>

@@ -8,6 +8,18 @@ const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString('es-AR');
 };
 
+const getWeekRange = () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    const start = new Date(new Date(now).setDate(diff));
+    const end = new Date(new Date(now).setDate(diff + 6));
+    return {
+        desde: start.toISOString().split('T')[0],
+        hasta: end.toISOString().split('T')[0]
+    };
+};
+
 // ============================================================ 
 // PRINT COMPONENTS
 // ============================================================
@@ -29,7 +41,7 @@ const PrintLiquidacionSheet = ({ data }) => {
             <style>
                 {`@media print { @page { size: landscape; margin: 10mm; } }`}
             </style>
-            
+
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #333', paddingBottom: '15px', marginBottom: '20px' }}>
                 <div>
                     <h1 style={{ margin: 0, fontSize: '24px', textTransform: 'uppercase' }}>LIQUIDACIÓN DE {data.tipo}</h1>
@@ -47,10 +59,10 @@ const PrintLiquidacionSheet = ({ data }) => {
                     <tr style={{ backgroundColor: '#f0f0f0', borderBottom: '1px solid #ccc' }}>
                         <th style={{ padding: '8px', textAlign: 'left' }}>Fecha</th>
                         <th style={{ padding: '8px', textAlign: 'left' }}>Código</th>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Origen</th>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Destino</th>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Chofer</th>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Unidad</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>Origen / Destino</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>Chofer / Unidad</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>Gastos</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>Anticipos</th>
                         <th style={{ padding: '8px', textAlign: 'right' }}>Monto</th>
                     </tr>
                 </thead>
@@ -59,10 +71,10 @@ const PrintLiquidacionSheet = ({ data }) => {
                         <tr key={v.id} style={{ borderBottom: '1px solid #eee' }}>
                             <td style={{ padding: '8px' }}>{formatDate(v.fecha)}</td>
                             <td style={{ padding: '8px' }}>VIA-{v.id.toString().padStart(4, '0')}</td>
-                            <td style={{ padding: '8px' }}>{v.origen}</td>
-                            <td style={{ padding: '8px' }}>{v.destino}</td>
-                            <td style={{ padding: '8px' }}>{v.chofer}</td>
-                            <td style={{ padding: '8px' }}>{v.unidad}</td>
+                            <td style={{ padding: '8px' }}>{v.origen} → {v.destino}</td>
+                            <td style={{ padding: '8px' }}>{v.chofer} ({v.unidad})</td>
+                            <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(v.total_gastos)}</td>
+                            <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(v.total_anticipos)}</td>
                             <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(v.monto)}</td>
                         </tr>
                     ))}
@@ -96,9 +108,12 @@ const LiquidacionWizard = ({ onClose, onSave }) => {
     const [step, setStep] = useState(1);
     const [tipo, setTipo] = useState('proveedor');
     const [entidadId, setEntidadId] = useState('');
-    const [filtrosActivos, setFiltrosActivos] = useState({ fecha: false, origen: false, destino: false });
-    const [filtros, setFiltros] = useState({ desde: '', hasta: '', origen: '', destino: '' });
-    
+    const [filtrosActivos, setFiltrosActivos] = useState({ fecha: true, origen: false, destino: false });
+    const [filtros, setFiltros] = useState(() => {
+        const range = getWeekRange();
+        return { desde: range.desde, hasta: range.hasta, origen: '', destino: '' };
+    });
+
     const [viajesDisponibles, setViajesDisponibles] = useState([]);
     const [viajesSeleccionados, setViajesSeleccionados] = useState([]);
 
@@ -109,9 +124,9 @@ const LiquidacionWizard = ({ onClose, onSave }) => {
     };
 
     const mockViajes = [
-        { id: 101, fecha: '2026-05-01', origen: 'Buenos Aires', destino: 'Rosario', chofer: 'Carlos Ruiz', unidad: 'AB 123 CD', monto: 150000 },
-        { id: 102, fecha: '2026-05-03', origen: 'Rosario', destino: 'Córdoba', chofer: 'Luis Sosa', unidad: 'EF 456 GH', monto: 200000 },
-        { id: 103, fecha: '2026-05-05', origen: 'Córdoba', destino: 'Mendoza', chofer: 'Mario Bross', unidad: 'IJ 789 KL', monto: 350000 },
+        { id: 101, fecha: '2026-05-01', origen: 'Buenos Aires', destino: 'Rosario', chofer: 'Carlos Ruiz', unidad: 'AB 123 CD', monto: 150000, total_gastos: 5000, total_anticipos: 10000 },
+        { id: 102, fecha: '2026-05-03', origen: 'Rosario', destino: 'Córdoba', chofer: 'Luis Sosa', unidad: 'EF 456 GH', monto: 200000, total_gastos: 8000, total_anticipos: 15000 },
+        { id: 103, fecha: '2026-05-05', origen: 'Córdoba', destino: 'Mendoza', chofer: 'Mario Bross', unidad: 'IJ 789 KL', monto: 350000, total_gastos: 12000, total_anticipos: 20000 },
     ];
 
     const handleSearch = () => {
@@ -133,7 +148,7 @@ const LiquidacionWizard = ({ onClose, onSave }) => {
         const viajesElegidos = viajesDisponibles.filter(v => viajesSeleccionados.includes(v.id));
         const total = viajesElegidos.reduce((acc, v) => acc + v.monto, 0);
         const entidad = mockEntidades[tipo === 'cliente' ? 'clientes' : 'proveedores'].find(e => e.id === parseInt(entidadId));
-        
+
         const nuevaLiq = {
             id: Date.now(),
             codigo: `LIQ-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
@@ -165,10 +180,10 @@ const LiquidacionWizard = ({ onClose, onSave }) => {
                                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Tipo de Liquidación</label>
                                 <div style={{ display: 'flex', gap: '1rem' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                        <input type="radio" name="tipo" checked={tipo === 'proveedor'} onChange={() => setTipo('proveedor')} /> Proveedor / Fletero
+                                        <input type="radio" name="tipo" checked={tipo === 'proveedor'} onChange={() => setTipo('proveedor')} /> Proveedor
                                     </label>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                        <input type="radio" name="tipo" checked={tipo === 'cliente'} onChange={() => setTipo('cliente')} /> Cliente / Generador
+                                        <input type="radio" name="tipo" checked={tipo === 'cliente'} onChange={() => setTipo('cliente')} /> Cliente
                                     </label>
                                 </div>
                             </div>
@@ -187,24 +202,24 @@ const LiquidacionWizard = ({ onClose, onSave }) => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                 <h4 style={{ fontSize: '1rem', margin: 0 }}>Filtros de Búsqueda</h4>
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    {!filtrosActivos.fecha && <button className="outline" style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }} onClick={() => setFiltrosActivos(prev => ({...prev, fecha: true}))}>+ Fecha</button>}
-                                    {!filtrosActivos.origen && <button className="outline" style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }} onClick={() => setFiltrosActivos(prev => ({...prev, origen: true}))}>+ Origen</button>}
-                                    {!filtrosActivos.destino && <button className="outline" style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }} onClick={() => setFiltrosActivos(prev => ({...prev, destino: true}))}>+ Destino</button>}
+                                    {!filtrosActivos.fecha && <button className="outline" style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }} onClick={() => setFiltrosActivos(prev => ({ ...prev, fecha: true }))}>+ Fecha</button>}
+                                    {!filtrosActivos.origen && <button className="outline" style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }} onClick={() => setFiltrosActivos(prev => ({ ...prev, origen: true }))}>+ Origen</button>}
+                                    {!filtrosActivos.destino && <button className="outline" style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }} onClick={() => setFiltrosActivos(prev => ({ ...prev, destino: true }))}>+ Destino</button>}
                                 </div>
                             </div>
-                            
+
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {filtrosActivos.fecha && (
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '1rem', alignItems: 'flex-end', backgroundColor: 'var(--bg-body)', padding: '0.75rem', borderRadius: 'var(--radius-md)' }}>
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Desde</label>
-                                            <input type="date" className="input-field" value={filtros.desde} onChange={e => setFiltros(prev => ({...prev, desde: e.target.value}))} />
+                                            <input type="date" className="input-field" value={filtros.desde} onChange={e => setFiltros(prev => ({ ...prev, desde: e.target.value }))} />
                                         </div>
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Hasta</label>
-                                            <input type="date" className="input-field" value={filtros.hasta} onChange={e => setFiltros(prev => ({...prev, hasta: e.target.value}))} />
+                                            <input type="date" className="input-field" value={filtros.hasta} onChange={e => setFiltros(prev => ({ ...prev, hasta: e.target.value }))} />
                                         </div>
-                                        <button className="outline" style={{ padding: '0.5rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => setFiltrosActivos(prev => ({...prev, fecha: false}))}><X size={16} /></button>
+                                        <button className="outline" style={{ padding: '0.5rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => setFiltrosActivos(prev => ({ ...prev, fecha: false }))}><X size={16} /></button>
                                     </div>
                                 )}
 
@@ -213,22 +228,22 @@ const LiquidacionWizard = ({ onClose, onSave }) => {
                                         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--bg-body)', padding: '0.75rem', borderRadius: 'var(--radius-md)' }}>
                                             <div style={{ flex: 1 }}>
                                                 <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Origen</label>
-                                                <input type="text" className="input-field" placeholder="Ej: Buenos Aires" value={filtros.origen} onChange={e => setFiltros(prev => ({...prev, origen: e.target.value}))} />
+                                                <input type="text" className="input-field" placeholder="Ej: Buenos Aires" value={filtros.origen} onChange={e => setFiltros(prev => ({ ...prev, origen: e.target.value }))} />
                                             </div>
-                                            <button className="outline" style={{ padding: '0.5rem', border: 'none', color: 'var(--color-danger-text)', marginTop: '1.2rem' }} onClick={() => setFiltrosActivos(prev => ({...prev, origen: false}))}><X size={16} /></button>
+                                            <button className="outline" style={{ padding: '0.5rem', border: 'none', color: 'var(--color-danger-text)', marginTop: '1.2rem' }} onClick={() => setFiltrosActivos(prev => ({ ...prev, origen: false }))}><X size={16} /></button>
                                         </div>
                                     )}
                                     {filtrosActivos.destino && (
                                         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--bg-body)', padding: '0.75rem', borderRadius: 'var(--radius-md)' }}>
                                             <div style={{ flex: 1 }}>
                                                 <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Destino</label>
-                                                <input type="text" className="input-field" placeholder="Ej: Rosario" value={filtros.destino} onChange={e => setFiltros(prev => ({...prev, destino: e.target.value}))} />
+                                                <input type="text" className="input-field" placeholder="Ej: Rosario" value={filtros.destino} onChange={e => setFiltros(prev => ({ ...prev, destino: e.target.value }))} />
                                             </div>
-                                            <button className="outline" style={{ padding: '0.5rem', border: 'none', color: 'var(--color-danger-text)', marginTop: '1.2rem' }} onClick={() => setFiltrosActivos(prev => ({...prev, destino: false}))}><X size={16} /></button>
+                                            <button className="outline" style={{ padding: '0.5rem', border: 'none', color: 'var(--color-danger-text)', marginTop: '1.2rem' }} onClick={() => setFiltrosActivos(prev => ({ ...prev, destino: false }))}><X size={16} /></button>
                                         </div>
                                     )}
                                 </div>
-                                
+
                                 {!filtrosActivos.fecha && !filtrosActivos.origen && !filtrosActivos.destino && (
                                     <div style={{ textAlign: 'center', padding: '1rem', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                                         Sin filtros adicionales. Se buscarán todos los viajes pendientes.
@@ -255,10 +270,10 @@ const LiquidacionWizard = ({ onClose, onSave }) => {
                                 <thead>
                                     <tr>
                                         <th style={{ width: '40px', textAlign: 'center' }}>
-                                            <input 
-                                                type="checkbox" 
-                                                checked={viajesSeleccionados.length === viajesDisponibles.length && viajesDisponibles.length > 0} 
-                                                onChange={e => setViajesSeleccionados(e.target.checked ? viajesDisponibles.map(v => v.id) : [])} 
+                                            <input
+                                                type="checkbox"
+                                                checked={viajesSeleccionados.length === viajesDisponibles.length && viajesDisponibles.length > 0}
+                                                onChange={e => setViajesSeleccionados(e.target.checked ? viajesDisponibles.map(v => v.id) : [])}
                                             />
                                         </th>
                                         <th>Fecha</th>
@@ -348,6 +363,8 @@ const LiquidacionPreview = ({ data, onClose, onPrint }) => {
                                     <th style={{ padding: '10px 8px', textAlign: 'left', color: '#555' }}>Código</th>
                                     <th style={{ padding: '10px 8px', textAlign: 'left', color: '#555' }}>Origen - Destino</th>
                                     <th style={{ padding: '10px 8px', textAlign: 'left', color: '#555' }}>Chofer / Unidad</th>
+                                    <th style={{ padding: '10px 8px', textAlign: 'right', color: '#555' }}>Gastos</th>
+                                    <th style={{ padding: '10px 8px', textAlign: 'right', color: '#555' }}>Anticipos</th>
                                     <th style={{ padding: '10px 8px', textAlign: 'right', color: '#555' }}>Monto</th>
                                 </tr>
                             </thead>
@@ -358,13 +375,15 @@ const LiquidacionPreview = ({ data, onClose, onPrint }) => {
                                         <td style={{ padding: '10px 8px', fontFamily: 'monospace' }}>VIA-{v.id.toString().padStart(4, '0')}</td>
                                         <td style={{ padding: '10px 8px' }}>{v.origen} → {v.destino}</td>
                                         <td style={{ padding: '10px 8px' }}>{v.chofer} <span style={{ color: '#888', fontSize: '11px', display: 'block' }}>{v.unidad}</span></td>
+                                        <td style={{ padding: '10px 8px', textAlign: 'right' }}>{formatCurrency(v.total_gastos)}</td>
+                                        <td style={{ padding: '10px 8px', textAlign: 'right' }}>{formatCurrency(v.total_anticipos)}</td>
                                         <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: '500' }}>{formatCurrency(v.monto)}</td>
                                     </tr>
                                 ))}
                             </tbody>
                             <tfoot>
                                 <tr style={{ fontWeight: 'bold', fontSize: '16px' }}>
-                                    <td colSpan="4" style={{ padding: '20px 8px 10px', textAlign: 'right', borderTop: '2px solid #ddd' }}>TOTAL A LIQUIDAR:</td>
+                                    <td colSpan="6" style={{ padding: '20px 8px 10px', textAlign: 'right', borderTop: '2px solid #ddd' }}>TOTAL A LIQUIDAR:</td>
                                     <td style={{ padding: '20px 8px 10px', textAlign: 'right', borderTop: '2px solid #ddd', color: 'var(--bg-primary)' }}>{formatCurrency(data.total)}</td>
                                 </tr>
                             </tfoot>
@@ -379,15 +398,15 @@ const LiquidacionPreview = ({ data, onClose, onPrint }) => {
 // ============================================================ 
 // MAIN PAGE COMPONENT
 // ============================================================
-const Liquidaciones = () => {
+const Settlements = () => {
     const [activeTab, setActiveTab] = useState('proveedores'); // 'proveedores' or 'clientes'
     const [searchQuery, setSearchQuery] = useState('');
     const [showArchived, setShowArchived] = useState(false);
-    
+
     // UI State
     const [liquidaciones, setLiquidaciones] = useState([]);
     const [loading, setLoading] = useState(false);
-    
+
     // Modals state
     const [showWizard, setShowWizard] = useState(false);
     const [previewData, setPreviewData] = useState(null);
@@ -558,17 +577,17 @@ const Liquidaciones = () => {
 
             {/* MODALS */}
             {showWizard && (
-                <LiquidacionWizard 
-                    onClose={() => setShowWizard(false)} 
-                    onSave={handleSaveWizard} 
+                <LiquidacionWizard
+                    onClose={() => setShowWizard(false)}
+                    onSave={handleSaveWizard}
                 />
             )}
 
             {previewData && !printMode && (
-                <LiquidacionPreview 
-                    data={previewData} 
-                    onClose={() => setPreviewData(null)} 
-                    onPrint={() => handlePrint(previewData)} 
+                <LiquidacionPreview
+                    data={previewData}
+                    onClose={() => setPreviewData(null)}
+                    onPrint={() => handlePrint(previewData)}
                 />
             )}
 
@@ -582,4 +601,4 @@ const Liquidaciones = () => {
     );
 };
 
-export default Liquidaciones;
+export default Settlements;
