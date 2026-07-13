@@ -1,159 +1,298 @@
-import React, { useState } from 'react';
-import { mockViajes, mockProveedores, mockFacturas } from '../data/mockData';
-import { UploadCloud, FileText, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import API_BASE_URL from '../apiConfig';
+import { UploadCloud, FileText, Search, Plus, X } from 'lucide-react';
 
-// Build a flat billing list from viajes remitos + facturas
-const buildBillingDocs = () => {
-  const docs = [];
-  mockViajes.forEach(v => {
-    if (v.remitos) {
-      v.remitos.forEach(r => {
-        const factura = r.factura_id ? mockFacturas.find(f => f.id === r.factura_id) : null;
-        docs.push({ id: r.id, type: 'Remito', documentNumber: r.numero, tripId: v.id, file: `remito_${r.id}.pdf`, date: r.fecha, status: r.estado === 'conforme' ? 'Conforme' : 'Pendiente' });
-        if (factura && !docs.find(d => d.type === 'Factura' && d.documentNumber === factura.numero)) {
-          docs.push({ id: `f-${factura.id}`, type: 'Factura', documentNumber: factura.numero, tripId: v.id, file: `factura_${factura.id}.pdf`, date: factura.fecha_emision, status: factura.estado === 'pagada' ? 'Conforme' : 'Pendiente' });
-        }
-      });
-    }
-  });
-  return docs;
+const formatCurrency = (amount) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount || 0);
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleDateString('es-AR');
 };
-const mockBilling = buildBillingDocs();
 
 const Billing = () => {
   const [activeTab, setActiveTab] = useState('Todos');
+  const [facturas, setFacturas] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
 
-  const documentTypes = ['Todos', 'Factura', 'Remito', 'Carta de Porte', 'Hoja de Ruta'];
+  const [formData, setFormData] = useState({
+    liquidacion_id: '',
+    numero: '',
+    tipo: 'A',
+    punto_venta: '',
+    fecha_emision: new Date().toISOString().split('T')[0],
+    fecha_vencimiento: '',
+    monto_neto: 0,
+    iva: 0,
+    monto_total: 0,
+    estado: 'pendiente',
+    notas: '',
+  });
 
-  const getTripDetails = (tripId) => {
-    const trip = mockViajes.find(t => t.id === tripId);
-    if (!trip) return 'Desconocido';
-    const prov = mockProveedores.find(p => p.id === trip.proveedor_id);
-    return `Viaje #${tripId} (${prov?.razon_social || 'Varios'})`;
+  const [liquidaciones, setLiquidaciones] = useState([]);
+
+  const fetchFacturas = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/facturas`, { headers: { 'Accept': 'application/json' } });
+      if (res.ok) {
+        const data = await res.json();
+        setFacturas(data);
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
+
+  const fetchLiquidaciones = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/liquidaciones`, { headers: { 'Accept': 'application/json' } });
+      if (res.ok) {
+        const data = await res.json();
+        setLiquidaciones(data.filter(l => l.estado === 'pendiente'));
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => { fetchFacturas(); }, []);
+
+  const handleCreateFactura = async (e) => {
+    e.preventDefault();
+    setFormLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/facturas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (res.ok) {
+        setShowForm(false);
+        setFormData({
+          liquidacion_id: '', numero: '', tipo: 'A', punto_venta: '',
+          fecha_emision: new Date().toISOString().split('T')[0],
+          fecha_vencimiento: '', monto_neto: 0, iva: 0, monto_total: 0,
+          estado: 'pendiente', notas: '',
+        });
+        fetchFacturas();
+      } else {
+        const err = await res.json();
+        alert('Error: ' + JSON.stringify(err.errors || err.message));
+      }
+    } catch (e) { console.error(e); }
+    finally { setFormLoading(false); }
+  };
+
+  const handleOpenForm = () => {
+    fetchLiquidaciones();
+    setShowForm(true);
   };
 
   const getStatusBadge = (status) => {
-    switch(status) {
-      case 'Emitida': return <span className="badge info">{status}</span>;
-      case 'Conforme': return <span className="badge success">{status}</span>;
-      case 'Cerrada': return <span className="badge" style={{backgroundColor: 'var(--bg-hover)', color: 'var(--text-muted)'}}>{status}</span>;
-      case 'Pendiente': return <span className="badge warning">{status}</span>;
+    switch (status) {
+      case 'pagada': return <span className="badge success">Pagada</span>;
+      case 'pendiente': return <span className="badge warning">Pendiente</span>;
+      case 'anulada': return <span className="badge danger">Anulada</span>;
       default: return <span className="badge">{status}</span>;
     }
-  }
+  };
 
-  const filteredDocs = activeTab === 'Todos' ? mockBilling : mockBilling.filter(d => d.type === activeTab);
+  const filteredFacturas = facturas.filter(f => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const matchNumero = f.numero?.toLowerCase().includes(q);
+      const matchLiq = f.liquidacion?.numero?.toLowerCase().includes(q);
+      const matchEntidad = f.liquidacion?.cliente?.razon_social?.toLowerCase().includes(q)
+        || f.liquidacion?.proveedor?.razon_social?.toLowerCase().includes(q);
+      if (!matchNumero && !matchLiq && !matchEntidad) return false;
+    }
+    if (activeTab !== 'Todos') {
+      const tipoMap = { 'Factura A': 'A', 'Factura B': 'B', 'Factura C': 'C' };
+      if (tipoMap[activeTab] && f.tipo !== tipoMap[activeTab]) return false;
+    }
+    return true;
+  });
+
+  const tabs = ['Todos', 'Factura A', 'Factura B', 'Factura C'];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'fadeIn 0.5s ease-in-out' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '600' }}>Documentación y Facturación</h2>
+        <div>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
+            Facturación
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+            Facturas generadas a partir de liquidaciones.
+          </p>
+        </div>
+        <button onClick={handleOpenForm} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.25rem' }}>
+          <Plus size={18} /> Nueva Factura
+        </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-        
-        {/* Upload Form */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ marginBottom: '1rem', fontSize: '1.125rem' }}>Cargar Nuevo Documento</h3>
-          
-          <div style={{ 
-            border: '2px dashed var(--border-color)', 
-            borderRadius: 'var(--radius-lg)', 
-            padding: '2rem', 
-            textAlign: 'center', 
-            color: 'var(--text-muted)',
-            backgroundColor: 'var(--bg-body)',
-            cursor: 'pointer',
-            transition: 'border-color 0.2s',
-            marginBottom: '1.5rem'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--bg-primary)'}
-          onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}>
-            <UploadCloud size={48} style={{ margin: '0 auto 1rem', opacity: 0.8 }} />
-            <p style={{ fontWeight: 500 }}>Arrastra tu Factura, Remito o CP</p>
-            <p style={{ fontSize: '0.875rem' }}>Formatos soportados: PDF, JPG, PNG</p>
-          </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: 'auto' }}>
-            <select className="input-field" defaultValue={activeTab === 'Todos' ? '' : activeTab}>
-              <option value="">Tipo de Documento</option>
-              {documentTypes.filter(t => t !== 'Todos').map(type => (
-                <option key={type}>{type}</option>
-              ))}
-              <option>Orden de Carga</option>
-            </select>
-            <input type="text" className="input-field" placeholder="Número de Documento (Ej. FC-0001)" />
-            <select className="input-field">
-              <option value="">Vincular a un Viaje...</option>
-              {mockViajes.map(t => <option key={t.id} value={t.id}>#{t.id} - {t.origen} a {t.destino}</option>)}
-            </select>
-            <button style={{ width: '100%', padding: '0.75rem' }}>Procesar y Guardar</button>
-          </div>
+      {/* Tabs + Search */}
+      <div className="card" style={{ padding: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-body)', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
+          {tabs.map(tab => (
+            <button
+              key={tab}
+              className={activeTab === tab ? '' : 'outline'}
+              style={{
+                border: 'none',
+                background: activeTab === tab ? 'white' : 'transparent',
+                color: activeTab === tab ? 'var(--text-main)' : 'var(--text-muted)',
+                boxShadow: activeTab === tab ? 'var(--shadow-sm)' : 'none',
+                whiteSpace: 'nowrap',
+              }}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
 
-        {/* Existing Documents List */}
-        <div className="card" style={{ gridColumn: 'span 2', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)' }}>
-            <h3 style={{ fontSize: '1.125rem', margin: '0 0 1rem' }}>Archivo Documental</h3>
-            
-            {/* Tabs */}
-            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-              {documentTypes.map(tab => (
-                 <button 
-                  key={tab} 
-                  className={activeTab === tab ? '' : 'outline'} 
-                  onClick={() => setActiveTab(tab)}
-                  style={{ whiteSpace: 'nowrap', borderRadius: 'var(--radius-md) var(--radius-md) 0 0' }}
-                 >
-                   {tab}
-                 </button>
-              ))}
-            </div>
+        <div style={{ position: 'relative', flex: 1, minWidth: '250px' }}>
+          <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input
+            type="text"
+            className="input-field"
+            placeholder="Buscar por número, liquidación o entidad..."
+            style={{ paddingLeft: '2.5rem', width: '100%' }}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
 
-            <div style={{ position: 'relative' }}>
-              <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input type="text" className="input-field" placeholder="Buscar por viaje o número..." style={{ paddingLeft: '2.5rem', width: '100%', maxWidth: '400px' }} />
-            </div>
+      {/* Table */}
+      <div className="card" style={{ padding: 0, overflow: 'hidden', minHeight: '300px', display: 'flex', flexDirection: 'column' }}>
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem', flex: 1 }}>
+            <div className="spinner"></div>
+            <p style={{ marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>Cargando facturas...</p>
           </div>
-          
+        ) : (
           <div style={{ overflowX: 'auto' }}>
             <table className="datatable">
               <thead>
                 <tr>
+                  <th>N° Factura</th>
                   <th>Tipo</th>
-                  <th>Nro Documento</th>
-                  <th>Viaje Asignado</th>
-                  <th>Fecha</th>
-                  <th>Archivo</th>
-                  <th>Estado</th>
+                  <th>Liquidación</th>
+                  <th>Entidad</th>
+                  <th>Fecha Emisión</th>
+                  <th style={{ textAlign: 'right' }}>Monto Total</th>
+                  <th style={{ textAlign: 'center' }}>Estado</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredDocs.map(doc => (
-                  <tr key={doc.id}>
-                    <td style={{ fontWeight: '500' }}>{doc.type}</td>
-                    <td>{doc.documentNumber}</td>
-                    <td>{getTripDetails(doc.tripId)}</td>
-                    <td>{doc.date}</td>
-                    <td>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--bg-primary)', cursor: 'pointer', fontSize: '0.875rem' }}>
-                        <FileText size={16} /> {doc.file}
-                      </span>
-                    </td>
-                    <td>{getStatusBadge(doc.status)}</td>
-                  </tr>
-                ))}
-                {filteredDocs.length === 0 && (
+                {filteredFacturas.length === 0 ? (
                   <tr>
-                    <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No hay documentos de este tipo cargados.</td>
+                    <td colSpan="7" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                        <FileText size={48} style={{ opacity: 0.3 }} />
+                        <p>No hay facturas registradas.</p>
+                      </div>
+                    </td>
                   </tr>
+                ) : (
+                  filteredFacturas.map((f) => (
+                    <tr key={f.id} className="table-row-hover">
+                      <td style={{ fontFamily: 'monospace', fontWeight: 500 }}>{f.numero}</td>
+                      <td><span className="badge" style={{ backgroundColor: 'var(--bg-body)' }}>Factura {f.tipo}</span></td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{f.liquidacion?.numero || '—'}</td>
+                      <td>{f.liquidacion?.cliente?.razon_social || f.liquidacion?.proveedor?.razon_social || '—'}</td>
+                      <td>{formatDate(f.fecha_emision)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(f.monto_total)}</td>
+                      <td style={{ textAlign: 'center' }}>{getStatusBadge(f.estado)}</td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
           </div>
-        </div>
-        
+        )}
       </div>
+
+      {/* Create Factura Modal */}
+      {showForm && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <div className="card" style={{ width: '90%', maxWidth: '500px', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '700' }}>Nueva Factura</h3>
+              <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+
+            <form onSubmit={handleCreateFactura} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Liquidación Asociada</label>
+                <select className="input-field" value={formData.liquidacion_id} onChange={e => setFormData({ ...formData, liquidacion_id: e.target.value })} required>
+                  <option value="">Seleccionar liquidación pendiente...</option>
+                  {liquidaciones.map(l => (
+                    <option key={l.id} value={l.id}>{l.numero} — {l.cliente?.razon_social || l.proveedor?.razon_social} ({formatCurrency(l.total)})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Tipo</label>
+                  <select className="input-field" value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })}>
+                    <option value="A">Factura A</option>
+                    <option value="B">Factura B</option>
+                    <option value="C">Factura C</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Punto de Venta</label>
+                  <input className="input-field" value={formData.punto_venta} onChange={e => setFormData({ ...formData, punto_venta: e.target.value })} placeholder="0001" />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Número de Factura</label>
+                <input className="input-field" value={formData.numero} onChange={e => setFormData({ ...formData, numero: e.target.value })} required placeholder="FC-A-0001-00004561" />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Fecha Emisión</label>
+                  <input type="date" className="input-field" value={formData.fecha_emision} onChange={e => setFormData({ ...formData, fecha_emision: e.target.value })} required />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Fecha Vencimiento</label>
+                  <input type="date" className="input-field" value={formData.fecha_vencimiento} onChange={e => setFormData({ ...formData, fecha_vencimiento: e.target.value })} />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Monto Neto</label>
+                  <input type="number" step="0.01" className="input-field" value={formData.monto_neto} onChange={e => setFormData({ ...formData, monto_neto: parseFloat(e.target.value) || 0 })} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>IVA</label>
+                  <input type="number" step="0.01" className="input-field" value={formData.iva} onChange={e => setFormData({ ...formData, iva: parseFloat(e.target.value) || 0 })} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Monto Total</label>
+                  <input type="number" step="0.01" className="input-field" value={formData.monto_total} onChange={e => setFormData({ ...formData, monto_total: parseFloat(e.target.value) || 0 })} required />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Notas</label>
+                <textarea className="input-field" rows={2} value={formData.notas} onChange={e => setFormData({ ...formData, notas: e.target.value })} placeholder="Notas opcionales" />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
+                <button type="button" className="outline" onClick={() => setShowForm(false)}>Cancelar</button>
+                <button type="submit" disabled={formLoading}>{formLoading ? 'Guardando...' : 'Crear Factura'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

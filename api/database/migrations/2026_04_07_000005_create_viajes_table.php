@@ -10,14 +10,15 @@ return new class extends Migration
     {
         Schema::create('viajes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('unidad_id')->constrained('unidades');
+            $table->integer('nro_viaje')->nullable();
+            $table->foreignId('unidad_id')->nullable()->constrained('unidades');
             $table->foreignId('chofer_id')->nullable()->constrained('choferes');
-            $table->foreignId('cliente_id')->constrained('clientes');
+            $table->foreignId('cliente_id')->nullable()->constrained('clientes');
             $table->foreignId('proveedor_id')->nullable()->constrained('proveedores');
             $table->string('estado')->default('pendiente');
-            $table->string('origen');
-            $table->string('destino');
-            $table->date('fecha_salida')->nullable();
+            $table->string('origen')->nullable();
+            $table->string('destino')->nullable();
+            $table->date('fecha_salida')->default(date('Y-m-d'));
             $table->time('hora_salida')->nullable();
             $table->date('fecha_llegada')->nullable();
             $table->time('hora_llegada')->nullable();

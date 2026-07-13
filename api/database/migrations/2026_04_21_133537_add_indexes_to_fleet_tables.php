@@ -31,11 +31,6 @@ return new class extends Migration
         Schema::table('cargas', function (Blueprint $table) {
             $table->index('viaje_id');
         });
-
-        Schema::table('remitos', function (Blueprint $table) {
-            $table->index('viaje_id');
-            $table->index('factura_id');
-        });
     }
 
     /**
@@ -57,10 +52,6 @@ return new class extends Migration
 
         Schema::table('cargas', function (Blueprint $table) {
             $table->dropIndex(['viaje_id']);
-        });
-
-        Schema::table('remitos', function (Blueprint $table) {
-            $table->dropIndex(['viaje_id', 'factura_id']);
         });
     }
 };

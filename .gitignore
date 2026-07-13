@@ -8,4 +8,6 @@
 .DS_Store
 deploy.php
 release.zip
-migrations.zip
+migrations.zipapi/storage/framework/views/
+api/storage/
+*.sqlite

@@ -59,8 +59,9 @@ class ChoferController extends Controller
         return response()->json($chofer, 201);
     }
 
-    public function show(Chofer $chofer)
+    public function show($id)
     {
+        $chofer = Chofer::withTrashed()->findOrFail($id);
         return response()->json($chofer);
     }
 

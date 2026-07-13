@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Factura;
-use App\Models\Remito;
 use Illuminate\Http\Request;
 
 class FacturaController extends Controller
@@ -16,40 +15,43 @@ class FacturaController extends Controller
             $query->onlyTrashed();
         }
 
-        if ($request->has('viaje_id')) {
-            $query->where('viaje_id', $request->get('viaje_id'));
+        if ($request->has('liquidacion_id')) {
+            $query->where('liquidacion_id', $request->get('liquidacion_id'));
         }
 
-        return response()->json($query->orderBy('fecha_emision', 'desc')->get());
+        return response()->json(
+            $query->with(['liquidacion', 'liquidacion.cliente', 'liquidacion.proveedor'])
+                ->orderBy('fecha_emision', 'desc')
+                ->get()
+        );
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'viaje_id' => 'required|exists:viajes,id',
+            'liquidacion_id' => 'required|exists:liquidaciones,id',
             'numero' => 'required|string|unique:facturas,numero',
             'tipo' => 'nullable|string',
             'punto_venta' => 'nullable|string',
             'fecha_emision' => 'required|date',
+            'fecha_vencimiento' => 'nullable|date',
             'monto_neto' => 'nullable|numeric|min:0',
             'iva' => 'nullable|numeric|min:0',
             'monto_total' => 'required|numeric|min:0',
             'estado' => 'nullable|string',
-            'remito_ids' => 'required|array',
-            'remito_ids.*' => 'exists:remitos,id',
+            'notas' => 'nullable|string',
         ]);
 
         $factura = Factura::create($validated);
 
-        // Link Remitos to this Factura
-        Remito::whereIn('id', $validated['remito_ids'])->update(['factura_id' => $factura->id]);
-
-        return response()->json($factura->load('remitos'), 201);
+        return response()->json($factura->load('liquidacion'), 201);
     }
 
     public function show($id)
     {
-        $factura = Factura::withTrashed()->with('remitos')->findOrFail($id);
+        $factura = Factura::withTrashed()
+            ->with(['liquidacion', 'liquidacion.cliente', 'liquidacion.proveedor', 'liquidacion.viajes'])
+            ->findOrFail($id);
         return response()->json($factura);
     }
 
@@ -62,15 +64,17 @@ class FacturaController extends Controller
             'tipo' => 'nullable|string',
             'punto_venta' => 'nullable|string',
             'fecha_emision' => 'sometimes|required|date',
+            'fecha_vencimiento' => 'nullable|date',
             'monto_neto' => 'sometimes|required|numeric|min:0',
             'iva' => 'sometimes|required|numeric|min:0',
             'monto_total' => 'sometimes|required|numeric|min:0',
             'estado' => 'nullable|string',
+            'notas' => 'nullable|string',
         ]);
 
         $factura->update($validated);
 
-        return response()->json($factura);
+        return response()->json($factura->load('liquidacion'));
     }
 
     public function destroy($id)

@@ -57,9 +57,10 @@ class UnidadController extends Controller
         return response()->json($unidad, 201);
     }
 
-    public function show(Unidad $unidade)
+    public function show($id)
     {
-        return response()->json($unidade);
+        $unidad = Unidad::withTrashed()->findOrFail($id);
+        return response()->json($unidad);
     }
 
     public function update(Request $request, $id)

@@ -1,41 +1,84 @@
-# TAG Logística - Sistema de Gestión Integral
+# TAG Logistica - Sistema de Gestión Integral
 
-**TAG Logística** es una plataforma diseñada para centralizar y optimizar la operativa diaria de empresas de transporte y logística. El sistema permite gestionar desde la asignación de recursos hasta la trazabilidad financiera y documental de cada viaje, proporcionando una solución integral para el control de la flota y la administración comercial.
-
----
-
-## Módulos Principales
-
-### 1. Gestión de Operaciones (Viajes)
-El corazón del sistema. Permite el seguimiento en tiempo real de cada operación:
-*   **Planificación**: Registro de origen, destino, fechas, horarios y asignación de carga.
-*   **Asignación de Recursos**: Vinculación dinámica de choferes y unidades (propios o tercerizados).
-*   **Tarifario Flexible**: Soporte para múltiples esquemas de cobro (por km, bulto, tonelada o tarifa plana).
-*   **Trazabilidad Documental**: Flujo completo desde el remito hasta el pago (Remito -> Factura -> Orden de Pago -> Cheques).
-
-### 2. Administración de Recursos
-Control detallado de los activos y personal involucrado:
-*   **Unidades**: Gestión de camiones y acoplados, incluyendo seguimiento de vencimientos de VTV y Seguros.
-*   **Choferes**: Administración de legajos, contactos y control de licencias (LINTI).
-*   **Proveedores (Fleteros)**: Gestión de transporte tercerizado para operaciones de red.
-
-### 3. Finanzas y Liquidaciones
-Control riguroso de los flujos de dinero asociados a la operación:
-*   **Gastos y Anticipos**: Registro de movimientos financieros directos por viaje para un control de caja preciso.
-*   **Módulo de Liquidaciones (Settlements)**: Herramienta avanzada para el cierre de períodos con choferes y proveedores. Permite filtrar viajes realizados, calcular saldos y generar documentos de liquidación profesionales.
-
-### 4. Documentación e Impresión
-Generación de documentos listos para la operación física:
-*   **Hojas de Ruta**: Impresión optimizada (A4) con todos los detalles logísticos y financieros del viaje.
-*   **Comprobantes**: Generación de vouchers para gastos, anticipos y documentos de liquidación en formatos profesionales (Portrait/Landscape).
+**TAG Logistica** es una plataforma disenada para centralizar y optimizar la operativa diaria de empresas de transporte y logistica. El sistema permite gestionar desde la asignacion de recursos hasta la trazabilidad documental y financiera de cada viaje.
 
 ---
 
-## Tecnologías Utilizadas
+## Modulos Principales
 
-*   **Frontend**: React 18 con Vite, utilizando un sistema de diseño propio basado en CSS nativo y una interfaz optimizada para largas jornadas de trabajo (Soporte para Modo Protección Visual).
-*   **Backend**: API REST robusta desarrollada en Laravel 11, garantizando integridad de datos y escalabilidad.
-*   **Base de Datos**: MySQL con soporte para eliminación lógica (Soft Deletes) y auditoría de registros.
+### 1. Viajes (Modulo Central)
+El corazon del sistema. Ciclo de vida completo con 5 estados:
+*   **Pendiente → En Curso → Finalizado → Liquidado**
+*   **Cancelado** (desde pendiente o en curso)
+*   Asignacion de recursos (choferes y unidades, propios o tercerizados)
+*   Sistema de tarifa flexible (por km, bulto, tonelada, tarifa plana)
+*   Gestion de cargas
+*   **Documento asociado (1:1)**: REMITO, CARTA_DE_PORTE o HOJA_DE_RUTA
+*   Hoja de ruta imprimible (A4)
+
+### 2. Administracion de Recursos
+*   **Unidades**: Camiones y acoplados, seguimiento VTV/Seguros
+*   **Choferes**: Legajos, contactos, control LINTI
+*   **Proveedores (Fleteros)**: Transporte tercerizado
+
+### 3. Liquidaciones
+Agrupacion de viajes para cobrar al cliente o pagar al proveedor:
+*   Wizard de creacion con filtros dinamicos
+*   Numeracion automatica: LIQ-C-XXXX (clientes), LIQ-P-XXXX (proveedores)
+*   Estados: borrador → pendiente → facturada
+*   Agregar/quitar viajes, actualizar montos, calcular total
+
+### 4. Facturacion
+*   Facturas generadas a partir de liquidaciones
+*   CRUD completo (mock por ahora)
+
+### 5. Documentacion e Impresion
+*   Hojas de ruta imprimibles
+*   Documentos por viaje (REMITO, CARTA_DE_PORTE, HOJA_DE_RUTA)
 
 ---
-*Este sistema ha sido desarrollado para transformar la complejidad logística en procesos simples, trazables y eficientes.*
+
+## Flujo de Negocio
+
+```
+Viaje → Documento → Liquidacion → Factura
+         (1:1)        (N:N)         (1:1)
+```
+
+---
+
+## Stack Tecnologico
+
+*   **Frontend**: React 19 + Vite 8, React Router DOM 7, Recharts, Lucide React
+*   **Backend**: Laravel 13, PHP 8.4
+*   **Base de datos**: SQLite (desarrollo), MySQL (produccion)
+*   **Auth**: Laravel Sanctum
+
+---
+
+## Inicio Rapido (Desarrollo)
+
+```bash
+# Backend
+cd api
+php artisan migrate:fresh --seed
+php artisan serve
+
+# Frontend
+cd client
+npm install
+npm run dev
+```
+
+O usar los scripts `.bat` en la raiz del proyecto:
+- `iniciar-backend.bat`
+- `iniciar-frontend.bat`
+- `reset-db.bat`
+
+---
+
+## Produccion
+
+**URL:** `http://logisticatag.com.ar`
+
+Ver `DEPLOYMENT_GUIDE.md` para instrucciones de despliegue.

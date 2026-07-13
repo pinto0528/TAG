@@ -1,8 +1,22 @@
-import React from 'react';
-import { mockDocsAlerts, mockChoferes as mockDrivers, mockUnidades as mockFleet } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
 import { UploadCloud, FileText, AlertCircle } from 'lucide-react';
 
 const Documentation = () => {
+  const [choferes, setChoferes] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const apiBase = import.meta.env.VITE_API_BASE_URL;
+    Promise.all([
+      fetch(`${apiBase}/choferes`).then(r => r.json()),
+      fetch(`${apiBase}/unidades`).then(r => r.json())
+    ]).then(([choferesData, unidadesData]) => {
+      setChoferes(choferesData.data || []);
+      setUnidades(unidadesData.data || []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -37,10 +51,10 @@ const Documentation = () => {
             <select className="input-field">
               <option value="">Seleccionar Entidad...</option>
               <optgroup label="Choferes">
-                {mockDrivers.map(d => <option key={`d-${d.id}`} value={d.id}>{d.name}</option>)}
+                {choferes.map(d => <option key={`d-${d.id}`} value={d.id}>{d.nombre} {d.apellido}</option>)}
               </optgroup>
               <optgroup label="Unidades">
-                {mockFleet.map(f => <option key={`f-${f.id}`} value={f.id}>{f.plate} ({f.brand})</option>)}
+                {unidades.map(f => <option key={`f-${f.id}`} value={f.id}>{f.patente} ({f.marca})</option>)}
               </optgroup>
             </select>
             <select className="input-field">
@@ -60,41 +74,11 @@ const Documentation = () => {
         <div className="card" style={{ gridColumn: 'span 2' }}>
           <h3 style={{ marginBottom: '1.5rem', fontSize: '1.125rem' }}>Vencimientos Próximos</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {mockDocsAlerts.map(alert => (
-              <div key={alert.id} style={{
-                display: 'flex', alignItems: 'center', gap: '1rem',
-                border: '1px solid var(--border-color)',
-                padding: '1rem',
-                borderRadius: 'var(--radius-md)'
-              }}>
-                <div style={{
-                  color: alert.severity === 'danger' ? 'var(--color-danger-text)' : 'var(--color-warning-text)',
-                  backgroundColor: alert.severity === 'danger' ? 'var(--color-danger-bg)' : 'var(--color-warning-bg)',
-                  padding: '0.75rem', borderRadius: '50%'
-                }}>
-                  <AlertCircle size={24} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                    <strong>{alert.type}</strong>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{alert.expiration}</span>
-                  </div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{alert.entity}</div>
-
-                  {/* Progress bar mock */}
-                  <div style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{
-                      height: '100%',
-                      width: `${Math.max(5, (alert.daysLeft / 60) * 100)}%`,
-                      backgroundColor: alert.severity === 'danger' ? 'var(--color-danger-text)' : 'var(--color-warning-text)'
-                    }}></div>
-                  </div>
-                  <div style={{ fontSize: '0.75rem', textAlign: 'right', marginTop: '0.25rem', color: 'var(--text-muted)' }}>
-                    Faltan {alert.daysLeft} días
-                  </div>
-                </div>
-              </div>
-            ))}
+            {loading ? (
+              <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>Cargando vencimientos...</div>
+            ) : (
+              <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>Sin vencimientos registrados</div>
+            )}
           </div>
         </div>
       </div>

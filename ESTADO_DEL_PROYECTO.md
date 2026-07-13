@@ -1,16 +1,20 @@
 # Estado del Proyecto - TAG Logistica
 
 **Fecha del documento:** 13 de julio de 2026
-**Ultimo commit:** `64d15e2` — 6 de mayo de 2026 (hace ~2 meses)
-**Rama activa:** `develop`
+**Entorno actual:** Desarrollo local (SQLite, PHP 8.4)
 
 ---
 
 ## 1. Resumen General
 
-TAG Logistica es un sistema de gestion integral para empresas de transporte y logistica. Permite administrar clientes, proveedores, recursos (unidades/choferes), viajes, finanzas y documentacion desde una unica plataforma.
+TAG Logistica es un sistema de gestion integral para empresas de transporte y logistica. Permite administrar clientes, proveedores, recursos (unidades/choferes), viajes, liquidaciones y documentacion desde una unica plataforma.
 
-**Produccion:** `http://logisticatag.com.ar` (DonWeb hosting compartido)
+**Flujo de negocio:**
+```
+Viaje → Documento (REMITO | CARTA_DE_PORTE | HOJA_DE_RUTA)
+  ↓ (se agrupan en liquidaciones)
+Liquidacion → Factura
+```
 
 ---
 
@@ -19,12 +23,19 @@ TAG Logistica es un sistema de gestion integral para empresas de transporte y lo
 | Capa | Tecnologia | Version |
 |------|-----------|---------|
 | Frontend | React + Vite | React 19, Vite 8 |
-| Backend | Laravel | 13 (PHP 8.3+) |
-| Base de datos | MySQL | 8.0 |
+| Backend | Laravel | 13 (PHP 8.4) |
+| Base de datos (dev) | SQLite | — |
+| Base de datos (prod) | MySQL | 8.0 |
 | Auth | Laravel Sanctum | 4.x |
 | UI Charts | Recharts | 3.8 |
 | Icons | Lucide React | 1.7 |
 | Router | React Router DOM | 7.13 |
+
+**Entorno de desarrollo local:**
+- PHP 8.4.23 en `C:\php84` (instalacion manual)
+- Composer 2.10.2 en `~/composer.phar`
+- Base de datos SQLite en `api/database/database.sqlite`
+- Scripts `.bat` para iniciar backend/frontend
 
 ---
 
@@ -32,26 +43,28 @@ TAG Logistica es un sistema de gestion integral para empresas de transporte y lo
 
 ```
 TAG/
-├── api/                    # Backend Laravel
+├── api/                         # Backend Laravel
 │   ├── app/
-│   │   ├── Enums/          # EstadoViaje
-│   │   ├── Http/Controllers/  # 11 controladores
-│   │   └── Models/         # 12 modelos Eloquent
-│   ├── config/
+│   │   ├── Enums/               # EstadoViaje (5 estados)
+│   │   ├── Http/Controllers/    # 8 controladores
+│   │   └── Models/              # 11 modelos Eloquent
 │   ├── database/
-│   │   ├── migrations/     # 18 migraciones
-│   │   └── seeders/        # DatabaseSeeder
-│   ├── routes/api.php      # Rutas API
-│   └── public/.htaccess    # Config SPA + API
-├── client/                 # Frontend React
+│   │   ├── migrations/          # 21 migraciones
+│   │   └── seeders/             # TestSeeder
+│   ├── routes/api.php           # Rutas API
+│   └── database.sqlite          # DB SQLite (dev)
+├── client/                      # Frontend React
 │   └── src/
-│       ├── pages/          # 10 paginas
-│       ├── data/           # mockData.js
+│       ├── pages/               # 10 paginas
 │       └── apiConfig.js
-├── docker-compose.yml      # Orquestacion local
-├── pre-deploy.bat          # Script de despliegue
-├── DEPLOYMENT_GUIDE.md     # Guia para DonWeb
-└── HISTORY.md              # Registro de cambios
+├── scratch/
+│   └── 00-LOGICA-DE-DATOS.md    # Diseno de datos y plan
+├── HISTORY.md                   # Registro de cambios
+├── ESTADO_DEL_PROYECTO.md       # Este archivo
+├── DEPLOYMENT_GUIDE.md          # Guia de despliegue
+├── iniciar-backend.bat          # Atajo backend
+├── iniciar-frontend.bat         # Atajo frontend
+└── reset-db.bat                 # Reset DB + seed
 ```
 
 ---
@@ -59,137 +72,165 @@ TAG/
 ## 4. Modulos Implementados
 
 ### 4.1 Viajes (Modulo Central)
-- CRUD completo con ciclo de vida
-- Estados: Pendiente, En Curso, Completado, Cancelado
+- CRUD completo con 5 estados: pendiente, en_curso, finalizado, liquidado, cancelado
+- `nro_viaje` auto-generado (secuencial)
+- `fecha_salida` default = hoy, es el unico campo required
+- Todos los demas campos son nullable
 - Asignacion de recursos (choferes, unidades propios o tercerizados)
-- Sistema de tarifas flexible (por km, bulto, tonelada, tarifa plana)
-- Gestion de cargas
-- Hoja de ruta imprimible (A4)
-- Filtros y busqueda
+- Sistema de tarifas flexible
+- Gestion de cargas (1:1)
+- Documento asociado (1:1): REMITO, CARTA_DE_PORTE, HOJA_DE_RUTA
+- Liquidaciones via pivot (N:N)
+- Gastos y Anticipos por viaje
 
 ### 4.2 Clientes y Proveedores
-- Gestion de entidades comerciales
-- Contactos y datos de comunicacion
-- Relacion con viajes y recursos
+- CRUD completo con soft delete (archivar/restaurar)
+- Relacion con viajes, liquidaciones y recursos
 
 ### 4.3 Recursos
-- **Unidades:** Camiones y acoplados, seguimiento VTV/Seguros
-- **Choferes:** Legajos, contactos, control LINTI
-- Soporte para recursos propios y tercerizados
+- **Unidades:** CRUD, soporte propios/tercerizados, seguimiento VTV/Seguros
+- **Choferes:** CRUD, legajos, control LINTI, propios/tercerizados
 
-### 4.4 Finanzas
-- **Gastos:** Registro por viaje
-- **Anticipos:** Control por viaje
-- **Facturacion:** Facturas, Ordenes de Pago, Cheques
-- Trazaabilidad completa: Remito -> Factura -> Orden de Pago -> Cheque
+### 4.4 Documentos
+- 1:1 con viaje
+- Tipos: REMITO, CARTA_DE_PORTE, HOJA_DE_RUTA
+- Estados: pendiente, conforme, rechazado
 
-### 4.5 Liquidaciones (Settlements)
+### 4.5 Liquidaciones
+- CRUD completo con soft delete
+- Numeracion automatica: LIQ-C-XXXX (clientes), LIQ-P-XXXX (proveedores)
+- Estados: borrador → pendiente → facturada
 - Wizard de creacion con filtros dinamicos
-- Rango de fechas por defecto (semana actual)
-- Previsualizacion e impresion en formato landscape
-- Totales de gastos y anticipos por viaje
-- Validacion de viajes ya liquidados
+- Agregar/quitar viajes en estado borrador
+- Actualizar monto por viaje
+- Calculo automatico de total
+- Viaje pasa a "liquidado" al pasar a estado pendiente
+- Viajes cancelados no se pueden agregar
 
-### 4.6 Documentacion
-- Generacion de hojas de ruta
-- Comprobantes de gastos y anticipos
-- Documentos de liquidacion
+### 4.6 Facturacion
+- CRUD completo (mock por ahora)
+- Referencia a liquidacion (no a viaje directamente)
 
 ### 4.7 Dashboard
-- Metricas financieras
-- Resumen operativo
+- Metricas (conectado a API)
 - Soporte para modo Proteccion Visual
 
 ---
 
 ## 5. Modelos de Base de Datos
 
-| Modelo | Descripcion |
-|--------|-------------|
-| `Viaje` | Entidad central, relaciona todo |
-| `Cliente` | Entidad comercial |
-| `Proveedor` | Transporte tercerizado |
-| `Chofer` | Personal de conduccion |
-| `Unidad` | Vehiculos (camiones/semi) |
-| `Carga` | Tipos de carga |
-| `Factura` | Documentos de facturacion |
-| `Remito` | Documentos de despacho |
-| `OrdenPago` | Órdenes de pago |
-| `Cheque` | Instrumentos de pago |
-| `Gasto` | Gastos por viaje |
-| `Anticipo` | Anticipos por viaje |
-| `User` | Usuarios del sistema |
+| Modelo | Descripcion | Relaciones clave |
+|--------|-------------|-----------------|
+| `Viaje` | Entidad central | cliente, proveedor, unidad, chofer, carga, documento, liquidaciones, gastos, anticipos |
+| `Cliente` | Entidad comercial | viajes, liquidaciones |
+| `Proveedor` | Transporte tercerizado | viajes, liquidaciones, unidades, choferes |
+| `Chofer` | Personal de conduccion | viajes, proveedor |
+| `Unidad` | Vehiculos | viajes, proveedor |
+| `Carga` | Tipos de carga (1:1 con viaje) | viaje |
+| `Documento` | Documento del viaje (1:1) | viaje |
+| `Liquidacion` | Agrupacion de viajes | cliente, proveedor, viajes (N:N), factura |
+| `Factura` | Documento de facturacion | liquidacion |
+| `Gasto` | Gastos por viaje | viaje |
+| `Anticipo` | Anticipos por viaje | viaje |
+| `User` | Usuarios del sistema | — |
 
 ---
 
-## 6. Estado de Ramas
+## 6. Endpoints API
 
-| Rama | Commits | Estado |
-|------|---------|--------|
-| `develop` | 25 | **Activa** - rama principal de desarrollo |
-| `master` | 1 | Obsoleta - solo tiene el commit inicial |
-| `resources` | 25 | Identica a develop (duplicada) |
-| `trips` | 9 | Obsoleta - subset antiguo de develop |
+```
+Viajes:
+  GET/POST        /api/viajes
+  GET/PUT/DELETE   /api/viajes/{id}
+  POST             /api/viajes/{id}/restore
 
-**Nota:** Las ramas `resources` y `trips` podrian eliminarse sin afectar el proyecto.
+Clientes:
+  GET/POST        /api/clientes
+  GET/PUT/DELETE   /api/clientes/{id}
+  POST             /api/clientes/{id}/restore
+
+Proveedores:
+  GET/POST        /api/proveedores
+  GET/PUT/DELETE   /api/proveedores/{id}
+  POST             /api/proveedores/{id}/restore
+
+Choferes:
+  GET/POST        /api/choferes
+  GET/PUT/DELETE   /api/choferes/{id}
+  POST             /api/choferes/{id}/restore
+
+Unidades:
+  GET/POST        /api/unidades
+  GET/PUT/DELETE   /api/unidades/{id}
+  POST             /api/unidades/{id}/restore
+
+Documentos:
+  GET/POST        /api/documentos
+  GET/PUT/DELETE   /api/documentos/{id}
+  POST             /api/documentos/{id}/restore
+
+Liquidaciones:
+  GET/POST        /api/liquidaciones
+  GET/PUT/DELETE   /api/liquidaciones/{id}
+  POST             /api/liquidaciones/{id}/restore
+  GET              /api/liquidaciones/{id}/viajes-disponibles
+  POST             /api/liquidaciones/{id}/viajes        (agregar viajes)
+  DELETE           /api/liquidaciones/{id}/viajes/{viajeId}
+  PUT              /api/liquidaciones/{id}/viajes/{viajeId}/monto
+  PUT              /api/liquidaciones/{id}/estado
+
+Facturas:
+  GET/POST        /api/facturas
+  GET/PUT/DELETE   /api/facturas/{id}
+  POST             /api/facturas/{id}/restore
+
+Gastos:
+  GET/POST        /api/gastos
+  GET/PUT/DELETE   /api/gastos/{id}
+  POST             /api/gastos/{id}/restore
+
+Anticipos:
+  GET/POST        /api/anticipos
+  GET/PUT/DELETE   /api/anticipos/{id}
+  POST             /api/anticipos/{id}/restore
+```
 
 ---
 
-## 7. Endpoints API
+## 7. Entorno de Desarrollo
 
-```
-GET/POST        /api/viajes
-GET/PUT/DELETE   /api/viajes/{id}
-GET/POST        /api/clientes
-GET/PUT/DELETE   /api/clientes/{id}
-GET/POST        /api/proveedores
-GET/PUT/DELETE   /api/proveedores/{id}
-GET/POST        /api/choferes
-GET/PUT/DELETE   /api/choferes/{id}
-GET/POST        /api/unidades
-GET/PUT/DELETE   /api/unidades/{id}
-GET/POST        /api/facturas
-GET/POST        /api/remitos
-GET/POST        /api/ordenes-pago
-GET/POST        /api/cheques
-GET/POST        /api/gastos
-GET/POST        /api/anticipos
-```
-
----
-
-## 8. Entorno de Desarrollo (Docker)
-
-```yaml
-Servicios:
-  db:       MySQL 8.0 (puerto 3306, user: root, pass: root)
-  api:      Laravel artisan serve (puerto 8000)
-  client:   Vite dev server (puerto 5173)
-```
-
-**Para levantar:**
+### Inicio rapido
 ```bash
-docker compose up -d
-docker compose exec api php artisan key:generate
-docker compose exec api php artisan migrate
-docker compose exec api php artisan db:seed
+# Opcion 1: doble click en los .bat
+iniciar-backend.bat    # Laravel en http://localhost:8000
+iniciar-frontend.bat   # Vite en http://localhost:5173
+
+# Opcion 2: manual
+cd api && php artisan serve
+cd client && npm run dev
 ```
 
----
+### Reset de base de datos
+```bash
+# Doble click en reset-db.bat o:
+cd api && php artisan migrate:fresh --seed --force
+```
 
-## 9. Entorno de Produccion (DonWeb)
-
-- **URL:** `http://logisticatag.com.ar`
-- **API:** `http://logisticatag.com.ar/api`
-- **Hosting:** Ferozo (compartido, sin Docker)
-- **Frontend:** Build estatico subido por FTP a `public_html`
-- **Backend:** Laravel en subcarpeta, Apache con PHP-FPM
-
-**Proceso de deploy:**
-1. Ejecutar `pre-deploy.bat`
-2. Subir `client/dist` a `public_html` por FTP
-3. Subir `api/` al servidor
-4. Configurar `.env` en el servidor
-5. Ejecutar migraciones en el servidor
+### Seeder incluido (TestSeeder)
+- 2 clientes (Transporte SRL, Distribuidora Norte)
+- 2 proveedores (Fletero Lopez, Transportes del Sur)
+- 2 choferes propios + 2 externos
+- 2 unidades propias + 2 externas
+- 1 usuario Admin (admin@tag.com / admin123)
 
 ---
+
+## 8. Pendiente / Proximo
+
+- [ ] **Frontend**: pagina en blanco al abrir (bug runtime, build compila OK)
+- [ ] **Factura**: creacion completa (actualmente mock)
+- [ ] **Dashboard**: metricas conectadas a API real
+- [ ] **Documentacion**: paginacion y filtros avanzados
+- [ ] **Deploy**: adaptar entorno para MySQL (produccion)
+- [ ] **Auth**: login real con Sanctum (actualmente bypass)
+- [ ] **Auditoria**: campos created_by/updated_by con usuario real

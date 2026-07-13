@@ -1,17 +1,27 @@
-import React from 'react';
-import { mockViajes, mockDocsAlerts } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { AlertTriangle, TrendingUp, DollarSign } from 'lucide-react';
 
 const Dashboard = ({ theme }) => {
+  const [viajes, setViajes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const apiBase = import.meta.env.VITE_API_BASE_URL;
+    fetch(`${apiBase}/viajes`)
+      .then(r => r.json())
+      .then(data => { setViajes(data.data || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
   // Financial Data Processing
-  const totalRevenue = mockViajes.reduce((acc, trip) => acc + (trip.precio || 0), 0);
-  const totalExpenses = mockViajes.reduce((acc, trip) => acc + (trip.gastos?.reduce((eAcc, e) => eAcc + e.monto, 0) || 0), 0);
+  const totalRevenue = viajes.reduce((acc, trip) => acc + (trip.precio_pactado || 0), 0);
+  const totalExpenses = viajes.reduce((acc, trip) => acc + (trip.gastos?.reduce((eAcc, e) => eAcc + e.monto, 0) || 0), 0);
   const netCashFlow = totalRevenue - totalExpenses;
 
   // Chart: Desglose de gastos
   const expMap = {};
-  mockViajes.forEach(t => {
+  viajes.forEach(t => {
     if (t.gastos) {
       t.gastos.forEach(e => {
         if (!expMap[e.tipo]) expMap[e.tipo] = 0;
@@ -23,8 +33,8 @@ const Dashboard = ({ theme }) => {
 
   // Chart: Rentabilidad por destino
   const destMap = {};
-  mockViajes.forEach(t => {
-    const margin = (t.precio || 0) - (t.gastos?.reduce((a,e) => a+e.monto, 0) || 0);
+  viajes.forEach(t => {
+    const margin = (t.precio_pactado || 0) - (t.gastos?.reduce((a,e) => a+e.monto, 0) || 0);
     if (!destMap[t.destino]) destMap[t.destino] = 0;
     destMap[t.destino] += margin;
   });
@@ -33,11 +43,11 @@ const Dashboard = ({ theme }) => {
     .sort((a,b) => b.margen - a.margen);
 
   // Chart: Estado de Viajes
-  const statusMap = { 'finalizado': 0, 'en_curso': 0, 'pendiente': 0, 'cancelado': 0 };
-  mockViajes.forEach(t => {
+  const statusMap = { 'finalizado': 0, 'en_curso': 0, 'pendiente': 0, 'liquidado': 0, 'cancelado': 0 };
+  viajes.forEach(t => {
     if (statusMap[t.estado] !== undefined) statusMap[t.estado]++;
   });
-  const statusLabels = { 'finalizado': 'Finalizado', 'en_curso': 'En curso', 'pendiente': 'Pendiente', 'cancelado': 'Cancelado' };
+  const statusLabels = { 'finalizado': 'Finalizado', 'en_curso': 'En curso', 'pendiente': 'Pendiente', 'liquidado': 'Liquidado', 'cancelado': 'Cancelado' };
   const tripsStatusData = Object.keys(statusMap)
     .filter(k => statusMap[k] > 0)
     .map(k => ({ name: statusLabels[k], value: statusMap[k], key: k }));
@@ -87,7 +97,7 @@ const Dashboard = ({ theme }) => {
         </div>
         <div className="card">
           <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><TrendingUp size={16}/> Viajes Totales</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{mockViajes.length} procesados</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{viajes.length} procesados</div>
         </div>
       </div>
 
@@ -147,19 +157,11 @@ const Dashboard = ({ theme }) => {
             <AlertTriangle size={20} color="var(--color-warning-text)" /> Panel de Riesgo
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, overflowY: 'auto' }}>
-            {mockDocsAlerts.filter(a => a.daysLeft <= 15).map(alert => (
-              <div key={alert.id} style={{
-                padding: '1rem',
-                borderLeft: '4px solid var(--color-danger-text)',
-                backgroundColor: 'var(--color-danger-bg)',
-                borderRadius: 'var(--radius-md)'
-              }}>
-                <div style={{ fontWeight: '600', color: 'var(--color-danger-text)' }}>{alert.entity}</div>
-                <div style={{ fontSize: '0.875rem', color: 'var(--color-danger-text)' }}>
-                  {alert.type} - Vence: {alert.expiration} ({alert.daysLeft} días)
-                </div>
-              </div>
-            ))}
+            {loading ? (
+              <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>Cargando...</div>
+            ) : (
+              <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>Sin alertas de vencimientos</div>
+            )}
           </div>
         </div>
 

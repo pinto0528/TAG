@@ -5,14 +5,23 @@ namespace App\Models;
 use App\Enums\EstadoViaje;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Viaje extends Model
 {
     use SoftDeletes;
+
+    protected static function booted(): void
+    {
+        static::creating(function (Viaje $viaje) {
+            if (is_null($viaje->nro_viaje)) {
+                $viaje->nro_viaje = (self::max('nro_viaje') ?? 0) + 1;
+            }
+        });
+    }
 
     protected $table = 'viajes';
 
@@ -25,6 +34,7 @@ class Viaje extends Model
     }
 
     protected $fillable = [
+        'nro_viaje',
         'unidad_id',
         'chofer_id',
         'cliente_id',
@@ -98,9 +108,16 @@ class Viaje extends Model
         return $this->hasMany(Gasto::class);
     }
 
-    public function remitos(): HasMany
+    public function documento(): HasOne
     {
-        return $this->hasMany(Remito::class);
+        return $this->hasOne(Documento::class);
+    }
+
+    public function liquidaciones(): BelongsToMany
+    {
+        return $this->belongsToMany(Liquidacion::class, 'liquidacion_viaje', 'viaje_id', 'liquidacion_id')
+            ->withPivot('monto')
+            ->withTimestamps();
     }
 
     // ---------- Auditoría ----------

@@ -15,6 +15,7 @@ const getStatusBadge = (status) => {
     case 'finalizado': return <span className="badge success">Finalizado</span>;
     case 'en_curso': return <span className="badge info">En curso</span>;
     case 'pendiente': return <span className="badge warning">Pendiente</span>;
+    case 'liquidado': return <span className="badge" style={{ backgroundColor: '#8b5cf6', color: '#fff' }}>Liquidado</span>;
     case 'cancelado': return <span className="badge danger">Cancelado</span>;
     default: return <span className="badge">{status}</span>;
   }
@@ -171,28 +172,10 @@ const ViewDocument = ({ item, type }) => {
     if (item.tipo) fields.push({ label: 'Categoría', value: item.tipo });
     if (item.metodo_pago) fields.push({ label: 'Método Pago', value: item.metodo_pago });
     if (item.notas) fields.push({ label: 'Notas', value: item.notas });
-  } else if (type === 'remito') {
+  } else if (type === 'documento') {
+    fields.push({ label: 'Tipo', value: item.tipo });
     fields.push({ label: 'Número', value: item.numero });
     fields.push({ label: 'Fecha', value: formatDateForInput(item.fecha) });
-    fields.push({ label: 'Estado', value: item.estado });
-    if (item.descripcion) fields.push({ label: 'Descripción', value: item.descripcion });
-  } else if (type === 'factura') {
-    fields.push({ label: 'Número', value: `${item.tipo} ${item.punto_venta}-${item.numero}` });
-    fields.push({ label: 'Monto Total', value: formatCurrency(item.monto_total) });
-    fields.push({ label: 'Fecha Emisión', value: formatDateForInput(item.fecha_emision) });
-    fields.push({ label: 'Estado', value: item.estado });
-  } else if (type === 'orden-pago') {
-    fields.push({ label: 'Número', value: item.numero });
-    fields.push({ label: 'Monto', value: formatCurrency(item.monto_total) });
-    fields.push({ label: 'Fecha', value: formatDateForInput(item.fecha) });
-    fields.push({ label: 'Estado', value: item.estado });
-  } else if (type === 'cheque') {
-    fields.push({ label: 'Número', value: item.numero });
-    fields.push({ label: 'Banco', value: item.banco });
-    fields.push({ label: 'Monto', value: formatCurrency(item.monto) });
-    fields.push({ label: 'Fecha Cobro', value: formatDateForInput(item.fecha_cobro) });
-    fields.push({ label: 'Beneficiario', value: item.beneficiario });
-    fields.push({ label: 'Estado', value: item.estado });
   }
 
   return (
@@ -314,40 +297,34 @@ const FinanceForm = ({ item, viajetoId, onSave, onClose }) => {
 };
 
 const DocumentationForm = ({ trip, onSave, onClose }) => {
-  const [subType, setSubType] = useState('remito');
   const [loading, setLoading] = useState(false);
-  const [selectedRemitoIds, setSelectedRemitoIds] = useState([]);
+  const existingDoc = trip.documento;
 
-  // States for different types
-  const [remitoData, setRemitoData] = useState({ viaje_id: trip.id, numero: '', fecha: new Date().toISOString().split('T')[0], descripcion: '', estado: 'conforme' });
-  const [facturaData, setFacturaData] = useState({ viaje_id: trip.id, numero: '', tipo: 'A', punto_venta: '', fecha_emision: new Date().toISOString().split('T')[0], monto_neto: 0, iva: 0, monto_total: 0, estado: 'pendiente' });
-  const [ordenPagoData, setOrdenPagoData] = useState({ factura_id: '', numero: '', fecha: new Date().toISOString().split('T')[0], monto_total: 0, estado: 'pendiente' });
-  const [chequeData, setChequeData] = useState({ orden_pago_id: '', numero: '', banco: '', fecha_emision: new Date().toISOString().split('T')[0], fecha_cobro: '', monto: 0, beneficiario: '', estado: 'pendiente' });
+  const [docData, setDocData] = useState({
+    viaje_id: trip.id,
+    tipo: existingDoc?.tipo || 'REMITO',
+    numero: existingDoc?.numero || '',
+    fecha: existingDoc?.fecha ? formatDateForInput(existingDoc.fecha) : new Date().toISOString().split('T')[0],
+    descripcion: existingDoc?.descripcion || '',
+    estado: existingDoc?.estado || 'pendiente',
+    notas: existingDoc?.notas || '',
+  });
+
+  const isEdit = !!existingDoc;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      let config = { endpoint: '', data: {} };
-      if (subType === 'remito') config = { endpoint: 'remitos', data: remitoData };
-      else if (subType === 'factura') {
-        if (selectedRemitoIds.length === 0) {
-          alert('Debes seleccionar al menos un remito para la factura');
-          setLoading(false);
-          return;
-        }
-        config = { endpoint: 'facturas', data: { ...facturaData, remito_ids: selectedRemitoIds } };
-      }
-      else if (subType === 'orden-pago') config = { endpoint: 'ordenes-pago', data: ordenPagoData };
-      else if (subType === 'cheque') config = { endpoint: 'cheques', data: chequeData };
+      const url = isEdit
+        ? `${API_BASE_URL}/documentos/${existingDoc.id}`
+        : `${API_BASE_URL}/documentos`;
+      const method = isEdit ? 'PUT' : 'POST';
 
-      const res = await fetch(`${API_BASE_URL}/${config.endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ ...config.data, viaje_id: trip.id })
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(docData),
       });
 
       if (res.ok) onSave();
@@ -359,171 +336,45 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
     finally { setLoading(false); }
   };
 
-  const freeRemitos = trip.remitos?.filter(r => !r.factura_id) || [];
-
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div>
         <label style={labelStyle}>Tipo de Documento</label>
-        <select className="input-field" value={subType} onChange={e => setSubType(e.target.value)}>
-          <option value="remito">Remito</option>
-          <option value="factura">Factura</option>
-          <option value="orden-pago">Orden de Pago</option>
-          <option value="cheque">Cheque</option>
+        <select className="input-field" value={docData.tipo} onChange={e => setDocData({ ...docData, tipo: e.target.value })}>
+          <option value="REMITO">Remito</option>
+          <option value="CARTA_DE_PORTE">Carta de Porte</option>
+          <option value="HOJA_DE_RUTA">Hoja de Ruta</option>
         </select>
       </div>
-
-      {subType === 'remito' && (
-        <>
-          <div>
-            <label style={labelStyle}>Número de Remito</label>
-            <input className="input-field" value={remitoData.numero} onChange={e => setRemitoData({ ...remitoData, numero: e.target.value })} required />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={labelStyle}>Fecha</label>
-              <input type="date" className="input-field" value={remitoData.fecha} onChange={e => setRemitoData({ ...remitoData, fecha: e.target.value })} required />
-            </div>
-            <div>
-              <label style={labelStyle}>Estado</label>
-              <select className="input-field" value={remitoData.estado} onChange={e => setRemitoData({ ...remitoData, estado: e.target.value })}>
-                <option value="pendiente">Pendiente</option>
-                <option value="conforme">Conforme</option>
-                <option value="rechazado">Rechazado</option>
-              </select>
-            </div>
-          </div>
-        </>
-      )}
-
-      {subType === 'factura' && (
-        <>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label style={labelStyle}>Remitos Asociados (Seleccionar 1 o más)</label>
-            <div style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '0.5rem', backgroundColor: 'var(--bg-body)' }}>
-              {freeRemitos.length > 0 ? freeRemitos.map(r => (
-                <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', padding: '0.2rem 0' }}>
-                  <input type="checkbox" checked={selectedRemitoIds.includes(r.id)} onChange={e => {
-                    if (e.target.checked) setSelectedRemitoIds([...selectedRemitoIds, r.id]);
-                    else setSelectedRemitoIds(selectedRemitoIds.filter(id => id !== r.id));
-                  }} />
-                  Remito Nro: {r.numero} ({formatDateForInput(r.fecha)})
-                </label>
-              )) : <span style={{ fontSize: '0.8rem', fontStyle: 'italic' }}>No hay remitos pendientes en este viaje.</span>}
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={labelStyle}>Tipo</label>
-              <select className="input-field" value={facturaData.tipo} onChange={e => setFacturaData({ ...facturaData, tipo: e.target.value })}>
-                <option>A</option><option>B</option><option>C</option>
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Punto de Venta</label>
-              <input className="input-field" value={facturaData.punto_venta} onChange={e => setFacturaData({ ...facturaData, punto_venta: e.target.value })} placeholder="0001" />
-            </div>
-          </div>
-          <div>
-            <label style={labelStyle}>Número de Factura</label>
-            <input className="input-field" value={facturaData.numero} onChange={e => setFacturaData({ ...facturaData, numero: e.target.value })} required />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={labelStyle}>Total</label>
-              <input type="number" className="input-field" value={facturaData.monto_total} onChange={e => setFacturaData({ ...facturaData, monto_total: e.target.value })} required />
-            </div>
-            <div>
-              <label style={labelStyle}>Fecha</label>
-              <input type="date" className="input-field" value={facturaData.fecha_emision} onChange={e => setFacturaData({ ...facturaData, fecha_emision: e.target.value })} required />
-            </div>
-          </div>
-        </>
-      )}
-
-      {subType === 'orden-pago' && (
-        <>
-          <div>
-            <label style={labelStyle}>Vincular Factura</label>
-            <select className="input-field" value={ordenPagoData.factura_id} onChange={e => setOrdenPagoData({ ...ordenPagoData, factura_id: e.target.value })} required>
-              <option value="">Seleccionar factura...</option>
-              {trip.remitos?.filter(r => r.factura).reduce((acc, r) => {
-                if (!acc.find(f => f.id === r.factura.id)) acc.push(r.factura);
-                return acc;
-              }, []).map(f => (
-                <option key={f.id} value={f.id}>Factura {f.numero}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label style={labelStyle}>Número de Orden</label>
-            <input className="input-field" value={ordenPagoData.numero} onChange={e => setOrdenPagoData({ ...ordenPagoData, numero: e.target.value })} required />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={labelStyle}>Monto</label>
-              <input type="number" className="input-field" value={ordenPagoData.monto_total} onChange={e => setOrdenPagoData({ ...ordenPagoData, monto_total: e.target.value })} required />
-            </div>
-            <div>
-              <label style={labelStyle}>Fecha</label>
-              <input type="date" className="input-field" value={ordenPagoData.fecha} onChange={e => setOrdenPagoData({ ...ordenPagoData, fecha: e.target.value })} required />
-            </div>
-          </div>
-          <div>
-            <label style={labelStyle}>Estado</label>
-            <select className="input-field" value={ordenPagoData.estado} onChange={e => setOrdenPagoData({ ...ordenPagoData, estado: e.target.value })}>
-              <option value="pendiente">Pendiente</option>
-              <option value="emitida">Emitida</option>
-              <option value="pagada">Pagada</option>
-            </select>
-          </div>
-        </>
-      )}
-
-      {subType === 'cheque' && (
-        <>
-          <div>
-            <label style={labelStyle}>Vincular Orden de Pago</label>
-            <select className="input-field" value={chequeData.orden_pago_id} onChange={e => setChequeData({ ...chequeData, orden_pago_id: e.target.value })} required>
-              <option value="">Seleccionar O.P...</option>
-              {trip.remitos?.filter(r => r.factura?.orden_pago).reduce((acc, r) => {
-                if (!acc.find(op => op.id === r.factura.orden_pago.id)) acc.push(r.factura.orden_pago);
-                return acc;
-              }, []).map(op => (
-                <option key={op.id} value={op.id}>OP {op.numero}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={labelStyle}>Banco</label>
-              <input className="input-field" value={chequeData.banco} onChange={e => setChequeData({ ...chequeData, banco: e.target.value })} required />
-            </div>
-            <div>
-              <label style={labelStyle}>Número</label>
-              <input className="input-field" value={chequeData.numero} onChange={e => setChequeData({ ...chequeData, numero: e.target.value })} required />
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={labelStyle}>Monto</label>
-              <input type="number" className="input-field" value={chequeData.monto} onChange={e => setChequeData({ ...chequeData, monto: e.target.value })} required />
-            </div>
-            <div>
-              <label style={labelStyle}>F. Cobro</label>
-              <input type="date" className="input-field" value={chequeData.fecha_cobro} onChange={e => setChequeData({ ...chequeData, fecha_cobro: e.target.value })} required />
-            </div>
-          </div>
-          <div>
-            <label style={labelStyle}>Beneficiario</label>
-            <input className="input-field" value={chequeData.beneficiario} onChange={e => setChequeData({ ...chequeData, beneficiario: e.target.value })} />
-          </div>
-        </>
-      )}
-
+      <div>
+        <label style={labelStyle}>Número de Documento</label>
+        <input className="input-field" value={docData.numero} onChange={e => setDocData({ ...docData, numero: e.target.value })} required placeholder="Nro. del documento (alfanumérico)" />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <div>
+          <label style={labelStyle}>Fecha</label>
+          <input type="date" className="input-field" value={docData.fecha} onChange={e => setDocData({ ...docData, fecha: e.target.value })} required />
+        </div>
+        <div>
+          <label style={labelStyle}>Estado</label>
+          <select className="input-field" value={docData.estado} onChange={e => setDocData({ ...docData, estado: e.target.value })}>
+            <option value="pendiente">Pendiente</option>
+            <option value="conforme">Conforme</option>
+            <option value="rechazado">Rechazado</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label style={labelStyle}>Descripción</label>
+        <input className="input-field" value={docData.descripcion} onChange={e => setDocData({ ...docData, descripcion: e.target.value })} placeholder="Descripción opcional" />
+      </div>
+      <div>
+        <label style={labelStyle}>Notas</label>
+        <textarea className="input-field" rows={2} value={docData.notas} onChange={e => setDocData({ ...docData, notas: e.target.value })} placeholder="Notas adicionales" />
+      </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
         <button type="button" className="outline" onClick={onClose}>Cancelar</button>
-        <button type="submit" disabled={loading}>{loading ? 'Guardando...' : `Cargar ${subType.replace('-', ' ')}`}</button>
+        <button type="submit" disabled={loading}>{loading ? 'Guardando...' : (isEdit ? 'Actualizar Documento' : 'Cargar Documento')}</button>
       </div>
     </form>
   );
@@ -1318,91 +1169,46 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
         {activeTab === 'documentacion' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h4 style={{ ...subHeaderStyle, marginBottom: 0 }}><FileText size={14} />Trazabilidad de Documentación</h4>
+              <h4 style={{ ...subHeaderStyle, marginBottom: 0 }}><FileText size={14} />Documento del Viaje</h4>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => setModalCfg({ type: 'documentation', item: null })}>+ Cargar Documento</button>
+                {!trip.documento && (
+                  <button style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => setModalCfg({ type: 'documentation', item: null })}>+ Cargar Documento</button>
+                )}
+                {trip.documento && (
+                  <button style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => setModalCfg({ type: 'documentation', item: trip.documento })}>Editar Documento</button>
+                )}
               </div>
             </div>
 
-            {trip.remitos && trip.remitos.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {trip.remitos.map(r => (
-                  <div key={r.id} style={{ ...chainContainerStyle }}>
-                    <div style={stepStyle}>
-                      <div style={stepTitleStyle}><FileText size={14} /> Remito</div>
-                      <div style={stepContentStyle}>
-                        <strong>{r.numero}</strong>
-                        <span style={{ display: 'block', fontSize: '0.7rem', opacity: 0.7, margin: '0.1rem 0' }}>{formatDateForInput(r.fecha)}</span>
-                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.2rem' }}>
-                          <span className={`badge ${r.estado === 'conforme' ? 'success' : (r.estado === 'pendiente' ? 'warning' : 'info')}`} style={{ fontSize: '0.65rem' }}>{r.estado}</span>
-                          <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: r, subType: 'remito' })} title="Ver Remito"><Search size={12} /></button>
-                          <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', 'REMITO', r, trip)} title="Imprimir Remito"><Printer size={12} /></button>
-                          <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('remitos', r.id)} title="Eliminar Remito"><Trash2 size={12} /></button>
-                        </div>
-                      </div>
-                    </div>
-                    <ArrowRight size={20} style={arrowStyle} />
-                    <div style={{ ...stepStyle, opacity: r.factura ? 1 : 0.4 }}>
-                      <div style={stepTitleStyle}><FileText size={14} /> Factura</div>
-                      <div style={stepContentStyle}>
-                        {r.factura ? (
-                          <>
-                            <strong>{r.factura.numero}</strong>
-                            <span style={{ display: 'block', fontSize: '0.7rem', opacity: 0.7, margin: '0.1rem 0' }}>{formatDateForInput(r.factura.fecha_emision)}</span>
-                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.2rem' }}>
-                              <span className={`badge ${r.factura.estado === 'pagada' ? 'success' : (r.factura.estado === 'pendiente' ? 'warning' : 'info')}`} style={{ fontSize: '0.65rem' }}>{r.factura.estado}</span>
-                              <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: r.factura, subType: 'factura' })} title="Ver Factura"><Search size={12} /></button>
-                              <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', 'FACTURA', r.factura, trip)} title="Imprimir Factura"><Printer size={12} /></button>
-                              <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('facturas', r.factura.id)} title="Eliminar Factura"><Trash2 size={12} /></button>
-                            </div>
-                          </>
-                        ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>Sin factura</span>}
-                      </div>
-                    </div>
-                    <ArrowRight size={20} style={arrowStyle} />
-                    <div style={{ ...stepStyle, opacity: r.factura?.orden_pago ? 1 : 0.4 }}>
-                      <div style={stepTitleStyle}><DollarSign size={14} /> O. Pago</div>
-                      <div style={stepContentStyle}>
-                        {r.factura?.orden_pago ? (
-                          <>
-                            <strong>{r.factura.orden_pago.numero}</strong>
-                            <span style={{ display: 'block', fontSize: '0.7rem', opacity: 0.7, margin: '0.1rem 0' }}>{formatDateForInput(r.factura.orden_pago.fecha)}</span>
-                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.2rem' }}>
-                              <span className={`badge ${r.factura.orden_pago.estado === 'pagada' ? 'success' : (r.factura.orden_pago.estado === 'pendiente' ? 'warning' : 'info')}`} style={{ fontSize: '0.65rem' }}>{r.factura.orden_pago.estado}</span>
-                              <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: r.factura.orden_pago, subType: 'orden-pago' })} title="Ver O.P."><Search size={12} /></button>
-                              <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', 'ORDEN DE PAGO', r.factura.orden_pago, trip)} title="Imprimir O.P."><Printer size={12} /></button>
-                              <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('ordenes-pago', r.factura.orden_pago.id)} title="Eliminar O.P."><Trash2 size={12} /></button>
-                            </div>
-                          </>
-                        ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>Sin orden de pago</span>}
-                      </div>
-                    </div>
-                    <ArrowRight size={20} style={arrowStyle} />
-                    <div style={{ ...stepStyle, opacity: r.factura?.orden_pago?.cheques?.length ? 1 : 0.4 }}>
-                      <div style={stepTitleStyle}><Package size={14} /> Cheques</div>
-                      <div style={stepContentStyle}>
-                        {r.factura?.orden_pago?.cheques?.length > 0 ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            {r.factura.orden_pago.cheques.map(ch => (
-                              <div key={ch.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                                <strong>{ch.numero}</strong>
-                                <span style={{ fontSize: '0.7rem', opacity: 0.7, margin: '0.1rem 0' }}>{formatDateForInput(ch.fecha_cobro || ch.fecha_emision)}</span>
-                                <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.2rem' }}>
-                                  <span className={`badge ${ch.estado === 'cobrado' ? 'success' : (ch.estado === 'pendiente' ? 'warning' : 'info')}`} style={{ fontSize: '0.65rem' }}>{ch.estado}</span>
-                                  <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => setModalCfg({ type: 'view', item: ch, subType: 'cheque' })} title="Ver Cheque"><Search size={12} /></button>
-                                  <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', 'CHEQUE', ch, trip)} title="Imprimir Cheque"><Printer size={12} /></button>
-                                  <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('cheques', ch.id)} title="Eliminar Cheque"><Trash2 size={12} /></button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : <span style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>Sin cheque</span>}
-                      </div>
+            {trip.documento ? (
+              <div style={{ ...chainContainerStyle, justifyContent: 'center' }}>
+                <div style={{ ...stepStyle, opacity: 1, minWidth: '250px' }}>
+                  <div style={stepTitleStyle}>
+                    <FileText size={14} />
+                    {trip.documento.tipo === 'REMITO' ? 'Remito' : trip.documento.tipo === 'CARTA_DE_PORTE' ? 'Carta de Porte' : 'Hoja de Ruta'}
+                  </div>
+                  <div style={stepContentStyle}>
+                    <strong style={{ fontSize: '1rem' }}>{trip.documento.numero}</strong>
+                    <span style={{ display: 'block', fontSize: '0.75rem', opacity: 0.7, margin: '0.25rem 0' }}>{formatDateForInput(trip.documento.fecha)}</span>
+                    {trip.documento.descripcion && (
+                      <span style={{ display: 'block', fontSize: '0.8rem', margin: '0.25rem 0' }}>{trip.documento.descripcion}</span>
+                    )}
+                    <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.5rem' }}>
+                      <span className={`badge ${trip.documento.estado === 'conforme' ? 'success' : (trip.documento.estado === 'pendiente' ? 'warning' : 'danger')}`} style={{ fontSize: '0.65rem' }}>
+                        {trip.documento.estado}
+                      </span>
+                      <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', trip.documento.tipo, trip.documento, trip)} title="Imprimir"><Printer size={12} /></button>
+                      <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('documentos', trip.documento.id)} title="Eliminar"><Trash2 size={12} /></button>
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
-            ) : <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sin remitos cargados.</p>}
+            ) : (
+              <div style={{ textAlign: 'center', padding: '3rem', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}>
+                <FileText size={48} style={{ opacity: 0.3, margin: '0 auto 1rem' }} />
+                <p>Sin documento asignado. Cargue un Remito, Carta de Porte u Hoja de Ruta.</p>
+              </div>
+            )}
           </div>
         )}
       </div>

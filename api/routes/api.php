@@ -9,10 +9,9 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\GastoController;
 use App\Http\Controllers\AnticipoController;
-use App\Http\Controllers\RemitoController;
+use App\Http\Controllers\DocumentoController;
 use App\Http\Controllers\FacturaController;
-use App\Http\Controllers\OrdenPagoController;
-use App\Http\Controllers\ChequeController;
+use App\Http\Controllers\LiquidacionController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -27,16 +26,23 @@ $resources = [
     'proveedores' => ProveedorController::class,
     'gastos' => GastoController::class,
     'anticipos' => AnticipoController::class,
-    'remitos' => RemitoController::class,
+    'documentos' => DocumentoController::class,
     'facturas' => FacturaController::class,
-    'ordenes-pago' => OrdenPagoController::class,
-    'cheques' => ChequeController::class,
 ];
 
 foreach ($resources as $name => $controller) {
     Route::apiResource($name, $controller);
     Route::post("/{$name}/{id}/restore", [$controller, 'restore']);
 }
+
+// Liquidaciones (with custom endpoints)
+Route::apiResource('liquidaciones', LiquidacionController::class);
+Route::post('/liquidaciones/{id}/restore', [LiquidacionController::class, 'restore']);
+Route::get('/liquidaciones/{id}/viajes-disponibles', [LiquidacionController::class, 'viajesDisponibles']);
+Route::post('/liquidaciones/{id}/viajes', [LiquidacionController::class, 'agregarViajes']);
+Route::delete('/liquidaciones/{id}/viajes/{viajeId}', [LiquidacionController::class, 'quitarViaje']);
+Route::put('/liquidaciones/{id}/viajes/{viajeId}/monto', [LiquidacionController::class, 'actualizarMonto']);
+Route::put('/liquidaciones/{id}/estado', [LiquidacionController::class, 'cambiarEstado']);
 
 // Debug & Extra routes
 Route::get('/debug-viajes', function () { 

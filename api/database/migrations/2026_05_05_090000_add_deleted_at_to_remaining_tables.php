@@ -18,9 +18,6 @@ return new class extends Migration
             'anticipos',
             'gastos',
             'facturas',
-            'remitos',
-            'ordenes_pago',
-            'cheques',
             'users'
         ];
 
@@ -45,9 +42,6 @@ return new class extends Migration
             'anticipos',
             'gastos',
             'facturas',
-            'remitos',
-            'ordenes_pago',
-            'cheques',
             'users'
         ];
 

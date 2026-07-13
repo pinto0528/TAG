@@ -19,7 +19,8 @@ class ViajeController extends Controller
             'carga',
             'gastos',
             'anticipos',
-            'remitos.factura.orden_pago.cheques'
+            'documento',
+            'liquidaciones',
         ]);
 
         if ($request->boolean('archivados')) {
@@ -95,16 +96,16 @@ class ViajeController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'cliente_id' => 'required|exists:clientes,id',
+            'cliente_id' => 'nullable|exists:clientes,id',
             'proveedor_id' => 'nullable|exists:proveedores,id',
-            'origen' => 'required|string',
-            'destino' => 'required|string',
-            'precio_pactado' => 'required|numeric|min:0',
+            'origen' => 'nullable|string',
+            'destino' => 'nullable|string',
+            'precio_pactado' => 'nullable|numeric|min:0',
             'costo_proveedor' => 'nullable|numeric|min:0',
-            'unidad_id' => 'required|exists:unidades,id',
-            'chofer_id' => 'required|exists:choferes,id',
+            'unidad_id' => 'nullable|exists:unidades,id',
+            'chofer_id' => 'nullable|exists:choferes,id',
             'km_recorrido' => 'nullable|integer',
-            'fecha_salida' => 'nullable|date',
+            'fecha_salida' => 'required|date',
             'hora_salida' => 'nullable|string',
             'fecha_llegada' => 'nullable|date',
             'hora_llegada' => 'nullable|string',
@@ -129,18 +130,18 @@ class ViajeController extends Controller
         }
 
         $viaje = Viaje::create([
-            'unidad_id' => $validated['unidad_id'],
-            'chofer_id' => $validated['chofer_id'],
-            'cliente_id' => $validated['cliente_id'],
+            'unidad_id' => $validated['unidad_id'] ?? null,
+            'chofer_id' => $validated['chofer_id'] ?? null,
+            'cliente_id' => $validated['cliente_id'] ?? null,
             'proveedor_id' => $validated['proveedor_id'] ?? null,
             'estado' => $validated['estado'],
-            'origen' => $validated['origen'],
-            'destino' => $validated['destino'],
-            'fecha_salida' => $validated['fecha_salida'] ?? null,
+            'origen' => $validated['origen'] ?? null,
+            'destino' => $validated['destino'] ?? null,
+            'fecha_salida' => $validated['fecha_salida'],
             'hora_salida' => $validated['hora_salida'] ?? null,
             'fecha_llegada' => $validated['fecha_llegada'] ?? null,
             'hora_llegada' => $validated['hora_llegada'] ?? null,
-            'precio_pactado' => $validated['precio_pactado'],
+            'precio_pactado' => $validated['precio_pactado'] ?? 0,
             'costo_proveedor' => $validated['costo_proveedor'] ?? 0,
             'km_recorrido' => $validated['km_recorrido'] ?? 0,
             'tipo_tarifa' => $validated['tipo_tarifa'] ?? null,
@@ -160,7 +161,7 @@ class ViajeController extends Controller
             ]);
         }
 
-        $viaje->load(['cliente', 'proveedor', 'unidad', 'chofer', 'carga', 'gastos', 'anticipos', 'remitos.factura.orden_pago.cheques']);
+        $viaje->load(['cliente', 'proveedor', 'unidad', 'chofer', 'carga', 'gastos', 'anticipos', 'documento', 'liquidaciones']);
 
         return response()->json($viaje, 201);
     }
@@ -168,16 +169,16 @@ class ViajeController extends Controller
     public function update(Request $request, Viaje $viaje)
     {
         $validated = $request->validate([
-            'cliente_id' => 'required|exists:clientes,id',
+            'cliente_id' => 'nullable|exists:clientes,id',
             'proveedor_id' => 'nullable|exists:proveedores,id',
-            'origen' => 'required|string',
-            'destino' => 'required|string',
-            'precio_pactado' => 'required|numeric|min:0',
+            'origen' => 'nullable|string',
+            'destino' => 'nullable|string',
+            'precio_pactado' => 'nullable|numeric|min:0',
             'costo_proveedor' => 'nullable|numeric|min:0',
-            'unidad_id' => 'required|exists:unidades,id',
-            'chofer_id' => 'required|exists:choferes,id',
+            'unidad_id' => 'nullable|exists:unidades,id',
+            'chofer_id' => 'nullable|exists:choferes,id',
             'km_recorrido' => 'nullable|integer',
-            'fecha_salida' => 'nullable|date',
+            'fecha_salida' => 'required|date',
             'hora_salida' => 'nullable|string',
             'fecha_llegada' => 'nullable|date',
             'hora_llegada' => 'nullable|string',
@@ -202,18 +203,18 @@ class ViajeController extends Controller
         }
 
         $viaje->update([
-            'unidad_id' => $validated['unidad_id'],
-            'chofer_id' => $validated['chofer_id'],
-            'cliente_id' => $validated['cliente_id'],
+            'unidad_id' => $validated['unidad_id'] ?? null,
+            'chofer_id' => $validated['chofer_id'] ?? null,
+            'cliente_id' => $validated['cliente_id'] ?? null,
             'proveedor_id' => $validated['proveedor_id'] ?? null,
             'estado' => $validated['estado'],
-            'origen' => $validated['origen'],
-            'destino' => $validated['destino'],
-            'fecha_salida' => $validated['fecha_salida'] ?? null,
+            'origen' => $validated['origen'] ?? null,
+            'destino' => $validated['destino'] ?? null,
+            'fecha_salida' => $validated['fecha_salida'],
             'hora_salida' => $validated['hora_salida'] ?? null,
             'fecha_llegada' => $validated['fecha_llegada'] ?? null,
             'hora_llegada' => $validated['hora_llegada'] ?? null,
-            'precio_pactado' => $validated['precio_pactado'],
+            'precio_pactado' => $validated['precio_pactado'] ?? 0,
             'costo_proveedor' => $validated['costo_proveedor'] ?? 0,
             'km_recorrido' => $validated['km_recorrido'] ?? 0,
             'tipo_tarifa' => $validated['tipo_tarifa'] ?? null,
@@ -240,7 +241,7 @@ class ViajeController extends Controller
         }
 
         $viaje->refresh();
-        $viaje->load(['cliente', 'proveedor', 'unidad', 'chofer', 'carga', 'gastos', 'anticipos', 'remitos.factura.orden_pago.cheques']);
+        $viaje->load(['cliente', 'proveedor', 'unidad', 'chofer', 'carga', 'gastos', 'anticipos', 'documento', 'liquidaciones']);
 
         return response()->json($viaje, 200);
     }
@@ -255,7 +256,8 @@ class ViajeController extends Controller
             'carga',
             'gastos',
             'anticipos',
-            'remitos.factura.orden_pago.cheques'
+            'documento',
+            'liquidaciones',
         ])->findOrFail($id);
         return response()->json($viaje);
     }
