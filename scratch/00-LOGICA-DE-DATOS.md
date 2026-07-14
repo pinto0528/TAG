@@ -33,6 +33,13 @@ Factura (al proveedor)
 15. **Viajes cancelados NO se pueden agregar a liquidaciones**
 16. **nro_viaje se asigna automaticamente** (secuencial)
 17. **Solo fecha_salida es required** al crear viaje, todo lo demas es nullable
+18. **Un viaje puede tener N unidades** (multi-unidad via tabla pivote `viaje_unidad`)
+19. **Gastos se clasifican**: propio/tercerizado + flag reintegro (boolean)
+20. **costo_viaje se auto-calcula** al modificar gastos o anticipos:
+    - `costo_proveedor_ajustado = costo_proveedor - totalAnticipos - propio_con_reintegro + tercerizado_con_reintegro`
+    - `costo_viaje = costo_proveedor_ajustado + propio_sin_reintegro + tercerizado_con_reintegro`
+21. **Documentos soportan archivos adjuntos** via tabla `documento_archivos`
+22. **Unidades y Choferes tienen campo `numero`** (numero interno)
 
 ## Estados
 
@@ -73,6 +80,10 @@ borrador → pendiente → facturada
 ### 1.4 Modificar tabla `facturas` (viaje_id → liquidacion_id) — COMPLETADO
 ### 1.5 Eliminar tablas (remitos, ordenes_pago, cheques) — COMPLETADO
 ### 1.6 Agregar `nro_viaje` y hacer campos nullable en viajes — COMPLETADO
+### 1.7 Agregar `numero` a unidades y choferes — COMPLETADO
+### 1.8 Multi-unidad: drop+recreate viajes, crear pivot `viaje_unidad` — COMPLETADO
+### 1.9 Tabla `documento_archivos` para archivos adjuntos — COMPLETADO
+### 1.10 Agregar `clase`+`reintegro` a gastos, `costo_viaje` a viajes — COMPLETADO
 
 ---
 
@@ -80,23 +91,27 @@ borrador → pendiente → facturada
 
 ### 2.1 Modelos nuevos — COMPLETADO
 - `app/Models/Documento.php` — 1:1 con Viaje
+- `app/Models/DocumentoArchivo.php` — archivos adjuntos de documentos
 - `app/Models/Liquidacion.php` — N:N con Viaje via pivot
 
 ### 2.2 Modelos modificados — COMPLETADO
-- `Viaje.php` — documento(), liquidaciones(), enum LIQUIDADO, auto-genera nro_viaje
+- `Viaje.php` — `unidades()` BelongsToMany, `costo_viaje` auto-calculado, `recalcularCostoViaje()`
+- `Gasto.php` — campos `clase` (propio|tercerizado), `reintegro` (boolean)
 - `Factura.php` — liquidacion() en vez de viaje()
 - `Cliente.php` — liquidaciones()
 - `Proveedor.php` — liquidaciones()
+- `Unidad.php`, `Chofer.php` — campo `numero`
 
 ### 2.3 Modelos eliminados — COMPLETADO
 - `Remito.php`, `OrdenPago.php`, `Cheque.php`
 
 ### 2.4 Controllers nuevos — COMPLETADO
-- `DocumentoController.php` — CRUD completo
+- `DocumentoController.php` — CRUD + storeArchivo/destroyArchivo
 - `LiquidacionController.php` — CRUD + viajes-disponibles, agregar/quitar viajes, actualizar monto, cambiar estado
 
 ### 2.5 Controllers modificados — COMPLETADO
-- `ViajeController.php` — campos nullable, eager loading
+- `ViajeController.php` — multi-unidad (`unidades` array), eager loading actualizado
+- `GastoController.php` — validacion clase+reintegro, auto-recalcula costo_viaje
 - `FacturaController.php` — filtrado por liquidacion
 
 ### 2.6 Controllers eliminados — COMPLETADO

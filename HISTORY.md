@@ -11,7 +11,7 @@ Sistema de gestion para una empresa de logistica y transporte. Permite la admini
 - **Liquidaciones**: Viajes agrupados para cobrar al cliente o pagar al proveedor.
 - **Facturacion**: Facturas generadas a partir de liquidaciones (mock por ahora).
 
-### 2026-07-13 — Rediseño del modelo de datos
+### 2026-07-13 — Rediseño del modelo de datos + Multi-unidad + Costo viaje
 
 #### Migraciones nuevas
 - **`2026_07_13_000001_create_documentos_table`**: Tabla documentos (1:1 con viaje)
@@ -19,49 +19,56 @@ Sistema de gestion para una empresa de logistica y transporte. Permite la admini
 - **`2026_07_13_000003_create_liquidacion_viaje_table`**: Tabla pivote con monto y timestamps
 - **`2026_07_13_000004_modify_facturas_replace_viaje_with_liquidacion`**: Facturas ahora referencian liquidaciones
 - **`2026_07_13_000005_drop_remitos_ordenes_pago_cheques_tables`**: Eliminadas tablas obsoletas
-
-#### Migraciones modificadas
-- **`2026_04_07_000005_create_viajes_table`**: Agregado `nro_viaje` (auto), todos los campos nullable excepto `fecha_salida` (default hoy)
+- **`2026_07_13_000006_add_nro_viaje_make_fields_nullable`**: `nro_viaje` auto, todos nullable excepto `fecha_salida` (default hoy)
+- **`2026_07_13_000007_add_numero_to_unidades_and_choferes`**: Campo `numero` en unidades y choferes
+- **`2026_07_13_000008_migrate_viajes_to_multi_unidad`**: Drop+recreate viajes sin `unidad_id`, crea pivot `viaje_unidad` (N:N)
+- **`2026_07_13_000009_create_documento_archivos_table`**: Archivos adjuntos a documentos
+- **`2026_07_13_000010_add_clase_reintegro_to_gastos_and_costo_viaje_to_viajes`**: `clase`+`reintegro` en gastos, `costo_viaje` en viajes
 
 #### Modelos nuevos
-- `Documento` — 1:1 con Viaje, tipos: REMITO | CARTA_DE_PORTE | HOJA_DE_RUTA
+- `Documento` — 1:1 con Viaje, tipos: REMITO | CARTA_DE_PORTE | HOJA_DE_RUTA, tiene `archivos()` (N:N)
+- `DocumentoArchivo` — archivos adjuntos de documentos (path, nombre, mime, size)
 - `Liquidacion` — N:N con Viaje via pivot, numeracion automatica LIQ-C-XXXX/LIQ-P-XXXX
 
 #### Modelos eliminados
 - `Remito`, `OrdenPago`, `Cheque`
 
 #### Modelos modificados
-- `Viaje` — relaciones `documento()`, `liquidaciones()`, enum con `LIQUIDADO`, auto-genera `nro_viaje`
+- `Viaje` — `unidades()` BelongsToMany via pivot `viaje_unidad`, accessor `unidad` backward-compatible, `costo_viaje` auto-calculado, `recalcularCostoViaje()` en boot
+- `Gasto` — campos nuevos: `clase` (propio|tercerizado), `reintegro` (boolean)
 - `Factura` — relacion `liquidacion()` en vez de `viaje()`
 - `Cliente`, `Proveedor` — relacion `liquidaciones()`
+- `Unidad`, `Chofer` — campo `numero` nuevo
 
 #### Controllers nuevos
-- `DocumentoController` — CRUD completo
+- `DocumentoController` — CRUD completo + `storeArchivo()` / `destroyArchivo()` para archivos adjuntos
 - `LiquidacionController` — CRUD + viajes-disponibles, agregar/quitar viajes, actualizar monto, cambiar estado
 
 #### Controllers eliminados
 - `RemitoController`, `OrdenPagoController`, `ChequeController`
 
 #### Controllers modificados
-- `ViajeController` — campos nullable, `fecha_salida` required, eager loading actualizado
+- `ViajeController` — multi-unidad (`unidades` array en store/update), eager loading `unidades`
+- `GastoController` — validacion `clase`+`reintegro`, auto-recalcula `costo_viaje` en CRUD
 - `FacturaController` — filtrado por liquidacion_id
 
-#### Enum actualizado
-- `EstadoViaje` — casos: PENDIENTE, EN_CURSO, FINALIZADO, LIQUIDADO, CANCELADO
+#### Rutas nuevas
+- `POST /api/documentos/{id}/archivos` — subir archivo a documento
+- `DELETE /api/documentos/{documentoId}/archivos/{archivoId}` — eliminar archivo
 
 #### Frontend
-- `Trips.jsx` — 5 estados, documento 1:1, badges actualizados
+- `Trips.jsx` — multi-unidad, gastos propio/tercerizado con reintegro, costo_viaje visible, selector de unidades
+- `Resources.jsx` — campo numero en unidades/choferes
 - `Settlements.jsx` — conectado a API real, wizard completo
 - `Billing.jsx` — conectado a API real
-- `Dashboard.jsx` — mockData reemplazado por llamadas a API
-- `Documentation.jsx` — mockData reemplazado por llamadas a API
+- `Dashboard.jsx`, `Documentation.jsx` — mockData eliminado, conectado a API
 - `mockData.js` — eliminado
 
 #### Entorno de desarrollo
 - PHP 8.4.23 instalado manualmente en `C:\php84`
 - Base de datos SQLite (dev) en `api/database/database.sqlite`
 - Seeder: `TestSeeder.php` — 2 clientes, 2 proveedores, 2 choferes propios, 2 externos, 2 unidades propias, 2 externas
-- Scripts `.bat` para iniciar backend/frontend
+- Scripts `.bat` en `bats/` para iniciar backend/frontend
 
 #### Bugs corregidos
 - `Class "App\Models\Model" not found` — falta import en todos los modelos
@@ -69,6 +76,12 @@ Sistema de gestion para una empresa de logistica y transporte. Permite la admini
 - `pivot.monto` alias — query directa a tabla pivot
 - Route model binding mismatch — `Chofer show`, `Unidad show` cambiados a `findOrFail($id)`
 - `liquidacion_viaje.created_at` missing — agregados timestamps a tabla pivot
+
+#### Fórmula de costo de viaje
+```
+costo_proveedor_ajustado = costo_proveedor - totalAnticipos - propio_con_reintegro + tercerizado_con_reintegro
+costo_viaje = costo_proveedor_ajustado + propio_sin_reintegro + tercerizado_con_reintegro
+```
 
 ### 2026-05-06
 - **[VIAJES]** Inclusion de detalles de Gastos y Anticipos en la Hoja de Ruta impresa.

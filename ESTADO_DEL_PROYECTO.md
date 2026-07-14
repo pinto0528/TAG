@@ -47,9 +47,9 @@ TAG/
 │   ├── app/
 │   │   ├── Enums/               # EstadoViaje (5 estados)
 │   │   ├── Http/Controllers/    # 8 controladores
-│   │   └── Models/              # 11 modelos Eloquent
+│   │   └── Models/              # 12 modelos Eloquent
 │   ├── database/
-│   │   ├── migrations/          # 21 migraciones
+│   │   ├── migrations/          # 31 migraciones
 │   │   └── seeders/             # TestSeeder
 │   ├── routes/api.php           # Rutas API
 │   └── database.sqlite          # DB SQLite (dev)
@@ -76,25 +76,28 @@ TAG/
 - `nro_viaje` auto-generado (secuencial)
 - `fecha_salida` default = hoy, es el unico campo required
 - Todos los demas campos son nullable
-- Asignacion de recursos (choferes, unidades propios o tercerizados)
+- Multi-unidad: N:N via tabla pivote `viaje_unidad`
+- Asignacion de recursos (choferes propios o tercerizados)
 - Sistema de tarifas flexible
 - Gestion de cargas (1:1)
-- Documento asociado (1:1): REMITO, CARTA_DE_PORTE, HOJA_DE_RUTA
+- Documento asociado (1:1): REMITO, CARTA_DE_PORTE, HOJA_DE_RUTA, con archivos adjuntos
 - Liquidaciones via pivot (N:N)
-- Gastos y Anticipos por viaje
+- Gastos por viaje: clasificacion propio/tercerizado, flag reintegro, recalculo automatico de `costo_viaje`
+- Anticipos por viaje
 
 ### 4.2 Clientes y Proveedores
 - CRUD completo con soft delete (archivar/restaurar)
 - Relacion con viajes, liquidaciones y recursos
 
 ### 4.3 Recursos
-- **Unidades:** CRUD, soporte propios/tercerizados, seguimiento VTV/Seguros
-- **Choferes:** CRUD, legajos, control LINTI, propios/tercerizados
+- **Unidades:** CRUD, soporte propios/tercerizados, multi-asignacion a viajes, campo numero interno
+- **Choferes:** CRUD, legajos, control LINTI, propios/tercerizados, campo numero interno
 
 ### 4.4 Documentos
 - 1:1 con viaje
 - Tipos: REMITO, CARTA_DE_PORTE, HOJA_DE_RUTA
 - Estados: pendiente, conforme, rechazado
+- Archivos adjuntos: tabla `documento_archivos` (N:N)
 
 ### 4.5 Liquidaciones
 - CRUD completo con soft delete
@@ -121,16 +124,17 @@ TAG/
 
 | Modelo | Descripcion | Relaciones clave |
 |--------|-------------|-----------------|
-| `Viaje` | Entidad central | cliente, proveedor, unidad, chofer, carga, documento, liquidaciones, gastos, anticipos |
+| `Viaje` | Entidad central | cliente, proveedor, unidades (N:N), chofer, carga, documento, liquidaciones, gastos, anticipos |
 | `Cliente` | Entidad comercial | viajes, liquidaciones |
 | `Proveedor` | Transporte tercerizado | viajes, liquidaciones, unidades, choferes |
-| `Chofer` | Personal de conduccion | viajes, proveedor |
-| `Unidad` | Vehiculos | viajes, proveedor |
+| `Chofer` | Personal de conduccion | viajes, proveedor (campo `numero`) |
+| `Unidad` | Vehiculos | viajes (N:N), proveedor (campo `numero`) |
 | `Carga` | Tipos de carga (1:1 con viaje) | viaje |
-| `Documento` | Documento del viaje (1:1) | viaje |
+| `Documento` | Documento del viaje (1:1) | viaje, archivos (N:N) |
+| `DocumentoArchivo` | Archivos adjuntos de documentos | documento |
 | `Liquidacion` | Agrupacion de viajes | cliente, proveedor, viajes (N:N), factura |
 | `Factura` | Documento de facturacion | liquidacion |
-| `Gasto` | Gastos por viaje | viaje |
+| `Gasto` | Gastos por viaje | viaje (campos: clase propio/tercerizado, reintegro) |
 | `Anticipo` | Anticipos por viaje | viaje |
 | `User` | Usuarios del sistema | — |
 
@@ -168,6 +172,8 @@ Documentos:
   GET/POST        /api/documentos
   GET/PUT/DELETE   /api/documentos/{id}
   POST             /api/documentos/{id}/restore
+  POST             /api/documentos/{id}/archivos        (subir archivo)
+  DELETE           /api/documentos/{id}/archivos/{archivoId}  (eliminar archivo)
 
 Liquidaciones:
   GET/POST        /api/liquidaciones
@@ -230,7 +236,8 @@ cd api && php artisan migrate:fresh --seed --force
 - [ ] **Frontend**: pagina en blanco al abrir (bug runtime, build compila OK)
 - [ ] **Factura**: creacion completa (actualmente mock)
 - [ ] **Dashboard**: metricas conectadas a API real
-- [ ] **Documentacion**: paginacion y filtros avanzados
+- [ ] **Documentos**: paginado y filtros avanzados
+- [ ] **Documentos**: upload real de archivos (backend listo, frontend pendiente)
 - [ ] **Deploy**: adaptar entorno para MySQL (produccion)
 - [ ] **Auth**: login real con Sanctum (actualmente bypass)
 - [ ] **Auditoria**: campos created_by/updated_by con usuario real

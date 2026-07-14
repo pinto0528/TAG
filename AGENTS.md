@@ -67,19 +67,23 @@ C:/php84/php.exe artisan tinker --execute="echo print_r(\Illuminate\Support\Faca
 - `EstadoViaje`: pendiente, en_curso, finalizado, liquidado, cancelado
 - Estados de liquidacion: borrador, pendiente, facturada
 - Estados de documento: pendiente, conforme, rechazado
+- Gastos: clase (propio|tercerizado), reintegro (boolean)
 
 ## Estructura de Archivos Clave
 
 ### Modelos
-- `api/app/Models/Viaje.php` — entidad central, relaciones con todo
+- `api/app/Models/Viaje.php` — entidad central, multi-unidad (N:N), costo_viaje auto-calculado
 - `api/app/Models/Liquidacion.php` — N:N con viaje via pivot
-- `api/app/Models/Documento.php` — 1:1 con viaje
+- `api/app/Models/Documento.php` — 1:1 con viaje, archivos adjuntos (N:N)
+- `api/app/Models/DocumentoArchivo.php` — archivos de documentos
+- `api/app/Models/Gasto.php` — clase (propio|tercerizado), reintegro (boolean)
 - `api/app/Models/Factura.php` — 1:1 con liquidacion
 
 ### Controllers
-- `api/app/Http/Controllers/ViajeController.php` — CRUD + eager loading completo
+- `api/app/Http/Controllers/ViajeController.php` — CRUD + multi-unidad + eager loading completo
 - `api/app/Http/Controllers/LiquidacionController.php` — CRUD + viajes-disponibles, agregar/quitar viajes, cambiar estado
-- `api/app/Http/Controllers/DocumentoController.php` — CRUD simple
+- `api/app/Http/Controllers/DocumentoController.php` — CRUD + archivos adjuntos
+- `api/app/Http/Controllers/GastoController.php` — CRUD, auto-recalcula costo_viaje
 - `api/app/Http/Controllers/FacturaController.php` — CRUD, filtrado por liquidacion
 
 ### Frontend
