@@ -36,14 +36,18 @@ class TestSeeder extends Seeder
             ['nombre' => 'Juan', 'apellido' => 'García', 'dni' => '30.111.111', 'telefono' => '11 2222-3333', 'licencia_vencimiento' => '2027-05-15', 'proveedor_id' => null],
             ['nombre' => 'Carlos', 'apellido' => 'López', 'dni' => '28.222.222', 'telefono' => '11 3333-4444', 'licencia_vencimiento' => '2027-08-20', 'proveedor_id' => null],
             ['nombre' => 'Pedro', 'apellido' => 'Ramírez', 'dni' => '32.333.333', 'telefono' => '11 4444-5555', 'licencia_vencimiento' => '2027-03-10', 'proveedor_id' => $proveedoresModels[0]->id],
+            ['nombre' => 'Miguel', 'apellido' => 'Torres', 'dni' => '34.666.666', 'telefono' => '11 7777-8888', 'licencia_vencimiento' => '2028-01-20', 'proveedor_id' => $proveedoresModels[0]->id],
             ['nombre' => 'Luis', 'apellido' => 'Fernández', 'dni' => '31.444.444', 'telefono' => '11 5555-6666', 'licencia_vencimiento' => '2027-11-25', 'proveedor_id' => $proveedoresModels[1]->id],
+            ['nombre' => 'Sergio', 'apellido' => 'Díaz', 'dni' => '33.777.777', 'telefono' => '11 8888-9999', 'licencia_vencimiento' => '2028-06-15', 'proveedor_id' => $proveedoresModels[1]->id],
         ];
 
         $unidades = [
             ['patente' => 'ABC 123', 'marca' => 'Mercedes-Benz', 'modelo' => 'Actros', 'tipo' => 'Chasis c/Acoplado', 'anio' => 2022, 'proveedor_id' => null],
             ['patente' => 'DEF 456', 'marca' => 'Scania', 'modelo' => 'R450', 'tipo' => 'Semi', 'anio' => 2023, 'proveedor_id' => null],
             ['patente' => 'GHI 789', 'marca' => 'Volvo', 'modelo' => 'FH16', 'tipo' => 'Chasis c/Acoplado', 'anio' => 2021, 'proveedor_id' => $proveedoresModels[0]->id],
+            ['patente' => 'MNO 345', 'marca' => 'Scania', 'modelo' => 'R500', 'tipo' => 'Semi', 'anio' => 2023, 'proveedor_id' => $proveedoresModels[0]->id],
             ['patente' => 'JKL 012', 'marca' => 'Iveco', 'modelo' => 'Stralis', 'tipo' => 'Semi', 'anio' => 2024, 'proveedor_id' => $proveedoresModels[1]->id],
+            ['patente' => 'PQR 678', 'marca' => 'Mercedes-Benz', 'modelo' => 'Actros', 'tipo' => 'Chasis c/Acoplado', 'anio' => 2022, 'proveedor_id' => $proveedoresModels[1]->id],
         ];
 
         collect($choferes)->each(fn($c) => Chofer::create($c));

@@ -71,45 +71,70 @@ const PrintReceipt = ({ type, item, viaje }) => {
   const displayTitle = isAnticipo ? 'COMPROBANTE DE ANTICIPO' : 'COMPROBANTE DE GASTO';
 
   return (
-    <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif', color: '#333' }}>
-      <div style={{ border: '2px solid #ccc', padding: '40px 30px 30px', borderRadius: '8px', position: 'relative' }}>
-        <div style={{ position: 'absolute', top: '15px', right: '20px', fontSize: '12px', color: '#999', fontWeight: 'bold' }}>ORIGINAL</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid #eee', paddingBottom: '20px', marginBottom: '20px' }}>
+    <div style={{ padding: '30px', fontFamily: "'Courier New', 'Consolas', monospace", color: '#333', fontSize: '13px' }}>
+      <div style={{ border: '2px solid #333', padding: '30px 25px 25px', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '12px', right: '15px', fontSize: '11px', color: '#999', fontWeight: 'bold', letterSpacing: '1px' }}>ORIGINAL</div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid #333', paddingBottom: '15px', marginBottom: '15px' }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: '24px', color: color }}>{displayTitle}</h1>
-            <p style={{ margin: '5px 0 0', fontSize: '18px', fontWeight: 'bold' }}>TAG Logística</p>
+            <h1 style={{ margin: 0, fontSize: '20px', color: color, textTransform: 'uppercase', letterSpacing: '1px' }}>{displayTitle}</h1>
+            <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: 'bold' }}>TAG Logística</p>
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div style={{ textAlign: 'right', fontSize: '12px' }}>
             <p style={{ margin: 0 }}><strong>Fecha:</strong> {formatDateForInput(item.fecha)}</p>
-            <p style={{ margin: '5px 0 0' }}><strong>Viaje Nro:</strong> {viaje.codigo_viaje}</p>
+            <p style={{ margin: '3px 0 0' }}><strong>Viaje Nro:</strong> {viaje.codigo_viaje}</p>
           </div>
         </div>
 
-        <div style={{ marginBottom: '30px', backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '4px' }}>
-          <p style={{ fontSize: '16px', marginBottom: '10px' }}><strong>Concepto:</strong> {item.concepto || item.tipo}</p>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: color, margin: '15px 0' }}>
-            {formatCurrency(item.monto)}
-          </div>
-          {item.metodo_pago && <p><strong>Método de Pago:</strong> {item.metodo_pago}</p>}
-          {item.notas && <p><strong>Observaciones:</strong> {item.notas}</p>}
-        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+          <tbody>
+            <tr>
+              <td style={{ border: '1px solid #333', padding: '6px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5', width: '140px' }}>Concepto</td>
+              <td style={{ border: '1px solid #333', padding: '6px 10px' }}>{item.concepto || item.tipo}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #333', padding: '6px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Monto</td>
+              <td style={{ border: '1px solid #333', padding: '6px 10px', fontSize: '18px', fontWeight: 'bold' }}>{formatCurrency(item.monto)}</td>
+            </tr>
+            {item.metodo_pago && (
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '6px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Método de Pago</td>
+                <td style={{ border: '1px solid #333', padding: '6px 10px' }}>{item.metodo_pago}</td>
+              </tr>
+            )}
+            {item.notas && (
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '6px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Observaciones</td>
+                <td style={{ border: '1px solid #333', padding: '6px 10px' }}>{item.notas}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
 
-        <div style={{ marginBottom: '40px' }}>
-          <h4 style={{ marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '5px' }}>Información del Viaje</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px' }}>
-            <p><strong>Chofer:</strong> {getChoferName(viaje)}</p>
-            <p><strong>Unidad:</strong> {getUnidadLabel(viaje)}</p>
-            <p><strong>Origen:</strong> {viaje.origen}</p>
-            <p><strong>Destino:</strong> {viaje.destino}</p>
-          </div>
-        </div>
+        <h4 style={{ marginBottom: '8px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Información del Viaje</h4>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px' }}>
+          <tbody>
+            <tr>
+              <td style={{ border: '1px solid #333', padding: '5px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5', width: '120px' }}>Chofer</td>
+              <td style={{ border: '1px solid #333', padding: '5px 10px' }}>{getChoferName(viaje)}</td>
+              <td style={{ border: '1px solid #333', padding: '5px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5', width: '120px' }}>Unidad</td>
+              <td style={{ border: '1px solid #333', padding: '5px 10px' }}>{getUnidadLabel(viaje)}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #333', padding: '5px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Origen</td>
+              <td style={{ border: '1px solid #333', padding: '5px 10px' }}>{viaje.origen}</td>
+              <td style={{ border: '1px solid #333', padding: '5px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Destino</td>
+              <td style={{ border: '1px solid #333', padding: '5px 10px' }}>{viaje.destino}</td>
+            </tr>
+          </tbody>
+        </table>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '80px' }}>
-          <div style={{ textAlign: 'center', width: '220px', borderTop: '1px solid #999', paddingTop: '10px' }}>
-            <p style={{ margin: 0, fontSize: '12px' }}>Firma Autorizada</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '60px' }}>
+          <div style={{ textAlign: 'center', width: '200px', borderTop: '1px solid #333', paddingTop: '8px', fontSize: '11px' }}>
+            Firma Autorizada
           </div>
-          <div style={{ textAlign: 'center', width: '220px', borderTop: '1px solid #999', paddingTop: '10px' }}>
-            <p style={{ margin: 0, fontSize: '12px' }}>Firma Recibí</p>
+          <div style={{ textAlign: 'center', width: '200px', borderTop: '1px solid #333', paddingTop: '8px', fontSize: '11px' }}>
+            Firma Recibí
           </div>
         </div>
       </div>
@@ -121,40 +146,87 @@ const PrintDocumentVoucher = ({ type, item, viaje }) => {
   const displayTitle = type ? type.toUpperCase() : 'COMPROBANTE';
 
   return (
-    <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif', color: '#333' }}>
-      <div style={{ border: '2px solid #ccc', padding: '40px 30px 30px', borderRadius: '8px', position: 'relative' }}>
-        <div style={{ position: 'absolute', top: '15px', right: '20px', fontSize: '12px', color: '#999', fontWeight: 'bold' }}>ORIGINAL</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid #eee', paddingBottom: '20px', marginBottom: '20px' }}>
+    <div style={{ padding: '30px', fontFamily: "'Courier New', 'Consolas', monospace", color: '#333', fontSize: '13px' }}>
+      <div style={{ border: '2px solid #333', padding: '30px 25px 25px', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '12px', right: '15px', fontSize: '11px', color: '#999', fontWeight: 'bold', letterSpacing: '1px' }}>ORIGINAL</div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid #333', paddingBottom: '15px', marginBottom: '15px' }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: '24px', color: 'var(--bg-primary)' }}>{displayTitle}</h1>
-            <p style={{ margin: '5px 0 0', fontSize: '18px', fontWeight: 'bold' }}>TAG Logística</p>
+            <h1 style={{ margin: 0, fontSize: '20px', color: '#333', textTransform: 'uppercase', letterSpacing: '1px' }}>{displayTitle}</h1>
+            <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: 'bold' }}>TAG Logística</p>
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div style={{ textAlign: 'right', fontSize: '12px' }}>
             <p style={{ margin: 0 }}><strong>Fecha:</strong> {formatDateForInput(item.fecha || item.fecha_emision || item.fecha_cobro)}</p>
-            <p style={{ margin: '5px 0 0' }}><strong>Viaje:</strong> {viaje.codigo_viaje}</p>
+            <p style={{ margin: '3px 0 0' }}><strong>Viaje:</strong> {viaje.codigo_viaje}</p>
           </div>
         </div>
 
-        <div style={{ marginBottom: '30px', backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '4px' }}>
-          <p><strong>Número:</strong> <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{item.numero || 'S/N'}</span></p>
-          {item.monto_total && <p style={{ fontSize: '20px', marginTop: '10px' }}><strong>Monto Total:</strong> {formatCurrency(item.monto_total)}</p>}
-          {item.monto && <p style={{ fontSize: '20px', marginTop: '10px' }}><strong>Monto:</strong> {formatCurrency(item.monto)}</p>}
-          {item.banco && <p style={{ marginTop: '10px' }}><strong>Banco:</strong> {item.banco}</p>}
-          {item.descripcion && <p style={{ marginTop: '10px' }}><strong>Descripción:</strong> {item.descripcion}</p>}
-          {item.beneficiario && <p style={{ marginTop: '10px' }}><strong>Beneficiario:</strong> {item.beneficiario}</p>}
-          {item.estado && <p style={{ marginTop: '10px' }}><strong>Estado:</strong> <span className="badge" style={{ textTransform: 'uppercase' }}>{item.estado}</span></p>}
-        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+          <tbody>
+            <tr>
+              <td style={{ border: '1px solid #333', padding: '6px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5', width: '140px' }}>Número</td>
+              <td style={{ border: '1px solid #333', padding: '6px 10px', fontSize: '15px', fontWeight: 'bold' }}>{item.numero || 'S/N'}</td>
+            </tr>
+            {item.monto_total && (
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '6px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Monto Total</td>
+                <td style={{ border: '1px solid #333', padding: '6px 10px', fontSize: '15px', fontWeight: 'bold' }}>{formatCurrency(item.monto_total)}</td>
+              </tr>
+            )}
+            {item.monto && (
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '6px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Monto</td>
+                <td style={{ border: '1px solid #333', padding: '6px 10px', fontSize: '15px', fontWeight: 'bold' }}>{formatCurrency(item.monto)}</td>
+              </tr>
+            )}
+            {item.banco && (
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '6px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Banco</td>
+                <td style={{ border: '1px solid #333', padding: '6px 10px' }}>{item.banco}</td>
+              </tr>
+            )}
+            {item.descripcion && (
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '6px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Descripción</td>
+                <td style={{ border: '1px solid #333', padding: '6px 10px' }}>{item.descripcion}</td>
+              </tr>
+            )}
+            {item.beneficiario && (
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '6px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Beneficiario</td>
+                <td style={{ border: '1px solid #333', padding: '6px 10px' }}>{item.beneficiario}</td>
+              </tr>
+            )}
+            {item.estado && (
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '6px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Estado</td>
+                <td style={{ border: '1px solid #333', padding: '6px 10px', textTransform: 'uppercase' }}>{item.estado}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
 
-        <div style={{ marginBottom: '40px' }}>
-          <h4 style={{ marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '5px' }}>Información del Viaje</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px' }}>
-            <p><strong>Cliente:</strong> {getClienteName(viaje)}</p>
-            <p><strong>Proveedor:</strong> {getProveedorName(viaje) || 'Interno'}</p>
-            <p><strong>Ruta:</strong> {viaje.origen} {' → '} {viaje.destino}</p>
-            <p><strong>Chofer:</strong> {getChoferName(viaje)}</p>
-            <p><strong>Unidad:</strong> {getUnidadLabel(viaje)}</p>
-          </div>
-        </div>
+        <h4 style={{ marginBottom: '8px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Información del Viaje</h4>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <tbody>
+            <tr>
+              <td style={{ border: '1px solid #333', padding: '5px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5', width: '120px' }}>Cliente</td>
+              <td style={{ border: '1px solid #333', padding: '5px 10px' }}>{getClienteName(viaje)}</td>
+              <td style={{ border: '1px solid #333', padding: '5px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5', width: '120px' }}>Proveedor</td>
+              <td style={{ border: '1px solid #333', padding: '5px 10px' }}>{getProveedorName(viaje) || 'Interno'}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #333', padding: '5px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Ruta</td>
+              <td style={{ border: '1px solid #333', padding: '5px 10px' }}>{viaje.origen} {' → '} {viaje.destino}</td>
+              <td style={{ border: '1px solid #333', padding: '5px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Chofer</td>
+              <td style={{ border: '1px solid #333', padding: '5px 10px' }}>{getChoferName(viaje)}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #333', padding: '5px 10px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Unidad</td>
+              <td style={{ border: '1px solid #333', padding: '5px 10px', colSpan: 3 }}>{getUnidadLabel(viaje)}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -470,59 +542,59 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
 };
 
 const PrintSelectedTable = ({ viajes }) => (
-  <div style={{ padding: '0', fontFamily: 'sans-serif', color: 'black' }}>
+  <div style={{ padding: '0', fontFamily: "'Courier New', 'Consolas', monospace", color: 'black', fontSize: '12px' }}>
     <style>{`@page { size: A4 landscape; margin: 10mm; }`}</style>
-    <div style={{ borderBottom: '2px solid black', paddingBottom: '1rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+    <div style={{ borderBottom: '2px solid black', paddingBottom: '10px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
       <div>
-        <h1 style={{ margin: 0, fontSize: '2rem', textTransform: 'uppercase' }}>TAG Logística</h1>
-        <h3 style={{ margin: '0.2rem 0 0 0', color: '#555', fontSize: '1rem' }}>Reporte General de Viajes</h3>
+        <h1 style={{ margin: 0, fontSize: '18px', textTransform: 'uppercase', letterSpacing: '1px' }}>TAG Logística</h1>
+        <h3 style={{ margin: '3px 0 0 0', color: '#555', fontSize: '11px', textTransform: 'uppercase' }}>Reporte General de Viajes</h3>
       </div>
-      <div style={{ textAlign: 'right', fontSize: '0.9rem' }}>
+      <div style={{ textAlign: 'right', fontSize: '10px' }}>
         <p style={{ margin: 0 }}>Fecha de Emisión: {new Date().toLocaleDateString('es-AR')}</p>
         <p style={{ margin: 0 }}>Total Registros: {viajes.length}</p>
       </div>
     </div>
 
-    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
       <thead>
         <tr>
-          <th style={{ borderBottom: '2px solid black', padding: '0.4rem', textAlign: 'left', whiteSpace: 'nowrap' }}>Código</th>
-          <th style={{ borderBottom: '2px solid black', padding: '0.4rem', textAlign: 'left' }}>Fechas (S / L)</th>
-          <th style={{ borderBottom: '2px solid black', padding: '0.4rem', textAlign: 'left' }}>Proveedor</th>
-          <th style={{ borderBottom: '2px solid black', padding: '0.4rem', textAlign: 'left' }}>Ruta (Km)</th>
-          <th style={{ borderBottom: '2px solid black', padding: '0.4rem', textAlign: 'left' }}>Estado</th>
-          <th style={{ borderBottom: '2px solid black', padding: '0.4rem', textAlign: 'left' }}>Asignación a Cargo</th>
-          <th style={{ borderBottom: '2px solid black', padding: '0.4rem', textAlign: 'left' }}>Info de Carga</th>
-          <th style={{ borderBottom: '2px solid black', padding: '0.4rem', textAlign: 'right' }}>Tarifa / Precio</th>
-          <th style={{ borderBottom: '2px solid black', padding: '0.4rem', textAlign: 'left' }}>Observaciones</th>
+          <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left', whiteSpace: 'nowrap' }}>Código</th>
+          <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left' }}>Fechas (S / L)</th>
+          <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left' }}>Proveedor</th>
+          <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left' }}>Ruta (Km)</th>
+          <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left' }}>Estado</th>
+          <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left' }}>Asignación a Cargo</th>
+          <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left' }}>Info de Carga</th>
+          <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'right' }}>Tarifa / Precio</th>
+          <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left' }}>Observaciones</th>
         </tr>
       </thead>
       <tbody>
-        {viajes.sort((a, b) => new Date(a.fecha_salida) - new Date(b.fecha_salida)).map(trip => (
-          <tr key={trip.id}>
-            <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem', whiteSpace: 'nowrap' }}><strong>{trip.codigo_viaje}</strong></td>
-            <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>
+        {viajes.sort((a, b) => new Date(a.fecha_salida) - new Date(b.fecha_salida)).map((trip, idx) => (
+          <tr key={trip.id} style={idx % 2 === 0 ? {} : { backgroundColor: '#f5f5f5' }}>
+            <td style={{ borderBottom: '1px solid #ccc', padding: '4px 5px', whiteSpace: 'nowrap' }}><strong>{trip.codigo_viaje}</strong></td>
+            <td style={{ borderBottom: '1px solid #ccc', padding: '4px 5px' }}>
               Sal: {trip.fecha_salida ? formatDateDisplay(trip.fecha_salida) : 'S/D'} {trip.hora_salida ? trip.hora_salida.substring(11, 16) : ''}<br />
               Lle: {trip.fecha_llegada ? formatDateDisplay(trip.fecha_llegada) : 'S/D'} {trip.hora_llegada ? trip.hora_llegada.substring(11, 16) : ''}
             </td>
-            <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{getProveedorName(trip)}</td>
-            <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{trip.origen} {' → '} {trip.destino}</td>
-            <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{trip.estado.toUpperCase()}</td>
-            <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>
+            <td style={{ borderBottom: '1px solid #ccc', padding: '4px 5px' }}>{getProveedorName(trip)}</td>
+            <td style={{ borderBottom: '1px solid #ccc', padding: '4px 5px' }}>{trip.origen} {' → '} {trip.destino}</td>
+            <td style={{ borderBottom: '1px solid #ccc', padding: '4px 5px', textTransform: 'uppercase' }}>{trip.estado}</td>
+            <td style={{ borderBottom: '1px solid #ccc', padding: '4px 5px' }}>
               {trip.proveedor_id ? `[Tercerizado] ${getProveedorName(trip)}` : `[Propio] Chofer: ${getChoferName(trip)}`}
-              {!trip.proveedor_id && <><br /><span style={{ color: '#555', fontSize: '0.65rem' }}>{getUnidadLabel(trip)}</span></>}
+              {!trip.proveedor_id && <><br /><span style={{ color: '#555', fontSize: '9px' }}>{getUnidadLabel(trip)}</span></>}
             </td>
-            <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>
+            <td style={{ borderBottom: '1px solid #ccc', padding: '4px 5px' }}>
               {trip.carga?.tipo_carga || 'General'}
-              <span style={{ display: 'block', color: '#555', fontSize: '0.65rem' }}>
+              <span style={{ display: 'block', color: '#555', fontSize: '9px' }}>
                 P: {trip.carga?.peso_kg ? `${trip.carga.peso_kg}kg` : 'S/D'} | B: {trip.carga?.cantidad_bultos || 'S/D'}
               </span>
             </td>
-            <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem', textAlign: 'right' }}>
+            <td style={{ borderBottom: '1px solid #ccc', padding: '4px 5px', textAlign: 'right' }}>
               <div style={{ fontWeight: 'bold' }}>{formatCurrency(trip.precio_pactado)}</div>
-              <div style={{ fontSize: '0.6rem', color: '#666' }}>{trip.tarifa_base} x {formatCurrency(trip.tarifa_valor)}</div>
+              <div style={{ fontSize: '9px', color: '#666' }}>{trip.tarifa_base} x {formatCurrency(trip.tarifa_valor)}</div>
             </td>
-            <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem', maxWidth: '200px', wordWrap: 'break-word' }}>{trip.observaciones || '—'}</td>
+            <td style={{ borderBottom: '1px solid #ccc', padding: '4px 5px', maxWidth: '150px', wordWrap: 'break-word' }}>{trip.observaciones || '—'}</td>
           </tr>
         ))}
       </tbody>
@@ -531,101 +603,147 @@ const PrintSelectedTable = ({ viajes }) => (
 );
 
 const PrintTripSheet = ({ viaje }) => (
-  <div style={{ padding: '0', fontFamily: 'sans-serif', color: 'black', minHeight: '100vh' }}>
-    <style>{`@page { size: A4 portrait; margin: 15mm; }`}</style>
-    <div style={{ border: '2px solid black', padding: '2rem', borderRadius: '8px' }}>
-      <div style={{ borderBottom: '2px solid black', paddingBottom: '1rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+  <div style={{ padding: '0', fontFamily: "'Courier New', 'Consolas', monospace", color: 'black', minHeight: '100vh', fontSize: '12px' }}>
+    <style>{`@page { size: A4 portrait; margin: 12mm; }`}</style>
+    <div style={{ border: '2px solid #333', padding: '20px', position: 'relative' }}>
+      <div style={{ borderBottom: '2px solid #333', paddingBottom: '10px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '2rem', textTransform: 'uppercase' }}>TAG Logística</h1>
-          <h2 style={{ margin: '0.2rem 0 0 0', textTransform: 'uppercase', letterSpacing: '2px' }}>Hoja de Ruta / Viaje</h2>
+          <h1 style={{ margin: 0, fontSize: '18px', textTransform: 'uppercase', letterSpacing: '1px' }}>TAG Logística</h1>
+          <h2 style={{ margin: '3px 0 0 0', textTransform: 'uppercase', letterSpacing: '2px', fontSize: '13px' }}>Hoja de Ruta / Viaje</h2>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Nº {viaje.codigo_viaje}</h2>
-          <p style={{ margin: 0, textTransform: 'uppercase', fontWeight: 'bold' }}>{viaje.estado}</p>
+          <h2 style={{ margin: 0, fontSize: '16px' }}>Nº {viaje.codigo_viaje}</h2>
+          <p style={{ margin: 0, textTransform: 'uppercase', fontWeight: 'bold', fontSize: '11px' }}>{viaje.estado}</p>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
         <div>
-          <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Logística</h3>
-          <p style={{ margin: '0 0 0.3rem 0' }}><strong>Origen:</strong> {viaje.origen}</p>
-          <p style={{ margin: '0 0 0.3rem 0' }}><strong>Destino:</strong> {viaje.destino}</p>
-          <p style={{ margin: '0.5rem 0 0.3rem 0' }}><strong>Fecha Salida:</strong> {viaje.fecha_salida ? formatDateDisplay(viaje.fecha_salida) : 'S/D'} {viaje.hora_salida ? viaje.hora_salida.substring(11, 16) : ''}</p>
-          <p style={{ margin: '0 0 0.3rem 0' }}><strong>Fecha Llegada:</strong> {viaje.fecha_llegada ? formatDateDisplay(viaje.fecha_llegada) : 'S/D'} {viaje.hora_llegada ? viaje.hora_llegada.substring(11, 16) : ''}</p>
+          <h3 style={{ borderBottom: '1px solid #333', paddingBottom: '3px', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Logística</h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+            <tbody>
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold', backgroundColor: '#e5e5e5', width: '100px' }}>Origen</td>
+                <td style={{ border: '1px solid #333', padding: '4px 8px' }}>{viaje.origen}</td>
+              </tr>
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Destino</td>
+                <td style={{ border: '1px solid #333', padding: '4px 8px' }}>{viaje.destino}</td>
+              </tr>
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Fecha Salida</td>
+                <td style={{ border: '1px solid #333', padding: '4px 8px' }}>{viaje.fecha_salida ? formatDateDisplay(viaje.fecha_salida) : 'S/D'} {viaje.hora_salida ? viaje.hora_salida.substring(11, 16) : ''}</td>
+              </tr>
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Fecha Llegada</td>
+                <td style={{ border: '1px solid #333', padding: '4px 8px' }}>{viaje.fecha_llegada ? formatDateDisplay(viaje.fecha_llegada) : 'S/D'} {viaje.hora_llegada ? viaje.hora_llegada.substring(11, 16) : ''}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         <div>
-          <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Asignación</h3>
-          <p style={{ margin: '0 0 0.3rem 0' }}><strong>Cliente:</strong> {getClienteName(viaje)}</p>
-          <p style={{ margin: '0 0 0.3rem 0' }}><strong>Transporte:</strong> {getProveedorName(viaje) || 'Flota Propia'}</p>
-          <p style={{ margin: '0.5rem 0 0.3rem 0' }}><strong>Unidad Asignada:</strong> {getUnidadLabel(viaje)}</p>
-          <p style={{ margin: '0 0 0.3rem 0' }}><strong>Chofer:</strong> {getChoferName(viaje)}</p>
+          <h3 style={{ borderBottom: '1px solid #333', paddingBottom: '3px', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Asignación</h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+            <tbody>
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold', backgroundColor: '#e5e5e5', width: '100px' }}>Cliente</td>
+                <td style={{ border: '1px solid #333', padding: '4px 8px' }}>{getClienteName(viaje)}</td>
+              </tr>
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Transporte</td>
+                <td style={{ border: '1px solid #333', padding: '4px 8px' }}>{getProveedorName(viaje) || 'Flota Propia'}</td>
+              </tr>
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Unidad</td>
+                <td style={{ border: '1px solid #333', padding: '4px 8px' }}>{getUnidadLabel(viaje)}</td>
+              </tr>
+              <tr>
+                <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold', backgroundColor: '#e5e5e5' }}>Chofer</td>
+                <td style={{ border: '1px solid #333', padding: '4px 8px' }}>{getChoferName(viaje)}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Detalles de Carga y Tarifa</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
-        <p style={{ margin: 0 }}><strong>Tipo:</strong> {viaje.carga?.tipo_carga || 'General'}</p>
-        <p style={{ margin: 0 }}><strong>Peso:</strong> {viaje.carga?.peso_kg ? `${viaje.carga.peso_kg} Kg` : '—'}</p>
-        <p style={{ margin: 0 }}><strong>Bultos:</strong> {viaje.carga?.cantidad_bultos || '—'}</p>
-        <p style={{ margin: 0 }}><strong>Refrigeración:</strong> {viaje.carga?.requiere_refrigeracion ? 'SÍ' : 'NO'}</p>
-      </div>
-      <div style={{ backgroundColor: '#f5f5f5', padding: '0.75rem', borderRadius: '4px', marginBottom: '1.5rem' }}>
-        <p style={{ margin: 0 }}><strong>Esquema de Tarifa:</strong> {UNIDAD_MEDIDA_LABELS[viaje.tipo_tarifa] || 'Tarifa pactada'}</p>
-        <p style={{ margin: '0.25rem 0 0 0', fontSize: '1.1rem' }}>
-          <strong>Valor:</strong> {formatCurrency(viaje.tarifa_valor)} x {viaje.tarifa_base} = <span style={{ fontWeight: 'bold' }}>{formatCurrency(viaje.precio_pactado)}</span>
-        </p>
-      </div>
+      <h3 style={{ borderBottom: '1px solid #333', paddingBottom: '3px', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Detalles de Carga y Tarifa</h3>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', fontSize: '11px' }}>
+        <tbody>
+          <tr>
+            <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold', backgroundColor: '#e5e5e5', width: '100px' }}>Tipo</td>
+            <td style={{ border: '1px solid #333', padding: '4px 8px' }}>{viaje.carga?.tipo_carga || 'General'}</td>
+            <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold', backgroundColor: '#e5e5e5', width: '80px' }}>Peso</td>
+            <td style={{ border: '1px solid #333', padding: '4px 8px' }}>{viaje.carga?.peso_kg ? `${viaje.carga.peso_kg} Kg` : '—'}</td>
+            <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold', backgroundColor: '#e5e5e5', width: '70px' }}>Bultos</td>
+            <td style={{ border: '1px solid #333', padding: '4px 8px' }}>{viaje.carga?.cantidad_bultos || '—'}</td>
+            <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold', backgroundColor: '#e5e5e5', width: '90px' }}>Refrig.</td>
+            <td style={{ border: '1px solid #333', padding: '4px 8px' }}>{viaje.carga?.requiere_refrigeracion ? 'SÍ' : 'NO'}</td>
+          </tr>
+        </tbody>
+      </table>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '11px' }}>
+        <tbody>
+          <tr>
+            <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold', backgroundColor: '#e5e5e5', width: '120px' }}>Esquema Tarifa</td>
+            <td style={{ border: '1px solid #333', padding: '4px 8px' }}>{UNIDAD_MEDIDA_LABELS[viaje.tipo_tarifa] || 'Tarifa pactada'}</td>
+            <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold', backgroundColor: '#e5e5e5', width: '100px' }}>Cálculo</td>
+            <td style={{ border: '1px solid #333', padding: '4px 8px', fontWeight: 'bold' }}>{formatCurrency(viaje.tarifa_valor)} x {viaje.tarifa_base} = {formatCurrency(viaje.precio_pactado)}</td>
+          </tr>
+        </tbody>
+      </table>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
         <div>
-          <h4 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Gastos de Viaje</h4>
-          <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
+          <h4 style={{ borderBottom: '1px solid #333', paddingBottom: '3px', marginBottom: '5px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Gastos de Viaje</h4>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #ccc' }}>
-                <th style={{ textAlign: 'left', padding: '0.2rem' }}>Concepto</th>
-                <th style={{ textAlign: 'right', padding: '0.2rem' }}>Monto</th>
+              <tr>
+                <th style={{ borderBottom: '1px solid #333', padding: '3px 5px', textAlign: 'left', backgroundColor: '#e5e5e5' }}>Concepto</th>
+                <th style={{ borderBottom: '1px solid #333', padding: '3px 5px', textAlign: 'right', backgroundColor: '#e5e5e5' }}>Monto</th>
               </tr>
             </thead>
             <tbody>
               {viaje.gastos?.length > 0 ? viaje.gastos.map(g => (
-                <tr key={g.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '0.2rem' }}>{g.concepto || g.tipo}</td>
-                  <td style={{ padding: '0.2rem', textAlign: 'right' }}>{formatCurrency(g.monto)}</td>
+                <tr key={g.id}>
+                  <td style={{ borderBottom: '1px solid #ccc', padding: '3px 5px' }}>{g.concepto || g.tipo}</td>
+                  <td style={{ borderBottom: '1px solid #ccc', padding: '3px 5px', textAlign: 'right' }}>{formatCurrency(g.monto)}</td>
                 </tr>
-              )) : <tr><td colSpan="2" style={{ color: '#999', padding: '0.2rem' }}>Sin gastos registrados</td></tr>}
+              )) : <tr><td colSpan="2" style={{ color: '#999', padding: '3px 5px', fontStyle: 'italic' }}>Sin gastos registrados</td></tr>}
             </tbody>
           </table>
         </div>
         <div>
-          <h4 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Anticipos Entregados</h4>
-          <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
+          <h4 style={{ borderBottom: '1px solid #333', paddingBottom: '3px', marginBottom: '5px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Anticipos Entregados</h4>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #ccc' }}>
-                <th style={{ textAlign: 'left', padding: '0.2rem' }}>Concepto</th>
-                <th style={{ textAlign: 'right', padding: '0.2rem' }}>Monto</th>
+              <tr>
+                <th style={{ borderBottom: '1px solid #333', padding: '3px 5px', textAlign: 'left', backgroundColor: '#e5e5e5' }}>Concepto</th>
+                <th style={{ borderBottom: '1px solid #333', padding: '3px 5px', textAlign: 'right', backgroundColor: '#e5e5e5' }}>Monto</th>
               </tr>
             </thead>
             <tbody>
               {viaje.anticipos?.length > 0 ? viaje.anticipos.map(a => (
-                <tr key={a.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '0.2rem' }}>{a.concepto || a.metodo_pago}</td>
-                  <td style={{ padding: '0.2rem', textAlign: 'right' }}>{formatCurrency(a.monto)}</td>
+                <tr key={a.id}>
+                  <td style={{ borderBottom: '1px solid #ccc', padding: '3px 5px' }}>{a.concepto || a.metodo_pago}</td>
+                  <td style={{ borderBottom: '1px solid #ccc', padding: '3px 5px', textAlign: 'right' }}>{formatCurrency(a.monto)}</td>
                 </tr>
-              )) : <tr><td colSpan="2" style={{ color: '#999', padding: '0.2rem' }}>Sin anticipos registrados</td></tr>}
+              )) : <tr><td colSpan="2" style={{ color: '#999', padding: '3px 5px', fontStyle: 'italic' }}>Sin anticipos registrados</td></tr>}
             </tbody>
           </table>
         </div>
       </div>
 
-      <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '0.5rem' }}>Observaciones e Instrucciones</h3>
-      <p style={{ minHeight: '40px', fontSize: '0.9rem' }}>{viaje.observaciones || 'Sin indicaciones especiales.'}</p>
+      <h3 style={{ borderBottom: '1px solid #333', paddingBottom: '3px', marginBottom: '5px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Observaciones e Instrucciones</h3>
+      <div style={{ minHeight: '35px', border: '1px solid #ccc', padding: '6px 8px', fontSize: '11px', marginBottom: '20px' }}>
+        {viaje.observaciones || 'Sin indicaciones especiales.'}
+      </div>
 
-      <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'space-around', paddingTop: '1rem' }}>
-        <div style={{ textAlign: 'center', width: '200px' }}>
-          <div style={{ borderTop: '1px solid black', paddingTop: '0.5rem' }}>Firma Chofer / Encargado</div>
+      <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '40px' }}>
+        <div style={{ textAlign: 'center', width: '180px', borderTop: '1px solid #333', paddingTop: '6px', fontSize: '10px' }}>
+          Firma Chofer / Encargado
         </div>
-        <div style={{ textAlign: 'center', width: '200px' }}>
-          <div style={{ borderTop: '1px solid black', paddingTop: '0.5rem' }}>Sello Operaciones / TAG</div>
+        <div style={{ textAlign: 'center', width: '180px', borderTop: '1px solid #333', paddingTop: '6px', fontSize: '10px' }}>
+          Sello Operaciones / TAG
         </div>
       </div>
     </div>
@@ -776,7 +894,7 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
               <div>
                 <label style={labelStyle}>Unidades</label>
-                {filteredUnidades.length === 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sin unidades disponibles</span>}
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {unidadesRows.map((val, idx) => {
                     const usedIds = unidadesRows.filter((v, i) => i !== idx && v !== null);

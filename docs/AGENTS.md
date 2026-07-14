@@ -40,6 +40,11 @@ C:/php84/php.exe artisan migrate:fresh --seed --force
 C:/php84/php.exe artisan tinker --execute="echo print_r(\Illuminate\Support\Facades\Schema::getColumnListing('viajes'), true);"
 ```
 
+## Reglas Git
+
+- **NO commitear ni pushear** a menos que el usuario lo indique explícitamente.
+- Siempre preguntar antes de hacer commit.
+
 ## Convenciones
 
 ### PHP / Laravel

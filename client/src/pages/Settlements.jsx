@@ -45,64 +45,64 @@ const PrintLiquidacionSheet = ({ data }) => {
     if (!data) return null;
     const viajes = data.viajes || [];
     return (
-        <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', color: '#000', backgroundColor: '#fff', minHeight: '100vh' }}>
+        <div style={{ padding: '20px', fontFamily: "'Courier New', 'Consolas', monospace", color: '#000', backgroundColor: '#fff', minHeight: '100vh', fontSize: '12px' }}>
             <style>
                 {`@media print { @page { size: landscape; margin: 10mm; } }`}
             </style>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #333', paddingBottom: '15px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #333', paddingBottom: '10px', marginBottom: '15px' }}>
                 <div>
-                    <h1 style={{ margin: 0, fontSize: '24px', textTransform: 'uppercase' }}>LIQUIDACIÓN DE {data.tipo}</h1>
-                    <h2 style={{ margin: '5px 0 0 0', fontSize: '18px', color: '#555' }}>TAG Logística S.A.</h2>
+                    <h1 style={{ margin: 0, fontSize: '18px', textTransform: 'uppercase', letterSpacing: '1px' }}>LIQUIDACIÓN DE {data.tipo}</h1>
+                    <h2 style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#555' }}>TAG Logística S.A.</h2>
                 </div>
-                <div style={{ textAlign: 'right', fontSize: '14px' }}>
-                    <p style={{ margin: '0 0 5px 0' }}><strong>Fecha Emisión:</strong> {formatDate(data.fecha_emision)}</p>
-                    <p style={{ margin: '0 0 5px 0' }}><strong>Liquidación Nro:</strong> {data.numero}</p>
+                <div style={{ textAlign: 'right', fontSize: '11px' }}>
+                    <p style={{ margin: '0 0 3px 0' }}><strong>Fecha Emisión:</strong> {formatDate(data.fecha_emision)}</p>
+                    <p style={{ margin: '0 0 3px 0' }}><strong>Liquidación Nro:</strong> {data.numero}</p>
                     <p style={{ margin: 0 }}><strong>{data.tipo === 'cliente' ? 'Cliente' : 'Proveedor'}:</strong> {getEntityName(data)}</p>
                 </div>
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '30px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', marginBottom: '20px' }}>
                 <thead>
-                    <tr style={{ backgroundColor: '#f0f0f0', borderBottom: '1px solid #ccc' }}>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Fecha</th>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Código</th>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Origen / Destino</th>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Chofer / Unidad</th>
-                        <th style={{ padding: '8px', textAlign: 'right' }}>Gastos</th>
-                        <th style={{ padding: '8px', textAlign: 'right' }}>Anticipos</th>
-                        <th style={{ padding: '8px', textAlign: 'right' }}>Monto</th>
+                    <tr>
+                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Fecha</th>
+                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Código</th>
+                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Origen / Destino</th>
+                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Chofer / Unidad</th>
+                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Gastos</th>
+                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Anticipos</th>
+                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Monto</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {viajes.map((v) => (
-                        <tr key={v.id} style={{ borderBottom: '1px solid #eee' }}>
-                            <td style={{ padding: '8px' }}>{formatDate(v.fecha_salida)}</td>
-                            <td style={{ padding: '8px' }}>{getViajeCodigo(v)}</td>
-                            <td style={{ padding: '8px' }}>{v.origen} → {v.destino}</td>
-                            <td style={{ padding: '8px' }}>{v.chofer?.nombre} {v.chofer?.apellido} ({v.unidad?.patente})</td>
-                            <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(v.total_gastos)}</td>
-                            <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(v.total_anticipos)}</td>
-                            <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(v.pivot?.monto ?? v.precio_pactado)}</td>
+                    {viajes.map((v, idx) => (
+                        <tr key={v.id} style={idx % 2 === 0 ? {} : { backgroundColor: '#f5f5f5' }}>
+                            <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{formatDate(v.fecha_salida)}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', fontWeight: 'bold' }}>{getViajeCodigo(v)}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.origen} → {v.destino}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.chofer?.nombre} {v.chofer?.apellido} ({v.unidad?.patente})</td>
+                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right' }}>{formatCurrency(v.total_gastos)}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right' }}>{formatCurrency(v.total_anticipos)}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(v.pivot?.monto ?? v.precio_pactado)}</td>
                         </tr>
                     ))}
                 </tbody>
                 <tfoot>
-                    <tr style={{ fontWeight: 'bold', fontSize: '14px', borderTop: '2px solid #333' }}>
-                        <td colSpan="6" style={{ padding: '12px 8px', textAlign: 'right' }}>TOTAL A LIQUIDAR:</td>
-                        <td style={{ padding: '12px 8px', textAlign: 'right' }}>{formatCurrency(data.total)}</td>
+                    <tr>
+                        <td colSpan="6" style={{ border: '1px solid #333', padding: '8px', textAlign: 'right', fontWeight: 'bold', backgroundColor: '#e5e5e5', fontSize: '12px', textTransform: 'uppercase' }}>TOTAL A LIQUIDAR:</td>
+                        <td style={{ border: '1px solid #333', padding: '8px', textAlign: 'right', fontWeight: 'bold', fontSize: '14px' }}>{formatCurrency(data.total)}</td>
                     </tr>
                 </tfoot>
             </table>
 
-            <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '80px' }}>
-                <div style={{ textAlign: 'center', width: '200px', borderTop: '1px solid #333', paddingTop: '10px', fontSize: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '50px' }}>
+                <div style={{ textAlign: 'center', width: '180px', borderTop: '1px solid #333', paddingTop: '8px', fontSize: '10px' }}>
                     <p style={{ margin: 0 }}>Emitido por</p>
-                    <p style={{ margin: '5px 0 0 0', color: '#666' }}>TAG Logística</p>
+                    <p style={{ margin: '3px 0 0 0', color: '#666' }}>TAG Logística</p>
                 </div>
-                <div style={{ textAlign: 'center', width: '200px', borderTop: '1px solid #333', paddingTop: '10px', fontSize: '12px' }}>
+                <div style={{ textAlign: 'center', width: '180px', borderTop: '1px solid #333', paddingTop: '8px', fontSize: '10px' }}>
                     <p style={{ margin: 0 }}>Recibí Conforme</p>
-                    <p style={{ margin: '5px 0 0 0', color: '#666' }}>Firma y Aclaración</p>
+                    <p style={{ margin: '3px 0 0 0', color: '#666' }}>Firma y Aclaración</p>
                 </div>
             </div>
         </div>

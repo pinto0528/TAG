@@ -244,6 +244,29 @@ button.outline:hover {
   }
   .print-only {
     display: block !important;
+    font-family: 'Courier New', 'Consolas', monospace;
+    color: black;
+  }
+  .print-only table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  .print-only th,
+  .print-only td {
+    border: 1px solid #333;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8rem;
+    vertical-align: top;
+  }
+  .print-only th {
+    background-color: #e5e5e5;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.03em;
+  }
+  .print-only tr:nth-child(even) {
+    background-color: #f9f9f9;
   }
   body {
     background: white;
