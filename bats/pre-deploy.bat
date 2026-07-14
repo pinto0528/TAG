@@ -6,7 +6,7 @@ echo.
 
 :: 1. Build Frontend
 echo [1/3] Compilando Frontend (React)...
-cd client
+cd /d "%~dp0..\client"
 call npm install
 call npm run build
 if %errorlevel% neq 0 (
@@ -15,16 +15,14 @@ if %errorlevel% neq 0 (
     pause
     exit /b %errorlevel%
 )
-cd ..
 
 :: 2. Limpiar cache Laravel
 echo [2/3] Limpiando caches de Laravel (API)...
-cd api
+cd /d "%~dp0..\api"
 php artisan config:clear
 php artisan cache:clear
 php artisan view:clear
 php artisan route:clear
-cd ..
 
 echo.
 echo [3/3] LISTO PARA SUBIR.

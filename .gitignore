@@ -11,3 +11,4 @@ release.zip
 migrations.zipapi/storage/framework/views/
 api/storage/
 *.sqlite
+nul

@@ -390,7 +390,7 @@ const LiquidacionWizard = ({ onClose, onSave }) => {
                                                 <th>Fecha</th>
                                                 <th>Origen - Destino</th>
                                                 <th>Chofer / Unidad</th>
-                                                <th style={{ textAlign: 'right' }}>Precio Pactado</th>
+                                                <th style={{ textAlign: 'right' }}>Precio del Viaje</th>
                                                 <th style={{ textAlign: 'right' }}>Monto</th>
                                             </tr>
                                         </thead>

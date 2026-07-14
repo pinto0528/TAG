@@ -25,7 +25,7 @@ Factura (al proveedor)
 7. **Se quitan Ordenes de Pago y Cheques por ahora**
 8. **Liquidacion es proceso MANUAL** - el usuario selecciona viajes
 9. **Solo se puede agregar viajes a liquidacion en estado BORRADOR**
-10. **Monto por viaje: precio_pactado, editable**
+10. **Monto por viaje: precio del viaje, editable**
 11. **Empezar de cero** - no migrar datos viejos
 12. **Numeracion separada por tipo**: LIQ-C-0001 (clientes), LIQ-P-0001 (proveedores)
 13. **Liquidaciones se pueden archivar/restaurar** (soft delete)

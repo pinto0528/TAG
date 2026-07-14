@@ -730,33 +730,31 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 50, overflowY: 'auto', padding: '2rem 0',
     }}>
-      <div className="card" style={{ width: 'min(960px, calc(100vw - 2rem))', margin: '0 auto' }}>
+      <div className="card" style={{ width: 'min(1200px, calc(100vw - 2rem))', margin: '0 auto' }}>
         <h3 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>{title}</h3>
-        <form style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }} onSubmit={(e) => { e.preventDefault(); onClose(); }}>
+        <form style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }} onSubmit={(e) => { e.preventDefault(); onClose(); }}>
 
-          {/* — Sección: Datos Principales — */}
-          <fieldset style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-            <legend style={{ fontSize: '0.875rem', fontWeight: 600, padding: '0 0.5rem', color: 'var(--text-muted)' }}>Datos del Viaje</legend>
-
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-              <div style={{ flex: '1 1 200px' }}>
+          {/* — Sección: Comercial — */}
+          <fieldset style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', backgroundColor: 'var(--bg-body)' }}>
+            <legend style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0 0.5rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Comercial</legend>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '0.75rem', alignItems: 'end' }}>
+              <div>
                 <label style={labelStyle}>Cliente *</label>
                 <select className="input-field" value={clienteId} onChange={e => setClienteId(e.target.value)} required>
                   <option value="">Seleccione...</option>
                   {clientes.map(c => <option key={c.id} value={c.id}>{c.razon_social}</option>)}
                 </select>
               </div>
-              <div style={{ flex: '1 1 120px', display: 'flex', alignItems: 'flex-end', gap: '0.5rem', paddingBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingBottom: '0.5rem' }}>
                 <input type="checkbox" id="tercerizado" checked={esTercerizado} onChange={e => {
                   setEsTercerizado(e.target.checked);
                   if (!e.target.checked) setProveedorId('');
                   setUnidadesRows([null]);
                   setChoferId('');
                 }} />
-                <label htmlFor="tercerizado" style={{ fontSize: '0.875rem', fontWeight: 600 }}>Tercerizado</label>
+                <label htmlFor="tercerizado" style={{ fontSize: '0.875rem', fontWeight: 600, whiteSpace: 'nowrap' }}>Tercerizado</label>
               </div>
-
-              <div style={{ flex: '1 1 200px', opacity: esTercerizado ? 1 : 0.6 }}>
+              <div style={{ opacity: esTercerizado ? 1 : 0.6 }}>
                 <label style={labelStyle}>Proveedor (Empresa) *</label>
                 <select
                   className="input-field"
@@ -770,15 +768,18 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                 </select>
               </div>
             </div>
+          </fieldset>
 
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <div style={{ flex: '2 1 200px' }}>
+          {/* — Sección: Recursos — */}
+          <fieldset style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', backgroundColor: 'var(--bg-body)' }}>
+            <legend style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0 0.5rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recursos</legend>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
+              <div>
                 <label style={labelStyle}>Unidades</label>
                 {filteredUnidades.length === 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sin unidades disponibles</span>}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {unidadesRows.map((val, idx) => {
                     const usedIds = unidadesRows.filter((v, i) => i !== idx && v !== null);
-                    const available = filteredUnidades.filter(u => !usedIds.includes(u.id));
                     return (
                       <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         <select
@@ -820,7 +821,7 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                   )}
                 </div>
               </div>
-              <div style={{ flex: '1 1 200px' }}>
+              <div>
                 <label style={labelStyle}>Chofer *</label>
                 <select className="input-field" value={choferId} onChange={e => setChoferId(e.target.value)} required>
                   <option value="">Seleccione chofer...</option>
@@ -830,52 +831,56 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
             </div>
           </fieldset>
 
-          {/* — Sección: Ruta y Horarios — */}
-          <fieldset style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-            <legend style={{ fontSize: '0.875rem', fontWeight: 600, padding: '0 0.5rem', color: 'var(--text-muted)' }}>Ruta y Horarios</legend>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 200px' }}>
-                <label style={labelStyle}>Origen *</label>
-                <input id="f_origen" type="text" className="input-field" placeholder="Ej. CABA" defaultValue={d.origen || ''} required />
+          {/* — Sección: Ruta — */}
+          <fieldset style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', backgroundColor: 'var(--bg-body)' }}>
+            <legend style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0 0.5rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ruta</legend>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingRight: '0.75rem', borderRight: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>Salida</div>
+                <div>
+                  <label style={labelStyle}>Origen *</label>
+                  <input id="f_origen" type="text" className="input-field" placeholder="Ej. CABA" defaultValue={d.origen || ''} required />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.75rem' }}>
+                  <div>
+                    <label style={labelStyle}>Fecha</label>
+                    <input id="f_f_salida" type="date" className="input-field" defaultValue={dateSalida} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Hora</label>
+                    <input id="f_h_salida" type="time" className="input-field" defaultValue={timeSalida} />
+                  </div>
+                </div>
               </div>
-              <div style={{ flex: '1 1 140px' }}>
-                <label style={labelStyle}>Fecha Salida</label>
-                <input id="f_f_salida" type="date" className="input-field" defaultValue={dateSalida} />
-              </div>
-              <div style={{ flex: '1 1 100px' }}>
-                <label style={labelStyle}>Hora Salida</label>
-                <input id="f_h_salida" type="time" className="input-field" defaultValue={timeSalida} />
-              </div>
-
-              <div style={{ flex: '1 1 200px' }}>
-                <label style={labelStyle}>Destino *</label>
-                <input id="f_destino" type="text" className="input-field" placeholder="Ej. Rosario" defaultValue={d.destino || ''} required />
-              </div>
-              <div style={{ flex: '1 1 140px' }}>
-                <label style={labelStyle}>Fecha Llegada</label>
-                <input id="f_f_llegada" type="date" className="input-field" defaultValue={dateLlegada} />
-              </div>
-              <div style={{ flex: '1 1 100px' }}>
-                <label style={labelStyle}>Hora Llegada</label>
-                <input id="f_h_llegada" type="time" className="input-field" defaultValue={timeLlegada} />
-              </div>
-
-              <div style={{ flex: '1 1 140px' }}>
-                <label style={labelStyle}>Distancia (km)</label>
-                <input id="f_km" type="number" className="input-field" placeholder="0" value={kmRecorrido} onChange={e => setKmRecorrido(e.target.value)} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingLeft: '0.75rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>Llegada</div>
+                <div>
+                  <label style={labelStyle}>Destino *</label>
+                  <input id="f_destino" type="text" className="input-field" placeholder="Ej. Rosario" defaultValue={d.destino || ''} required />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.75rem' }}>
+                  <div>
+                    <label style={labelStyle}>Fecha</label>
+                    <input id="f_f_llegada" type="date" className="input-field" defaultValue={dateLlegada} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Hora</label>
+                    <input id="f_h_llegada" type="time" className="input-field" defaultValue={timeLlegada} />
+                  </div>
+                </div>
               </div>
             </div>
           </fieldset>
 
           {/* — Sección: Carga — */}
-          <fieldset style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-            <legend style={{ fontSize: '0.875rem', fontWeight: 600, padding: '0 0.5rem', color: 'var(--text-muted)' }}>Datos de Carga</legend>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <div style={{ flex: '2 1 200px' }}>
+          <fieldset style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', backgroundColor: 'var(--bg-body)' }}>
+            <legend style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0 0.5rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Carga</legend>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr auto', gap: '0.75rem', alignItems: 'end' }}>
+              <div>
                 <label style={labelStyle}>Descripción</label>
                 <input id="f_carga_desc" type="text" className="input-field" placeholder="Ej. Electrodomésticos" defaultValue={d.carga?.descripcion || ''} />
               </div>
-              <div style={{ flex: '1 1 140px' }}>
+              <div>
                 <label style={labelStyle}>Tipo de Carga</label>
                 <select id="f_tipo_carga" className="input-field" defaultValue={d.carga?.tipo_carga || ''}>
                   <option value="">Seleccione...</option>
@@ -886,109 +891,76 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                   <option>Peligrosa</option>
                 </select>
               </div>
-              <div style={{ flex: '1 1 120px' }}>
+              <div>
                 <label style={labelStyle}>Peso (kg)</label>
                 <input type="number" className="input-field" placeholder="0" value={pesoKg} onChange={e => setPesoKg(e.target.value)} />
               </div>
-              <div style={{ flex: '1 1 120px' }}>
+              <div>
                 <label style={labelStyle}>Bultos</label>
                 <input type="number" className="input-field" placeholder="0" value={bultos} onChange={e => setBultos(e.target.value)} />
               </div>
-              <div style={{ flex: '1 1 120px', display: 'flex', alignItems: 'flex-end', gap: '0.5rem', paddingBottom: '0.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingBottom: '0.25rem' }}>
                 <input type="checkbox" id="refri" defaultChecked={d.carga?.requiere_refrigeracion || false} />
-                <label htmlFor="refri" style={{ fontSize: '0.875rem' }}>Refrigeración</label>
+                <label htmlFor="refri" style={{ fontSize: '0.875rem', whiteSpace: 'nowrap' }}>Refrigeración</label>
               </div>
             </div>
           </fieldset>
 
-          {/* — Sección: Precio y Estado — */}
-          <fieldset style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-            <legend style={{ fontSize: '0.875rem', fontWeight: 600, padding: '0 0.5rem', color: 'var(--text-muted)' }}>Precio y Estado</legend>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', width: '100%', marginBottom: '1rem' }}>
+          {/* — Sección: Precio — */}
+          <fieldset style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', backgroundColor: 'var(--bg-body)' }}>
+            <legend style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0 0.5rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Precio</legend>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', width: '100%', marginBottom: '0.75rem' }}>
               <div>
                 <label style={labelStyle}>Tipo de Tarifa</label>
-                <select
-                  className="input-field"
-                  value={tipoTarifa}
-                  onChange={e => setTipoTarifa(e.target.value)}
-                >
+                <select className="input-field" value={tipoTarifa} onChange={e => setTipoTarifa(e.target.value)}>
                   <option value="fija">Fija por viaje</option>
                   <option value="tonelada">Por tonelada</option>
                   <option value="bulto">Por bulto</option>
                   <option value="km">Por km recorrido</option>
                 </select>
               </div>
-
               <div>
                 <label style={labelStyle}>Tarifa Unitario ($)</label>
                 <div style={{ position: 'relative' }}>
                   <DollarSign size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                  <input
-                    type="number"
-                    className="input-field"
-                    style={{ paddingLeft: '2.25rem' }}
-                    placeholder="0.00"
-                    value={tarifaValor}
-                    onChange={e => setTarifaValor(e.target.value)}
-                  />
+                  <input type="number" className="input-field" style={{ paddingLeft: '2.25rem' }} placeholder="0.00" value={tarifaValor} onChange={e => setTarifaValor(e.target.value)} />
                 </div>
               </div>
-
               <div>
                 <label style={labelStyle}>
                   {tipoTarifa === 'fija' ? 'Base (Fija)' :
                     tipoTarifa === 'tonelada' ? 'Cantidad (Toneladas)' :
                       tipoTarifa === 'bulto' ? 'Cantidad (Bultos)' : 'Cantidad (Kilómetros)'}
                 </label>
-                <input
-                  type="number"
-                  className="input-field"
-                  value={tarifaBase}
-                  onChange={e => setTarifaBase(e.target.value)}
-                  disabled={tipoTarifa === 'fija'}
-                  placeholder="0.00"
-                />
+                <input type="number" className="input-field" value={tarifaBase} onChange={e => setTarifaBase(e.target.value)} disabled={tipoTarifa === 'fija'} placeholder="0.00" />
               </div>
             </div>
-
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end', width: '100%' }}>
-              <div style={{ flex: '1 1 200px' }}>
-                <label style={labelStyle}>Precio Pactado (Cálculo Final) *</label>
+            <div style={{ display: 'grid', gridTemplateColumns: esTercerizado ? '1fr 1fr' : '1fr', gap: '0.75rem', alignItems: 'end' }}>
+              <div>
+                <label style={labelStyle}>Precio del Viaje *</label>
                 <div style={{ position: 'relative' }}>
                   <DollarSign size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                  <input
-                    type="number"
-                    className="input-field"
-                    placeholder="0.00"
-                    style={{ paddingLeft: '2.25rem', backgroundColor: 'rgba(0,0,0,0.02)', fontWeight: 'bold' }}
-                    value={precioPactado}
-                    onChange={e => setPrecioPactado(e.target.value)}
-                    required
-                  />
+                  <input type="number" className="input-field" placeholder="0.00" style={{ paddingLeft: '2.25rem', backgroundColor: 'rgba(0,0,0,0.02)', fontWeight: 'bold' }} value={precioPactado} onChange={e => setPrecioPactado(e.target.value)} required />
                 </div>
               </div>
-
               {esTercerizado && (
-                <div style={{ flex: '1 1 200px' }}>
+                <div>
                   <label style={labelStyle}>Costo Proveedor *</label>
                   <div style={{ position: 'relative' }}>
                     <DollarSign size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                    <input
-                      type="number"
-                      className="input-field"
-                      placeholder="0.00"
-                      style={{ paddingLeft: '2.25rem' }}
-                      value={costoProveedor}
-                      onChange={e => setCostoProveedor(e.target.value)}
-                      required={esTercerizado}
-                    />
+                    <input type="number" className="input-field" placeholder="0.00" style={{ paddingLeft: '2.25rem' }} value={costoProveedor} onChange={e => setCostoProveedor(e.target.value)} required={esTercerizado} />
                   </div>
                 </div>
               )}
+            </div>
+          </fieldset>
 
-              <div style={{ flex: '1 1 200px' }}>
-                <label style={labelStyle}>Estado</label>
+          {/* — Sección: Estado — */}
+          <fieldset style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', backgroundColor: 'var(--bg-body)' }}>
+            <legend style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0 0.5rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Estado</legend>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem', alignItems: 'end' }}>
+              <div>
+                <label style={labelStyle}>Estado del Viaje</label>
                 <select id="f_estado" className="input-field" defaultValue={d.estado || 'pendiente'}>
                   <option value="pendiente">Pendiente</option>
                   <option value="en_curso">En curso</option>
@@ -996,10 +968,10 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                   <option value="cancelado">Cancelado</option>
                 </select>
               </div>
-            </div>
-            <div style={{ marginTop: '1rem' }}>
-              <label style={labelStyle}>Observaciones</label>
-              <textarea id="f_obs" className="input-field" rows="2" placeholder="Notas internas sobre el viaje..." defaultValue={d.observaciones || ''} style={{ resize: 'vertical' }} />
+              <div>
+                <label style={labelStyle}>Observaciones</label>
+                <textarea id="f_obs" className="input-field" rows="1" placeholder="Notas internas sobre el viaje..." defaultValue={d.observaciones || ''} style={{ resize: 'vertical' }} />
+              </div>
             </div>
           </fieldset>
 
