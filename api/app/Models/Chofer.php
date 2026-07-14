@@ -14,6 +14,7 @@ class Chofer extends Model
 
     protected $fillable = [
         'proveedor_id',
+        'numero',
         'nombre',
         'apellido',
         'dni',

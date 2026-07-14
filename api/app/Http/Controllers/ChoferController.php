@@ -20,6 +20,7 @@ class ChoferController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('nombre', 'like', "%{$search}%")
                   ->orWhere('apellido', 'like', "%{$search}%")
+                  ->orWhere('numero', 'like', "%{$search}%")
                   ->orWhere('dni', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
                   ->orWhere('telefono', 'like', "%{$search}%");
@@ -43,6 +44,7 @@ class ChoferController extends Controller
         $validated = $request->validate([
             'nombre' => 'required|string',
             'apellido' => 'required|string',
+            'numero' => 'nullable|string',
             'dni' => 'nullable|string|unique:choferes,dni',
             'telefono' => 'nullable|string',
             'email' => 'nullable|email',
@@ -72,6 +74,7 @@ class ChoferController extends Controller
         $validated = $request->validate([
             'nombre' => 'sometimes|required|string',
             'apellido' => 'sometimes|required|string',
+            'numero' => 'nullable|string',
             'dni' => 'nullable|string|unique:choferes,dni,' . $id,
             'telefono' => 'nullable|string',
             'email' => 'nullable|email',

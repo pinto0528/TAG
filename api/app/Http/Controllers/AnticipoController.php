@@ -34,6 +34,7 @@ class AnticipoController extends Controller
         ]);
 
         $anticipo = Anticipo::create($validated);
+        $anticipo->viaje->recalcularCostoViaje();
 
         return response()->json($anticipo, 201);
     }
@@ -57,6 +58,7 @@ class AnticipoController extends Controller
         ]);
 
         $anticipo->update($validated);
+        $anticipo->viaje->recalcularCostoViaje();
 
         return response()->json($anticipo);
     }
@@ -65,6 +67,7 @@ class AnticipoController extends Controller
     {
         $anticipo = Anticipo::findOrFail($id);
         $anticipo->delete();
+        $anticipo->viaje->recalcularCostoViaje();
         return response()->json(['message' => 'Anticipo archivado']);
     }
 
@@ -72,6 +75,7 @@ class AnticipoController extends Controller
     {
         $anticipo = Anticipo::withTrashed()->findOrFail($id);
         $anticipo->restore();
+        $anticipo->viaje->recalcularCostoViaje();
         return response()->json(['message' => 'Anticipo restaurado']);
     }
 }

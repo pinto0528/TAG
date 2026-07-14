@@ -21,6 +21,7 @@ class UnidadController extends Controller
                 $q->where('patente', 'like', "%{$search}%")
                   ->orWhere('marca', 'like', "%{$search}%")
                   ->orWhere('modelo', 'like', "%{$search}%")
+                  ->orWhere('numero', 'like', "%{$search}%")
                   ->orWhere('numero_interno', 'like', "%{$search}%");
             });
         }
@@ -45,6 +46,7 @@ class UnidadController extends Controller
             'modelo' => 'nullable|string',
             'anio' => 'nullable|integer',
             'tipo' => 'nullable|string',
+            'numero' => 'nullable|string',
             'numero_interno' => 'nullable|string',
             'vtv_vencimiento' => 'nullable|date',
             'seguro_vencimiento' => 'nullable|date',
@@ -73,6 +75,7 @@ class UnidadController extends Controller
             'modelo' => 'nullable|string',
             'anio' => 'nullable|integer',
             'tipo' => 'nullable|string',
+            'numero' => 'nullable|string',
             'numero_interno' => 'nullable|string',
             'vtv_vencimiento' => 'nullable|date',
             'seguro_vencimiento' => 'nullable|date',

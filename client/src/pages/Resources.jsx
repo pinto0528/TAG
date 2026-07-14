@@ -227,8 +227,10 @@ const Resources = () => {
                     ))}
                     {(activeTab === 'choferes' ? choferes : unidades).length === 0 && (
                         <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
-                            <AlertCircle size={48} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
-                            <p>No se encontraron resultados.</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                                <AlertCircle size={48} style={{ opacity: 0.3 }} />
+                                <p>No hay {activeTab === 'choferes' ? 'choferes' : 'unidades'} registrados.</p>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -282,7 +284,9 @@ const ItemCard = ({ item, type, onEdit, onDelete, onRestore, onToggleActive }) =
                             {type === 'choferes' ? `${item.nombre} ${item.apellido}` : item.patente}
                         </h3>
                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                            {type === 'choferes' ? `DNI: ${item.dni || 'S/D'}` : `${item.marca || ''} ${item.modelo || ''} (${item.anio || '—'})`}
+                            {type === 'choferes'
+                                ? `${item.numero ? `Nro. ${item.numero} · ` : ''}DNI: ${item.dni || 'S/D'}`
+                                : `${item.numero ? `Nro. ${item.numero} · ` : ''}${item.marca || ''} ${item.modelo || ''} (${item.anio || '—'})`}
                         </p>
                     </div>
                 </div>
@@ -403,9 +407,15 @@ const Form = ({ type, initialData, onSave, onDelete, onRestore, onCancel, select
                             <input name="apellido" value={formData.apellido || ''} onChange={handleChange} className="input-field" required />
                         </div>
                     </div>
-                    <div>
-                        <label style={labelStyle}>DNI</label>
-                        <input name="dni" value={formData.dni || ''} onChange={handleChange} className="input-field" />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div>
+                            <label style={labelStyle}>Número</label>
+                            <input name="numero" value={formData.numero || ''} onChange={handleChange} className="input-field" placeholder="Nro. identificador" />
+                        </div>
+                        <div>
+                            <label style={labelStyle}>DNI</label>
+                            <input name="dni" value={formData.dni || ''} onChange={handleChange} className="input-field" />
+                        </div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div>
@@ -440,9 +450,13 @@ const Form = ({ type, initialData, onSave, onDelete, onRestore, onCancel, select
                             <input name="patente" value={formData.patente || ''} onChange={handleChange} className="input-field" required />
                         </div>
                         <div>
-                            <label style={labelStyle}>Nro Interno</label>
-                            <input name="numero_interno" value={formData.numero_interno || ''} onChange={handleChange} className="input-field" />
+                            <label style={labelStyle}>Número</label>
+                            <input name="numero" value={formData.numero || ''} onChange={handleChange} className="input-field" placeholder="Nro. identificador" />
                         </div>
+                    </div>
+                    <div>
+                        <label style={labelStyle}>Nro Interno</label>
+                        <input name="numero_interno" value={formData.numero_interno || ''} onChange={handleChange} className="input-field" />
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div>
@@ -461,12 +475,13 @@ const Form = ({ type, initialData, onSave, onDelete, onRestore, onCancel, select
                         </div>
                         <div>
                             <label style={labelStyle}>Tipo</label>
-                            <select name="tipo" value={formData.tipo || 'Camión'} onChange={handleChange} className="input-field">
-                                <option>Camión</option>
-                                <option>Acoplado</option>
-                                <option>Semi</option>
-                                <option>Furgón</option>
-                            </select>
+                            <input list="tipos-unidad" name="tipo" value={formData.tipo || ''} onChange={handleChange} className="input-field" placeholder="Ej. Camión, Semi, Acoplado..." />
+                            <datalist id="tipos-unidad">
+                                <option value="Camión" />
+                                <option value="Acoplado" />
+                                <option value="Semi" />
+                                <option value="Furgón" />
+                            </datalist>
                         </div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

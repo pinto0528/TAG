@@ -134,7 +134,7 @@ class LiquidacionController extends Controller
         $viajesYaEnLiquidacion = $liquidacion->viajes()->pluck('viajes.id');
         $query->whereNotIn('viajes.id', $viajesYaEnLiquidacion);
 
-        $viajes = $query->with(['cliente', 'proveedor', 'unidad', 'chofer', 'documento'])
+        $viajes = $query->with(['cliente', 'proveedor', 'unidades', 'chofer', 'documento'])
             ->orderBy('fecha_salida', 'desc')
             ->get();
 
@@ -232,7 +232,7 @@ class LiquidacionController extends Controller
     private function generateNumero(string $tipo): string
     {
         $prefijo = $tipo === 'cliente' ? 'LIQ-C' : 'LIQ-P';
-        $ultimo = Liquidacion::where('numero', 'like', "{$prefijo}-%")
+        $ultimo = Liquidacion::withTrashed()->where('numero', 'like', "{$prefijo}-%")
             ->latest('id')
             ->first();
 

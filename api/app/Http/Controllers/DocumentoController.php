@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Documento;
+use App\Models\DocumentoArchivo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class DocumentoController extends Controller
 {
@@ -19,7 +21,7 @@ class DocumentoController extends Controller
             $query->where('viaje_id', $request->get('viaje_id'));
         }
 
-        return response()->json($query->with('viaje')->orderBy('fecha', 'desc')->get());
+        return response()->json($query->with(['viaje', 'archivos'])->orderBy('fecha', 'desc')->get());
     }
 
     public function store(Request $request)
@@ -36,12 +38,16 @@ class DocumentoController extends Controller
 
         $documento = Documento::create($validated);
 
-        return response()->json($documento->load('viaje'), 201);
+        if ($request->hasFile('archivos')) {
+            $this->storeArchivos($request->file('archivos'), $documento);
+        }
+
+        return response()->json($documento->load(['viaje', 'archivos']), 201);
     }
 
     public function show($id)
     {
-        $documento = Documento::withTrashed()->with('viaje')->findOrFail($id);
+        $documento = Documento::withTrashed()->with(['viaje', 'archivos'])->findOrFail($id);
         return response()->json($documento);
     }
 
@@ -60,7 +66,11 @@ class DocumentoController extends Controller
 
         $documento->update($validated);
 
-        return response()->json($documento->load('viaje'));
+        if ($request->hasFile('archivos')) {
+            $this->storeArchivos($request->file('archivos'), $documento);
+        }
+
+        return response()->json($documento->load(['viaje', 'archivos']));
     }
 
     public function destroy($id)
@@ -75,5 +85,48 @@ class DocumentoController extends Controller
         $documento = Documento::withTrashed()->findOrFail($id);
         $documento->restore();
         return response()->json(['message' => 'Documento restaurado']);
+    }
+
+    public function storeArchivo(Request $request, $documentoId)
+    {
+        $request->validate([
+            'archivo' => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
+        ]);
+
+        $documento = Documento::findOrFail($documentoId);
+
+        if ($request->hasFile('archivo')) {
+            $this->storeArchivos([$request->file('archivo')], $documento);
+        }
+
+        return response()->json($documento->load('archivos'), 201);
+    }
+
+    public function destroyArchivo($documentoId, $archivoId)
+    {
+        $archivo = DocumentoArchivo::where('documento_id', $documentoId)->findOrFail($archivoId);
+
+        Storage::disk('public')->delete($archivo->archivo_path);
+        $archivo->delete();
+
+        $documento = Documento::with('archivos')->findOrFail($documentoId);
+        return response()->json($documento);
+    }
+
+    private function storeArchivos(array $files, Documento $documento): void
+    {
+        foreach ($files as $file) {
+            if ($file->isValid()) {
+                $path = $file->store('documentos', 'public');
+
+                DocumentoArchivo::create([
+                    'documento_id' => $documento->id,
+                    'archivo_path' => $path,
+                    'archivo_nombre' => $file->getClientOriginalName(),
+                    'archivo_mime' => $file->getMimeType(),
+                    'archivo_size' => $file->getSize(),
+                ]);
+            }
+        }
     }
 }

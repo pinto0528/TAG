@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Unidad extends Model
@@ -19,6 +19,7 @@ class Unidad extends Model
         'modelo',
         'anio',
         'tipo',
+        'numero',
         'numero_interno',
         'vtv_vencimiento',
         'seguro_vencimiento',
@@ -39,8 +40,8 @@ class Unidad extends Model
         return $this->belongsTo(Proveedor::class);
     }
 
-    public function viajes(): HasMany
+    public function viajes(): BelongsToMany
     {
-        return $this->hasMany(Viaje::class);
+        return $this->belongsToMany(Viaje::class, 'viaje_unidad');
     }
 }

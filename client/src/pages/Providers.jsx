@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Mail, Phone, MapPin, Briefcase, RefreshCw, X, Trash2 } from 'lucide-react';
+import { Plus, Search, Edit, Mail, Phone, MapPin, Briefcase, RefreshCw, X, Trash2, FileText } from 'lucide-react';
 import API_BASE_URL from '../apiConfig';
 
 const Providers = () => {
@@ -217,8 +217,11 @@ const Providers = () => {
               <tbody>
                 {providers.length === 0 ? (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                      No se encontraron proveedores.
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                        <FileText size={48} style={{ opacity: 0.3 }} />
+                        <p>No hay proveedores registrados.</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (

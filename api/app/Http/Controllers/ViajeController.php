@@ -14,7 +14,7 @@ class ViajeController extends Controller
         $query = Viaje::select('viajes.*')->with([
             'cliente',
             'proveedor',
-            'unidad',
+            'unidades',
             'chofer',
             'carga',
             'gastos',
@@ -73,7 +73,8 @@ class ViajeController extends Controller
                     $query->leftJoin('choferes', 'viajes.chofer_id', '=', 'choferes.id')
                         ->orderBy('choferes.nombre', $dir);
                 } elseif ($sortBy === 'unidad') {
-                    $query->leftJoin('unidades', 'viajes.unidad_id', '=', 'unidades.id')
+                    $query->leftJoin('viaje_unidad', 'viajes.id', '=', 'viaje_unidad.viaje_id')
+                        ->leftJoin('unidades', 'viaje_unidad.unidad_id', '=', 'unidades.id')
                         ->orderBy('unidades.marca', $dir)->orderBy('unidades.patente', $dir);
                 } elseif ($sortBy === 'ruta') {
                     $query->orderBy('origen', $dir);
@@ -102,7 +103,8 @@ class ViajeController extends Controller
             'destino' => 'nullable|string',
             'precio_pactado' => 'nullable|numeric|min:0',
             'costo_proveedor' => 'nullable|numeric|min:0',
-            'unidad_id' => 'nullable|exists:unidades,id',
+            'unidades' => 'nullable|array',
+            'unidades.*' => 'exists:unidades,id',
             'chofer_id' => 'nullable|exists:choferes,id',
             'km_recorrido' => 'nullable|integer',
             'fecha_salida' => 'required|date',
@@ -130,7 +132,6 @@ class ViajeController extends Controller
         }
 
         $viaje = Viaje::create([
-            'unidad_id' => $validated['unidad_id'] ?? null,
             'chofer_id' => $validated['chofer_id'] ?? null,
             'cliente_id' => $validated['cliente_id'] ?? null,
             'proveedor_id' => $validated['proveedor_id'] ?? null,
@@ -150,6 +151,10 @@ class ViajeController extends Controller
             'observaciones' => $validated['observaciones'] ?? null,
         ]);
 
+        if (!empty($validated['unidades'])) {
+            $viaje->unidades()->sync($validated['unidades']);
+        }
+
         if (!empty($request->input('carga'))) {
             Carga::create([
                 'viaje_id' => $viaje->id,
@@ -161,7 +166,7 @@ class ViajeController extends Controller
             ]);
         }
 
-        $viaje->load(['cliente', 'proveedor', 'unidad', 'chofer', 'carga', 'gastos', 'anticipos', 'documento', 'liquidaciones']);
+        $viaje->load(['cliente', 'proveedor', 'unidades', 'chofer', 'carga', 'gastos', 'anticipos', 'documento', 'liquidaciones']);
 
         return response()->json($viaje, 201);
     }
@@ -175,7 +180,8 @@ class ViajeController extends Controller
             'destino' => 'nullable|string',
             'precio_pactado' => 'nullable|numeric|min:0',
             'costo_proveedor' => 'nullable|numeric|min:0',
-            'unidad_id' => 'nullable|exists:unidades,id',
+            'unidades' => 'nullable|array',
+            'unidades.*' => 'exists:unidades,id',
             'chofer_id' => 'nullable|exists:choferes,id',
             'km_recorrido' => 'nullable|integer',
             'fecha_salida' => 'required|date',
@@ -203,7 +209,6 @@ class ViajeController extends Controller
         }
 
         $viaje->update([
-            'unidad_id' => $validated['unidad_id'] ?? null,
             'chofer_id' => $validated['chofer_id'] ?? null,
             'cliente_id' => $validated['cliente_id'] ?? null,
             'proveedor_id' => $validated['proveedor_id'] ?? null,
@@ -223,6 +228,10 @@ class ViajeController extends Controller
             'observaciones' => $validated['observaciones'] ?? null,
         ]);
 
+        if (array_key_exists('unidades', $validated)) {
+            $viaje->unidades()->sync($validated['unidades'] ?? []);
+        }
+
         if (!empty($request->input('carga'))) {
             $cargaData = [
                 'descripcion' => $validated['carga']['descripcion'] ?? null,
@@ -241,7 +250,7 @@ class ViajeController extends Controller
         }
 
         $viaje->refresh();
-        $viaje->load(['cliente', 'proveedor', 'unidad', 'chofer', 'carga', 'gastos', 'anticipos', 'documento', 'liquidaciones']);
+        $viaje->load(['cliente', 'proveedor', 'unidades', 'chofer', 'carga', 'gastos', 'anticipos', 'documento', 'liquidaciones']);
 
         return response()->json($viaje, 200);
     }
@@ -251,7 +260,7 @@ class ViajeController extends Controller
         $viaje = Viaje::withTrashed()->with([
             'cliente',
             'proveedor',
-            'unidad',
+            'unidades',
             'chofer',
             'carga',
             'gastos',

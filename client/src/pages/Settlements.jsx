@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Search, FileText, Printer, Users, Briefcase, Eye, X, ChevronRight, ChevronLeft, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Plus, Search, FileText, Printer, Users, Briefcase, Eye, X, ChevronRight, ChevronLeft, Trash2, RotateCcw, AlertTriangle, CheckSquare } from 'lucide-react';
 import API_BASE_URL from '../apiConfig';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount || 0);
@@ -122,7 +122,7 @@ const LiquidacionWizard = ({ onClose, onSave }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const [filtrosActivos, setFiltrosActivos] = useState({ fecha: true, origen: false, destino: false });
+    const [filtrosActivos, setFiltrosActivos] = useState({ fecha: false, origen: false, destino: false });
     const [filtros, setFiltros] = useState(() => {
         const range = getWeekRange();
         return { desde: range.desde, hasta: range.hasta, origen: '', destino: '' };
@@ -365,9 +365,11 @@ const LiquidacionWizard = ({ onClose, onSave }) => {
                 {step === 2 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', flex: 1 }}>
                         {viajesDisponibles.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                                <FileText size={40} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
-                                <p>No se encontraron viajes disponibles para los filtros seleccionados.</p>
+                            <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                                    <FileText size={48} style={{ opacity: 0.3 }} />
+                                    <p>No hay viajes disponibles para los filtros seleccionados.</p>
+                                </div>
                             </div>
                         ) : (
                             <>

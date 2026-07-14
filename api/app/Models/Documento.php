@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Documento extends Model
@@ -33,6 +34,11 @@ class Documento extends Model
     public function viaje(): BelongsTo
     {
         return $this->belongsTo(Viaje::class);
+    }
+
+    public function archivos(): HasMany
+    {
+        return $this->hasMany(DocumentoArchivo::class);
     }
 
     public function creador(): BelongsTo

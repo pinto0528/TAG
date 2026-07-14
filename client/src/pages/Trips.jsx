@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import API_BASE_URL from '../apiConfig';
 import { Plus, ChevronDown, Edit, DollarSign, Package, FileText, Truck as TruckIcon, ArrowRight, CheckCircle2, Clock, Printer, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Trash2, X, Search } from 'lucide-react';
@@ -8,6 +8,15 @@ const formatCurrency = (amount) => new Intl.NumberFormat('es-AR', { style: 'curr
 const formatDateForInput = (dateStr) => {
   if (!dateStr) return '';
   return dateStr.split('T')[0];
+};
+
+const formatDateDisplay = (dateStr) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
 };
 
 const getStatusBadge = (status) => {
@@ -23,7 +32,11 @@ const getStatusBadge = (status) => {
 
 const getClienteName = (trip) => trip.cliente?.razon_social || '—';
 const getChoferName = (trip) => trip.chofer ? `${trip.chofer.nombre} ${trip.chofer.apellido}` : '— Sin asignar —';
-const getUnidadLabel = (trip) => trip.unidad ? `${trip.unidad.marca} ${trip.unidad.modelo} (${trip.unidad.patente})` : '—';
+const getUnidadLabel = (trip) => {
+  const unidades = trip.unidades;
+  if (!unidades || unidades.length === 0) return '—';
+  return unidades.map(u => `${u.marca} ${u.modelo} (${u.patente})`).join(', ');
+};
 const getProveedorName = (trip) => trip.proveedor?.razon_social || null;
 
 // Helpers para tarifa
@@ -198,6 +211,8 @@ const FinanceForm = ({ item, viajetoId, onSave, onClose }) => {
   } : {
     viaje_id: viajetoId,
     tipo: 'Combustible', // para gasto
+    clase: 'propio',
+    reintegro: false,
     concepto: '',
     monto: 0,
     fecha: new Date().toISOString().split('T')[0],
@@ -256,6 +271,25 @@ const FinanceForm = ({ item, viajetoId, onSave, onClose }) => {
         </div>
       )}
 
+      {type === 'gasto' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div>
+            <label style={labelStyle}>Clase</label>
+            <select className="input-field" value={formData.clase} onChange={e => setFormData({ ...formData, clase: e.target.value })} required>
+              <option value="propio">Propio</option>
+              <option value="tercerizado">Tercerizado</option>
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Reintegro</label>
+            <select className="input-field" value={formData.reintegro ? '1' : '0'} onChange={e => setFormData({ ...formData, reintegro: e.target.value === '1' })} required>
+              <option value="0">Sin reintegro</option>
+              <option value="1">Con reintegro</option>
+            </select>
+          </div>
+        </div>
+      )}
+
       <div>
         <label style={labelStyle}>Concepto</label>
         <input className="input-field" value={formData.concepto} onChange={e => setFormData({ ...formData, concepto: e.target.value })} required placeholder="Ej. Pago Combustible YPF" />
@@ -305,10 +339,13 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
     tipo: existingDoc?.tipo || 'REMITO',
     numero: existingDoc?.numero || '',
     fecha: existingDoc?.fecha ? formatDateForInput(existingDoc.fecha) : new Date().toISOString().split('T')[0],
-    descripcion: existingDoc?.descripcion || '',
-    estado: existingDoc?.estado || 'pendiente',
     notas: existingDoc?.notas || '',
   });
+
+  const [files, setFiles] = useState([]);
+  const [existingFiles, setExistingFiles] = useState(existingDoc?.archivos || []);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   const isEdit = !!existingDoc;
 
@@ -321,10 +358,16 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
         : `${API_BASE_URL}/documentos`;
       const method = isEdit ? 'PUT' : 'POST';
 
+      const formData = new FormData();
+      Object.entries(docData).forEach(([key, val]) => {
+        if (val !== null && val !== undefined) formData.append(key, val);
+      });
+      files.forEach(f => formData.append('archivos[]', f));
+
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(docData),
+        headers: { 'Accept': 'application/json' },
+        body: formData,
       });
 
       if (res.ok) onSave();
@@ -334,6 +377,24 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
+  };
+
+  const handleDeleteFile = async (archivoId) => {
+    if (!confirm('Eliminar este archivo?')) return;
+    setUploading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/documentos/${existingDoc.id}/archivos/${archivoId}`, { method: 'DELETE' });
+      if (res.ok) {
+        const data = await res.json();
+        setExistingFiles(data.archivos || []);
+      }
+    } finally { setUploading(false); }
+  };
+
+  const formatSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
   };
 
   return (
@@ -350,31 +411,59 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
         <label style={labelStyle}>Número de Documento</label>
         <input className="input-field" value={docData.numero} onChange={e => setDocData({ ...docData, numero: e.target.value })} required placeholder="Nro. del documento (alfanumérico)" />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-        <div>
-          <label style={labelStyle}>Fecha</label>
-          <input type="date" className="input-field" value={docData.fecha} onChange={e => setDocData({ ...docData, fecha: e.target.value })} required />
-        </div>
-        <div>
-          <label style={labelStyle}>Estado</label>
-          <select className="input-field" value={docData.estado} onChange={e => setDocData({ ...docData, estado: e.target.value })}>
-            <option value="pendiente">Pendiente</option>
-            <option value="conforme">Conforme</option>
-            <option value="rechazado">Rechazado</option>
-          </select>
-        </div>
-      </div>
       <div>
-        <label style={labelStyle}>Descripción</label>
-        <input className="input-field" value={docData.descripcion} onChange={e => setDocData({ ...docData, descripcion: e.target.value })} placeholder="Descripción opcional" />
+        <label style={labelStyle}>Fecha</label>
+        <input type="date" className="input-field" value={docData.fecha} onChange={e => setDocData({ ...docData, fecha: e.target.value })} required />
       </div>
       <div>
         <label style={labelStyle}>Notas</label>
         <textarea className="input-field" rows={2} value={docData.notas} onChange={e => setDocData({ ...docData, notas: e.target.value })} placeholder="Notas adicionales" />
       </div>
+
+      {/* Archivos adjuntos */}
+      <div>
+        <label style={labelStyle}>Archivos adjuntos (fotos o PDF)</label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".jpg,.jpeg,.png,.pdf"
+          style={{ display: 'none' }}
+          onChange={e => setFiles([...files, ...Array.from(e.target.files)])}
+        />
+        <button
+          type="button"
+          className="outline"
+          style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', marginBottom: '0.5rem' }}
+          onClick={() => fileInputRef.current?.click()}
+        >+ Agregar archivo</button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          {existingFiles.map(f => (
+            <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.6rem', backgroundColor: 'var(--bg-body)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem' }}>
+              {f.archivo_mime?.startsWith('image/') ? (
+                <img src={`/storage/${f.archivo_path}`} alt={f.archivo_nombre} style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '4px' }} />
+              ) : (
+                <span style={{ fontSize: '1.2rem' }}>📄</span>
+              )}
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.archivo_nombre}</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', flexShrink: 0 }}>{formatSize(f.archivo_size)}</span>
+              <button type="button" style={{ border: 'none', background: 'none', color: 'var(--color-danger-text)', cursor: 'pointer', padding: '0.2rem' }} onClick={() => handleDeleteFile(f.id)}>✕</button>
+            </div>
+          ))}
+          {files.map((f, idx) => (
+            <div key={`new-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.6rem', backgroundColor: 'var(--bg-body)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem' }}>
+              <span style={{ fontSize: '1.2rem' }}>📎</span>
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', flexShrink: 0 }}>{formatSize(f.size)}</span>
+              <button type="button" style={{ border: 'none', background: 'none', color: 'var(--color-danger-text)', cursor: 'pointer', padding: '0.2rem' }} onClick={() => setFiles(files.filter((_, i) => i !== idx))}>✕</button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
         <button type="button" className="outline" onClick={onClose}>Cancelar</button>
-        <button type="submit" disabled={loading}>{loading ? 'Guardando...' : (isEdit ? 'Actualizar Documento' : 'Cargar Documento')}</button>
+        <button type="submit" disabled={loading || uploading}>{loading ? 'Guardando...' : (isEdit ? 'Actualizar Documento' : 'Cargar Documento')}</button>
       </div>
     </form>
   );
@@ -413,8 +502,8 @@ const PrintSelectedTable = ({ viajes }) => (
           <tr key={trip.id}>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem', whiteSpace: 'nowrap' }}><strong>{trip.codigo_viaje}</strong></td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>
-              Sal: {trip.fecha_salida ? trip.fecha_salida.split('T')[0] : 'S/D'} {trip.hora_salida ? trip.hora_salida.substring(11, 16) : ''}<br />
-              Lle: {trip.fecha_llegada ? trip.fecha_llegada.split('T')[0] : 'S/D'} {trip.hora_llegada ? trip.hora_llegada.substring(11, 16) : ''}
+              Sal: {trip.fecha_salida ? formatDateDisplay(trip.fecha_salida) : 'S/D'} {trip.hora_salida ? trip.hora_salida.substring(11, 16) : ''}<br />
+              Lle: {trip.fecha_llegada ? formatDateDisplay(trip.fecha_llegada) : 'S/D'} {trip.hora_llegada ? trip.hora_llegada.substring(11, 16) : ''}
             </td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{getProveedorName(trip)}</td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '0.4rem' }}>{trip.origen} {' → '} {trip.destino}</td>
@@ -461,8 +550,8 @@ const PrintTripSheet = ({ viaje }) => (
           <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Logística</h3>
           <p style={{ margin: '0 0 0.3rem 0' }}><strong>Origen:</strong> {viaje.origen}</p>
           <p style={{ margin: '0 0 0.3rem 0' }}><strong>Destino:</strong> {viaje.destino}</p>
-          <p style={{ margin: '0.5rem 0 0.3rem 0' }}><strong>Fecha Salida:</strong> {viaje.fecha_salida ? viaje.fecha_salida.split('T')[0] : 'S/D'} {viaje.hora_salida ? viaje.hora_salida.substring(11, 16) : ''}</p>
-          <p style={{ margin: '0 0 0.3rem 0' }}><strong>Fecha Llegada:</strong> {viaje.fecha_llegada ? viaje.fecha_llegada.split('T')[0] : 'S/D'} {viaje.hora_llegada ? viaje.hora_llegada.substring(11, 16) : ''}</p>
+          <p style={{ margin: '0.5rem 0 0.3rem 0' }}><strong>Fecha Salida:</strong> {viaje.fecha_salida ? formatDateDisplay(viaje.fecha_salida) : 'S/D'} {viaje.hora_salida ? viaje.hora_salida.substring(11, 16) : ''}</p>
+          <p style={{ margin: '0 0 0.3rem 0' }}><strong>Fecha Llegada:</strong> {viaje.fecha_llegada ? formatDateDisplay(viaje.fecha_llegada) : 'S/D'} {viaje.hora_llegada ? viaje.hora_llegada.substring(11, 16) : ''}</p>
         </div>
         <div>
           <h3 style={{ borderBottom: '1px solid black', paddingBottom: '0.2rem', marginBottom: '1rem' }}>Asignación</h3>
@@ -582,7 +671,11 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
   const [esTercerizado, setEsTercerizado] = useState(!!d.proveedor_id);
   const [clienteId, setClienteId] = useState(d.cliente_id || '');
   const [proveedorId, setProveedorId] = useState(d.proveedor_id || '');
-  const [unidadId, setUnidadId] = useState(d.unidad_id || '');
+  const [unidadesRows, setUnidadesRows] = useState(() => {
+    const existing = d.unidades?.map(u => u.id) || [];
+    return existing.length > 0 ? existing : [null];
+  });
+  const unidadesSelected = unidadesRows.filter(id => id !== null);
   const [choferId, setChoferId] = useState(d.chofer_id || '');
 
   const dateSalida = d.fecha_salida ? d.fecha_salida.split('T')[0] : '';
@@ -637,7 +730,7 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 50, overflowY: 'auto', padding: '2rem 0',
     }}>
-      <div className="card" style={{ width: '100%', maxWidth: '720px', margin: '0 1rem' }}>
+      <div className="card" style={{ width: 'min(960px, calc(100vw - 2rem))', margin: '0 auto' }}>
         <h3 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>{title}</h3>
         <form style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }} onSubmit={(e) => { e.preventDefault(); onClose(); }}>
 
@@ -657,7 +750,7 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                 <input type="checkbox" id="tercerizado" checked={esTercerizado} onChange={e => {
                   setEsTercerizado(e.target.checked);
                   if (!e.target.checked) setProveedorId('');
-                  setUnidadId('');
+                  setUnidadesRows([null]);
                   setChoferId('');
                 }} />
                 <label htmlFor="tercerizado" style={{ fontSize: '0.875rem', fontWeight: 600 }}>Tercerizado</label>
@@ -668,7 +761,7 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                 <select
                   className="input-field"
                   value={proveedorId}
-                  onChange={e => { setProveedorId(e.target.value); setUnidadId(''); setChoferId(''); }}
+                  onChange={e => { setProveedorId(e.target.value); setUnidadesRows([null]); setChoferId(''); }}
                   required={esTercerizado}
                   disabled={!esTercerizado}
                 >
@@ -679,12 +772,53 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 200px' }}>
-                <label style={labelStyle}>Unidad *</label>
-                <select className="input-field" value={unidadId} onChange={e => setUnidadId(e.target.value)} required>
-                  <option value="">Seleccione unidad...</option>
-                  {filteredUnidades.map(u => <option key={u.id} value={u.id}>{u.marca} {u.modelo} ({u.patente})</option>)}
-                </select>
+              <div style={{ flex: '2 1 200px' }}>
+                <label style={labelStyle}>Unidades</label>
+                {filteredUnidades.length === 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sin unidades disponibles</span>}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {unidadesRows.map((val, idx) => {
+                    const usedIds = unidadesRows.filter((v, i) => i !== idx && v !== null);
+                    const available = filteredUnidades.filter(u => !usedIds.includes(u.id));
+                    return (
+                      <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <select
+                          className="input-field"
+                          style={{ flex: 1 }}
+                          value={val || ''}
+                          onChange={e => {
+                            const newVal = e.target.value ? Number(e.target.value) : null;
+                            const updated = [...unidadesRows];
+                            updated[idx] = newVal;
+                            setUnidadesRows(updated);
+                          }}
+                        >
+                          <option value="">Seleccione unidad...</option>
+                          {filteredUnidades
+                            .filter(u => u.id === val || !usedIds.includes(u.id))
+                            .map(u => <option key={u.id} value={u.id}>{u.marca} {u.modelo} ({u.patente})</option>)}
+                        </select>
+                        <button
+                          type="button"
+                          className="outline"
+                          style={{ padding: '0.3rem', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', flexShrink: 0 }}
+                          onClick={() => {
+                            if (unidadesRows.length === 1) setUnidadesRows([null]);
+                            else setUnidadesRows(unidadesRows.filter((_, i) => i !== idx));
+                          }}
+                          title="Quitar"
+                        >✕</button>
+                      </div>
+                    );
+                  })}
+                  {unidadesRows.length < filteredUnidades.length && (
+                    <button
+                      type="button"
+                      className="outline"
+                      style={{ alignSelf: 'flex-start', fontSize: '0.8rem', padding: '0.3rem 0.8rem', marginTop: '0.25rem' }}
+                      onClick={() => setUnidadesRows([...unidadesRows, null])}
+                    >+ Agregar unidad</button>
+                  )}
+                </div>
               </div>
               <div style={{ flex: '1 1 200px' }}>
                 <label style={labelStyle}>Chofer *</label>
@@ -913,7 +1047,7 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                 const payload = {
                   cliente_id: clienteId,
                   proveedor_id: esTercerizado ? (proveedorId || null) : null,
-                  unidad_id: unidadId || null,
+                  unidades: unidadesSelected,
                   chofer_id: choferId || null,
                   origen: document.getElementById('f_origen').value,
                   destino: document.getElementById('f_destino').value,
@@ -993,7 +1127,12 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
 
   const totalGastos = trip.gastos?.reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
   const totalAnticipos = trip.anticipos?.reduce((a, an) => a + parseFloat(an.monto), 0) || 0;
-  const margen = parseFloat(trip.precio_pactado) || 0; // Gastos and anticipos don't affect margin for now
+
+  const propioReintegro = trip.gastos?.filter(g => g.clase === 'propio' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
+  const terceroReintegro = trip.gastos?.filter(g => g.clase === 'tercerizado' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
+  const propioSinReintegro = trip.gastos?.filter(g => g.clase === 'propio' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
+  const costoProveedorBase = parseFloat(trip.costo_proveedor) || 0;
+  const costoProveedorAjustado = costoProveedorBase - totalAnticipos - propioReintegro + terceroReintegro;
 
   const handleDelete = (endpoint, id) => {
     setConfirmCfg({
@@ -1051,7 +1190,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
                 <InfoLine label="Transporte" value={getProveedorName(trip) || 'Flota Propia'} />
                 <InfoLine label="Chofer" value={getChoferName(trip)} />
                 <InfoLine label="Unidad" value={getUnidadLabel(trip)} />
-                <InfoLine label="Salida" value={trip.fecha_salida ? `${trip.fecha_salida.split('T')[0]} ${trip.hora_salida ? trip.hora_salida.substring(11, 16) : ''}` : '—'} />
+                <InfoLine label="Salida" value={trip.fecha_salida ? `${formatDateDisplay(trip.fecha_salida)} ${trip.hora_salida ? trip.hora_salida.substring(11, 16) : ''}` : '—'} />
                 <InfoLine label="Origen" value={trip.origen} />
                 <InfoLine label="Destino" value={trip.destino} />
               </div>
@@ -1112,7 +1251,9 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
                       <tr key={g.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                         <td style={{ padding: '0.65rem 0' }}>
                           <span className="badge" style={{ backgroundColor: 'var(--bg-body)', fontSize: '0.65rem', marginRight: '0.5rem' }}>{g.tipo}</span>
-                          {g.concepto}
+                          {g.clase && <span className="badge" style={{ backgroundColor: g.clase === 'propio' ? 'rgba(59,130,246,0.1)' : 'rgba(168,85,247,0.1)', color: g.clase === 'propio' ? '#3b82f6' : '#a855f7', fontSize: '0.6rem', marginRight: '0.35rem' }}>{g.clase === 'propio' ? 'Propio' : 'Tercerizado'}</span>}
+                          {g.reintegro !== null && <span className="badge" style={{ backgroundColor: g.reintegro ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: g.reintegro ? '#22c55e' : '#ef4444', fontSize: '0.6rem' }}>{g.reintegro ? 'Reintegro' : 'Sin reinte.'}</span>}
+                          <span style={{ marginLeft: '0.5rem' }}>{g.concepto}</span>
                         </td>
                         <td>{formatDateForInput(g.fecha)}</td>
                         <td style={{ textAlign: 'right', fontWeight: 500, color: 'var(--color-danger-text)' }}>{formatCurrency(g.monto)}</td>
@@ -1154,6 +1295,19 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
               <div style={{ backgroundColor: 'var(--bg-body)', padding: '1.5rem', borderRadius: 'var(--radius-md)', textAlign: 'center', border: '1px solid var(--border-color)' }}>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Precio Acordado</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--bg-primary)' }}>{formatCurrency(trip.precio_pactado)}</div>
+                {trip.proveedor_id && (
+                  <>
+                    <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Costo Proveedor</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-danger-text)' }}>{formatCurrency(costoProveedorAjustado)}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                      Ganancia: {formatCurrency((trip.precio_pactado || 0) - costoProveedorAjustado)}
+                    </div>
+                  </>
+                )}
+                <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Costo Viaje</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-danger-text)' }}>{formatCurrency(trip.costo_viaje || 0)}</div>
                 <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Gastos Registrados</div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-danger-text)' }}>{formatCurrency(totalGastos)}</div>
@@ -1181,27 +1335,44 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
             </div>
 
             {trip.documento ? (
-              <div style={{ ...chainContainerStyle, justifyContent: 'center' }}>
-                <div style={{ ...stepStyle, opacity: 1, minWidth: '250px' }}>
-                  <div style={stepTitleStyle}>
-                    <FileText size={14} />
-                    {trip.documento.tipo === 'REMITO' ? 'Remito' : trip.documento.tipo === 'CARTA_DE_PORTE' ? 'Carta de Porte' : 'Hoja de Ruta'}
-                  </div>
-                  <div style={stepContentStyle}>
-                    <strong style={{ fontSize: '1rem' }}>{trip.documento.numero}</strong>
-                    <span style={{ display: 'block', fontSize: '0.75rem', opacity: 0.7, margin: '0.25rem 0' }}>{formatDateForInput(trip.documento.fecha)}</span>
-                    {trip.documento.descripcion && (
-                      <span style={{ display: 'block', fontSize: '0.8rem', margin: '0.25rem 0' }}>{trip.documento.descripcion}</span>
-                    )}
-                    <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.5rem' }}>
-                      <span className={`badge ${trip.documento.estado === 'conforme' ? 'success' : (trip.documento.estado === 'pendiente' ? 'warning' : 'danger')}`} style={{ fontSize: '0.65rem' }}>
-                        {trip.documento.estado}
-                      </span>
-                      <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', trip.documento.tipo, trip.documento, trip)} title="Imprimir"><Printer size={12} /></button>
-                      <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('documentos', trip.documento.id)} title="Eliminar"><Trash2 size={12} /></button>
+              <div>
+                <div style={{ ...chainContainerStyle, justifyContent: 'center' }}>
+                  <div style={{ ...stepStyle, opacity: 1, minWidth: '250px' }}>
+                    <div style={stepTitleStyle}>
+                      <FileText size={14} />
+                      {trip.documento.tipo === 'REMITO' ? 'Remito' : trip.documento.tipo === 'CARTA_DE_PORTE' ? 'Carta de Porte' : 'Hoja de Ruta'}
+                    </div>
+                    <div style={stepContentStyle}>
+                      <strong style={{ fontSize: '1rem' }}>{trip.documento.numero}</strong>
+                      <span style={{ display: 'block', fontSize: '0.75rem', opacity: 0.7, margin: '0.25rem 0' }}>{formatDateForInput(trip.documento.fecha)}</span>
+                      {trip.documento.descripcion && (
+                        <span style={{ display: 'block', fontSize: '0.8rem', margin: '0.25rem 0' }}>{trip.documento.descripcion}</span>
+                      )}
+                      <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', marginTop: '0.5rem' }}>
+                        <span className={`badge ${trip.documento.estado === 'conforme' ? 'success' : (trip.documento.estado === 'pendiente' ? 'warning' : 'danger')}`} style={{ fontSize: '0.65rem' }}>
+                          {trip.documento.estado}
+                        </span>
+                        <button className="outline" style={{ padding: '0.1rem', border: 'none' }} onClick={() => onPrint('document', trip.documento.tipo, trip.documento, trip)} title="Imprimir"><Printer size={12} /></button>
+                        <button className="outline" style={{ padding: '0.1rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleDelete('documentos', trip.documento.id)} title="Eliminar"><Trash2 size={12} /></button>
+                      </div>
                     </div>
                   </div>
                 </div>
+                {trip.documento.archivos?.length > 0 && (
+                  <div style={{ marginTop: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    {trip.documento.archivos.map(f => (
+                      f.archivo_mime?.startsWith('image/') ? (
+                        <a key={f.id} href={`/storage/${f.archivo_path}`} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
+                          <img src={`/storage/${f.archivo_path}`} alt={f.archivo_nombre} style={{ width: '120px', height: '90px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }} />
+                        </a>
+                      ) : (
+                        <a key={f.id} href={`/storage/${f.archivo_path}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', backgroundColor: 'var(--bg-body)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.8rem', textDecoration: 'none', color: 'var(--text-main)' }}>
+                          <FileText size={16} /> {f.archivo_nombre}
+                        </a>
+                      )
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '3rem', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}>
@@ -1525,7 +1696,12 @@ const Trips = () => {
                 </tr>
               ) : viajes.length === 0 ? (
                 <tr>
-                  <td colSpan="9" style={{ textAlign: 'center', padding: '2rem' }}>No hay viajes cargados.</td>
+                  <td colSpan="11" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                      <FileText size={48} style={{ opacity: 0.3 }} />
+                      <p>No hay viajes cargados.</p>
+                    </div>
+                  </td>
                 </tr>
               ) : (
                 viajes.map(trip => {

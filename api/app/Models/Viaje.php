@@ -35,7 +35,6 @@ class Viaje extends Model
 
     protected $fillable = [
         'nro_viaje',
-        'unidad_id',
         'chofer_id',
         'cliente_id',
         'proveedor_id',
@@ -48,6 +47,7 @@ class Viaje extends Model
         'hora_llegada',
         'precio_pactado',
         'costo_proveedor',
+        'costo_viaje',
         'km_recorrido',
         'tipo_tarifa',
         'tarifa_valor',
@@ -65,6 +65,7 @@ class Viaje extends Model
             'fecha_llegada' => 'date',
             'precio_pactado' => 'decimal:2',
             'costo_proveedor' => 'decimal:2',
+            'costo_viaje' => 'decimal:2',
             'km_recorrido' => 'integer',
             'tarifa_valor' => 'decimal:2',
             'tarifa_base' => 'decimal:2',
@@ -73,9 +74,15 @@ class Viaje extends Model
 
     // ---------- Relaciones ----------
 
-    public function unidad(): BelongsTo
+    public function unidades(): BelongsToMany
     {
-        return $this->belongsTo(Unidad::class);
+        return $this->belongsToMany(Unidad::class, 'viaje_unidad');
+    }
+
+    // Accesor retrocompatible: primera unidad del viaje
+    public function getUnidadAttribute()
+    {
+        return $this->unidades->first();
     }
 
     public function chofer(): BelongsTo
@@ -118,6 +125,24 @@ class Viaje extends Model
         return $this->belongsToMany(Liquidacion::class, 'liquidacion_viaje', 'viaje_id', 'liquidacion_id')
             ->withPivot('monto')
             ->withTimestamps();
+    }
+
+    // ---------- Costo ----------
+
+    public function recalcularCostoViaje(): void
+    {
+        $gastos = $this->gastos()->withoutTrashed()->get();
+        $anticipos = $this->anticipos()->withoutTrashed()->sum('monto');
+
+        $propioReintegro = $gastos->where('clase', 'propio')->where('reintegro', true)->sum('monto');
+        $terceroReintegro = $gastos->where('clase', 'tercerizado')->where('reintegro', true)->sum('monto');
+        $propioSinReintegro = $gastos->where('clase', 'propio')->where('reintegro', false)->sum('monto');
+
+        $costoProveedorBase = $this->costo_proveedor ?? 0;
+        $costoProveedorAjustado = $costoProveedorBase - $anticipos - $propioReintegro + $terceroReintegro;
+
+        $this->costo_viaje = $costoProveedorAjustado + $propioSinReintegro + $terceroReintegro;
+        $this->save();
     }
 
     // ---------- Auditoría ----------

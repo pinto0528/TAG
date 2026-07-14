@@ -27,6 +27,8 @@ class GastoController extends Controller
         $validated = $request->validate([
             'viaje_id' => 'required|exists:viajes,id',
             'tipo' => 'required|string',
+            'clase' => 'required|in:propio,tercerizado',
+            'reintegro' => 'required|boolean',
             'concepto' => 'nullable|string',
             'monto' => 'required|numeric|min:0',
             'fecha' => 'required|date',
@@ -34,6 +36,7 @@ class GastoController extends Controller
         ]);
 
         $gasto = Gasto::create($validated);
+        $gasto->viaje->recalcularCostoViaje();
 
         return response()->json($gasto, 201);
     }
@@ -50,6 +53,8 @@ class GastoController extends Controller
 
         $validated = $request->validate([
             'tipo' => 'sometimes|required|string',
+            'clase' => 'sometimes|required|in:propio,tercerizado',
+            'reintegro' => 'sometimes|required|boolean',
             'concepto' => 'nullable|string',
             'monto' => 'sometimes|required|numeric|min:0',
             'fecha' => 'sometimes|required|date',
@@ -57,6 +62,7 @@ class GastoController extends Controller
         ]);
 
         $gasto->update($validated);
+        $gasto->viaje->recalcularCostoViaje();
 
         return response()->json($gasto);
     }
@@ -65,6 +71,7 @@ class GastoController extends Controller
     {
         $gasto = Gasto::findOrFail($id);
         $gasto->delete();
+        $gasto->viaje->recalcularCostoViaje();
         return response()->json(['message' => 'Gasto archivado']);
     }
 
@@ -72,6 +79,7 @@ class GastoController extends Controller
     {
         $gasto = Gasto::withTrashed()->findOrFail($id);
         $gasto->restore();
+        $gasto->viaje->recalcularCostoViaje();
         return response()->json(['message' => 'Gasto restaurado']);
     }
 }

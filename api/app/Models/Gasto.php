@@ -18,6 +18,8 @@ class Gasto extends Model
         'monto',
         'fecha',
         'tipo',
+        'clase',
+        'reintegro',
         'notas',
         'created_by',
     ];
@@ -27,6 +29,7 @@ class Gasto extends Model
         return [
             'monto' => 'decimal:2',
             'fecha' => 'date',
+            'reintegro' => 'boolean',
         ];
     }
 

@@ -44,6 +44,10 @@ Route::delete('/liquidaciones/{id}/viajes/{viajeId}', [LiquidacionController::cl
 Route::put('/liquidaciones/{id}/viajes/{viajeId}/monto', [LiquidacionController::class, 'actualizarMonto']);
 Route::put('/liquidaciones/{id}/estado', [LiquidacionController::class, 'cambiarEstado']);
 
+// Documento file uploads
+Route::post('/documentos/{id}/archivos', [DocumentoController::class, 'storeArchivo']);
+Route::delete('/documentos/{documentoId}/archivos/{archivoId}', [DocumentoController::class, 'destroyArchivo']);
+
 // Debug & Extra routes
 Route::get('/debug-viajes', function () { 
     $start = microtime(true);
