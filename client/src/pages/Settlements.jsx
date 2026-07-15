@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Search, FileText, Printer, Users, Briefcase, Eye, X, ChevronRight, ChevronLeft, Trash2, RotateCcw, AlertTriangle, CheckSquare } from 'lucide-react';
+import { Plus, Search, FileText, Printer, Users, Briefcase, Eye, X, ChevronRight, ChevronLeft, ChevronDown, Trash2, RotateCcw, AlertTriangle, CheckSquare } from 'lucide-react';
 import API_BASE_URL from '../apiConfig';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount || 0);
@@ -55,12 +55,11 @@ const PrintLiquidacionSheet = ({ data }) => {
                     <h1 style={{ margin: 0, fontSize: '18px', textTransform: 'uppercase', letterSpacing: '1px' }}>LIQUIDACIÓN DE {data.tipo}</h1>
                     <h2 style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#555' }}>TAG Logística S.A.</h2>
                 </div>
-                <div style={{ textAlign: 'right', fontSize: '11px' }}>
+                <div style={{ textAlign: 'right', fontSize: '13px' }}>
                     <p style={{ margin: '0 0 3px 0' }}><strong>Fecha Emisión:</strong> {formatDate(data.fecha_emision)}</p>
                     <p style={{ margin: '0 0 3px 0' }}><strong>Liquidación Nro:</strong> {data.numero}</p>
                     <p style={{ margin: '0 0 3px 0' }}><strong>{data.tipo === 'cliente' ? 'Cliente' : 'Proveedor'}:</strong> {getEntityName(data)}</p>
-                    {data.tipo === 'cliente' && data.cliente?.cuit && <p style={{ margin: 0 }}><strong>CUIT:</strong> {data.cliente.cuit}</p>}
-                    {data.tipo === 'proveedor' && data.proveedor?.cuit && <p style={{ margin: 0 }}><strong>CUIT:</strong> {data.proveedor.cuit}</p>}
+                    {(data.cliente?.cuit || data.proveedor?.cuit) && <p style={{ margin: 0 }}><strong>CUIT:</strong> {data.cliente?.cuit || data.proveedor?.cuit}</p>}
                 </div>
             </div>
 
@@ -69,6 +68,7 @@ const PrintLiquidacionSheet = ({ data }) => {
                     <tr>
                         <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Fecha</th>
                         <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Código</th>
+                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Documento</th>
                         <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Origen / Destino</th>
                         <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Chofer / Unidad</th>
                         {data.tipo === 'proveedor' && <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Cliente</th>}
@@ -81,12 +81,13 @@ const PrintLiquidacionSheet = ({ data }) => {
                     {viajes.map((v, idx) => (
                         <tr key={v.id} style={idx % 2 === 0 ? {} : { backgroundColor: '#f5f5f5' }}>
                             <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{formatDate(v.fecha_salida)}</td>
-                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', fontWeight: 'bold' }}>{getViajeCodigo(v)}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', fontWeight: 'bold', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{getViajeCodigo(v)}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', fontSize: '10px' }}>{v.documento ? `${v.documento.tipo === 'REMITO' ? 'Remito' : v.documento.tipo === 'CARTA_DE_PORTE' ? 'CdP' : 'HoR'} ${v.documento.numero}` : '—'}</td>
                             <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.origen} → {v.destino}</td>
-                            <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.chofer?.nombre} {v.chofer?.apellido} ({v.unidad?.patente})</td>
+                            <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.chofer?.nombre} {v.chofer?.apellido} ({v.unidades?.[0]?.patente || '—'})</td>
                             {data.tipo === 'proveedor' && <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.cliente?.razon_social || '—'}</td>}
-                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right' }}>{formatCurrency(v.total_gastos)}</td>
-                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right' }}>{formatCurrency(v.total_anticipos)}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right' }}>{formatCurrency(v.gastos?.reduce((s, g) => s + parseFloat(g.monto || 0), 0) || 0)}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right' }}>{formatCurrency(v.anticipos?.reduce((s, a) => s + parseFloat(a.monto || 0), 0) || 0)}</td>
                             <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(v.pivot?.monto ?? v.precio_pactado)}</td>
                         </tr>
                     ))}
@@ -99,16 +100,6 @@ const PrintLiquidacionSheet = ({ data }) => {
                 </tfoot>
             </table>
 
-            <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '50px' }}>
-                <div style={{ textAlign: 'center', width: '180px', borderTop: '1px solid #333', paddingTop: '8px', fontSize: '10px' }}>
-                    <p style={{ margin: 0 }}>Emitido por</p>
-                    <p style={{ margin: '3px 0 0 0', color: '#666' }}>TAG Logística</p>
-                </div>
-                <div style={{ textAlign: 'center', width: '180px', borderTop: '1px solid #333', paddingTop: '8px', fontSize: '10px' }}>
-                    <p style={{ margin: 0 }}>Recibí Conforme</p>
-                    <p style={{ margin: '3px 0 0 0', color: '#666' }}>Firma y Aclaración</p>
-                </div>
-            </div>
         </div>
     );
 };
@@ -560,19 +551,20 @@ const Settlements = () => {
     const [loading, setLoading] = useState(false);
 
     const [showWizard, setShowWizard] = useState(false);
-    const [previewData, setPreviewData] = useState(null);
     const [printMode, setPrintMode] = useState(false);
     const [dataToPrint, setDataToPrint] = useState(null);
 
     const [confirmAction, setConfirmAction] = useState(null);
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(null);
+    const [expandedLiq, setExpandedLiq] = useState(null);
+    const [printDropdownOpen, setPrintDropdownOpen] = useState(null);
 
     useEffect(() => {
-        if (statusDropdownOpen === null) return;
-        const handleClick = () => setStatusDropdownOpen(null);
+        if (statusDropdownOpen === null && printDropdownOpen === null) return;
+        const handleClick = () => { setStatusDropdownOpen(null); setPrintDropdownOpen(null); };
         document.addEventListener('click', handleClick);
         return () => document.removeEventListener('click', handleClick);
-    }, [statusDropdownOpen]);
+    }, [statusDropdownOpen, printDropdownOpen]);
 
     const fetchLiquidaciones = async () => {
         setLoading(true);
@@ -794,10 +786,9 @@ const Settlements = () => {
                                         </td>
                                     </tr>
                                 ) : (
-                                    liqFiltradas.map((liq) => {
+                                    liqFiltradas.flatMap((liq) => {
                                         const isArchived = !!liq.deleted_at;
-                                        const siguiente = getSiguienteEstado(liq.estado);
-                                        return (
+                                        const rows = [
                                             <tr key={liq.id} className="table-row-hover" style={isArchived ? { opacity: 0.5 } : {}}>
                                                 <td>{formatDate(liq.fecha_emision)}</td>
                                                 <td style={{ fontFamily: 'monospace', fontWeight: 500 }}>{liq.numero}</td>
@@ -807,11 +798,11 @@ const Settlements = () => {
                                                 <td style={{ textAlign: 'center', position: 'relative' }}>
                                                     <button
                                                         className="outline"
-                                                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', textTransform: 'uppercase' }}
+                                                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', color: 'var(--text-main, #333)' }}
                                                         onClick={(e) => { e.stopPropagation(); setStatusDropdownOpen(statusDropdownOpen === `liq-${liq.id}` ? null : `liq-${liq.id}`); }}
                                                         disabled={isArchived}
                                                     >
-                                                        {isArchived ? 'Archivada' : liq.estado} <ChevronDown size={10} />
+                                                        {isArchived ? 'Archivada' : liq.estado?.charAt(0).toUpperCase() + liq.estado?.slice(1)} <ChevronDown size={10} />
                                                     </button>
                                                     {statusDropdownOpen === `liq-${liq.id}` && !isArchived && (
                                                         <div style={{ position: 'fixed', zIndex: 9999, backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: '120px', overflow: 'hidden' }}
@@ -826,33 +817,71 @@ const Settlements = () => {
                                                                 }
                                                             }}
                                                         >
-                                                            {['borrador', 'pendiente', 'facturada'].filter(s => s !== liq.estado).map(s => (
-                                                                <button key={s} style={{ display: 'block', width: '100%', padding: '0.4rem 0.6rem', textAlign: 'left', fontSize: '0.75rem', border: 'none', background: 'none', cursor: 'pointer', textTransform: 'capitalize' }} onMouseEnter={e => e.target.style.backgroundColor = 'var(--bg-hover)'} onMouseLeave={e => e.target.style.backgroundColor = 'transparent'} onClick={() => handleChangeEstado(liq, s)}>{s}</button>
+                                                            {[
+                                                                { key: 'borrador', label: 'Borrador' },
+                                                                { key: 'pendiente', label: 'Pendiente' },
+                                                                { key: 'facturada', label: 'Facturada' },
+                                                            ].filter(s => s.key !== liq.estado).map(s => (
+                                                                <button key={s.key} style={{ display: 'block', width: '100%', padding: '0.4rem 0.6rem', textAlign: 'left', fontSize: '0.75rem', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-main, #333)' }} onMouseEnter={e => e.target.style.backgroundColor = 'var(--bg-hover)'} onMouseLeave={e => e.target.style.backgroundColor = 'transparent'} onClick={() => handleChangeEstado(liq, s.key)}>{s.label}</button>
                                                             ))}
                                                         </div>
                                                     )}
                                                 </td>
                                                 <td>
                                                     <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
-                                                        <button className="outline" style={{ padding: '0.4rem', border: 'none' }} onClick={() => setPreviewData(liq)} title="Ver Previsualización">
-                                                            <Eye size={16} />
+                                                        <button className="outline" style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }} onClick={() => handlePrint(liq)} title="Imprimir">
+                                                            <Printer size={14} />
                                                         </button>
-                                                        <button className="outline" style={{ padding: '0.4rem', border: 'none' }} onClick={() => handlePrint(liq)} title="Imprimir">
-                                                            <Printer size={16} />
+                                                        <button
+                                                            className="outline"
+                                                            style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}
+                                                            onClick={() => setExpandedLiq(expandedLiq === liq.id ? null : liq.id)}
+                                                        >
+                                                            Detalle <ChevronDown size={14} style={{ transform: expandedLiq === liq.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                                                         </button>
-                                                        {!isArchived ? (
-                                                            <button className="outline" style={{ padding: '0.4rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleArchive(liq)} title="Archivar">
-                                                                <Trash2 size={16} />
-                                                            </button>
-                                                        ) : (
-                                                            <button className="outline" style={{ padding: '0.4rem', border: 'none', color: 'var(--color-info-text, #2563eb)' }} onClick={() => handleRestore(liq)} title="Restaurar">
-                                                                <RotateCcw size={16} />
-                                                            </button>
-                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
-                                        );
+                                        ];
+                                        if (expandedLiq === liq.id && liq.viajes?.length > 0) {
+                                            rows.push(
+                                                <tr key={`liq-detail-${liq.id}`} style={{ backgroundColor: 'var(--bg-secondary, #f8f9fa)' }}>
+                                                    <td colSpan="7" style={{ padding: 0 }}>
+                                                        <div style={{ padding: '1rem 1.5rem' }}>
+                                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th style={{ textAlign: 'left', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Código</th>
+                                                                        <th style={{ textAlign: 'left', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Fecha</th>
+                                                                        <th style={{ textAlign: 'left', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Ruta</th>
+                                                                        <th style={{ textAlign: 'left', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Chofer / Unidad</th>
+                                                                        {liq.tipo === 'proveedor' && <th style={{ textAlign: 'left', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Cliente</th>}
+                                                                        <th style={{ textAlign: 'right', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Gastos</th>
+                                                                        <th style={{ textAlign: 'right', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Anticipos</th>
+                                                                        <th style={{ textAlign: 'right', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Monto</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {liq.viajes.map(v => (
+                                                                        <tr key={v.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                                                            <td style={{ padding: '0.4rem 0.6rem', fontFamily: 'monospace', fontWeight: 500 }}>{getViajeCodigo(v)}</td>
+                                                                            <td style={{ padding: '0.4rem 0.6rem' }}>{formatDate(v.fecha_salida)}</td>
+                                                                            <td style={{ padding: '0.4rem 0.6rem' }}>{v.origen} → {v.destino}</td>
+                                                                            <td style={{ padding: '0.4rem 0.6rem' }}>{v.chofer?.nombre} {v.chofer?.apellido} ({v.unidades?.[0]?.patente || '—'})</td>
+                                                                            {liq.tipo === 'proveedor' && <td style={{ padding: '0.4rem 0.6rem' }}>{v.cliente?.razon_social || '—'}</td>}
+                                                                            <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>{formatCurrency(v.gastos?.reduce((s, g) => s + parseFloat(g.monto || 0), 0) || 0)}</td>
+                                                                            <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>{formatCurrency(v.anticipos?.reduce((s, a) => s + parseFloat(a.monto || 0), 0) || 0)}</td>
+                                                                            <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(v.pivot?.monto ?? v.precio_pactado)}</td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }
+                                        return rows;
                                     })
                                 )}
                             </tbody>
@@ -865,14 +894,6 @@ const Settlements = () => {
                 <LiquidacionWizard
                     onClose={() => setShowWizard(false)}
                     onSave={handleSaveWizard}
-                />
-            )}
-
-            {previewData && !printMode && (
-                <LiquidacionPreview
-                    data={previewData}
-                    onClose={() => setPreviewData(null)}
-                    onPrint={() => handlePrint(previewData)}
                 />
             )}
 
