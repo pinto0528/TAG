@@ -25,7 +25,7 @@ class Viaje extends Model
 
     protected $table = 'viajes';
 
-    protected $appends = ['codigo_viaje'];
+    protected $appends = ['codigo_viaje', 'costo_proveedor_ajustado'];
 
     public function getCodigoViajeAttribute()
     {
@@ -70,6 +70,19 @@ class Viaje extends Model
             'tarifa_valor' => 'decimal:2',
             'tarifa_base' => 'decimal:2',
         ];
+    }
+
+    public function getCostoProveedorAjustadoAttribute(): float
+    {
+        $gastos = $this->relationLoaded('gastos') ? $this->gastos : $this->gastos()->withoutTrashed()->get();
+        $anticipos = $this->relationLoaded('anticipos') ? $this->anticipos->sum('monto') : $this->anticipos()->withoutTrashed()->sum('monto');
+
+        $propioReintegro = $gastos->where('clase', 'propio')->where('reintegro', true)->sum('monto');
+        $terceroReintegro = $gastos->where('clase', 'tercerizado')->where('reintegro', true)->sum('monto');
+
+        $costoProveedorBase = $this->costo_proveedor ?? 0;
+
+        return (float) $costoProveedorBase - (float) $anticipos - (float) $propioReintegro + (float) $terceroReintegro;
     }
 
     // ---------- Relaciones ----------

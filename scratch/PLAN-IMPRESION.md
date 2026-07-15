@@ -1,10 +1,6 @@
-# Plan: Sistema de Impresión Profesional y Finanzas
+# Plan: Impresión, Finanzas y UX
 
-Fecha: 2026-07-14
-
-## Resumen de cambios
-
-5 modificaciones en `Trips.jsx`, 1 cambio en `index.css`, 1 cambio en `Settlements.jsx`.
+Fecha: 2026-07-15 (actualizado)
 
 ## Imprimibles del sistema (6 total)
 
@@ -19,116 +15,114 @@ Fecha: 2026-07-14
 
 ---
 
-## 1. Estilo profesional para todos los imprimibles (monoespaciado + tablas Excel) ✅ COMPLETADO
+## Grupo A: Monto por tipo de liquidación
 
-**Archivos:** `Trips.jsx`, `Settlements.jsx`, `index.css`
+### A1. Backend — Accessor `costo_proveedor_ajustado` ✅ COMPLETADO
+**Archivo:** `api/app/Models/Viaje.php`
 
-Cambiar `fontFamily` a `'Courier New', 'Consolas', monospace` en todos los componentes de impresión:
-- `PrintReceipt` ✅
-- `PrintDocumentVoucher` ✅
-- `PrintSelectedTable` ✅
-- `PrintTripSheet` ✅
-- `PrintLiquidacionSheet` ✅
-- Nuevo: `PrintTripDetail` (punto 4)
+Agregar accessor que calcule:
+```
+costoProveedorAjustado = costo_proveedor - anticipos - propioReintegro + terceroReintegro
+```
+Reutiliza la lógica de `recalcularCostoViaje()` pero retorna en vez de guardar.
 
-Agregar borde de tabla estilo Excel: bordes sólidos 1px en celdas, fondo gris en headers, alineación consistente. Cada impresión lleva `<style>@page { size: A4 portrait/landscape; margin: 10mm; }</style>`.
+### A2. Backend — Eager load gastos/anticipos en viajesDisponibles ✅ COMPLETADO
+**Archivo:** `api/app/Http/Controllers/LiquidacionController.php:137`
+
+Agregar `gastos` y `anticipos` al `->with([...])` para que el accessor funcione sin N+1.
+
+### A3. Frontend — Monto default por tipo ✅ COMPLETADO
+**Archivo:** `client/src/pages/Settlements.jsx:194-196`
+
+Inicializar `montosEditados` según tipo:
+- `cliente`: `v.precio_pactado` (sin cambios)
+- `proveedor`: `v.costo_proveedor_ajustado ?? v.costo_proveedor`
+
+El usuario puede seguir editando el monto manualmente.
 
 ---
 
-## 2. Agregar info del viaje (Nro, Cliente, CUIT) a todos los imprimibles
+## Grupo B: Impresión y Finanzas
 
+### B1. Info viaje (Nro, Cliente, CUIT) en todos los imprimibles
+**Archivos:** `Trips.jsx`, `Settlements.jsx`
+
+| Componente | Cambio |
+|---|---|
+| `PrintTripSheet` | Agregar Cliente + CUIT al header derecho |
+| `PrintReceipt` | Agregar Cliente + CUIT debajo de "Viaje Nro" |
+| `PrintDocumentVoucher` | Agregar CUIT junto a Viaje |
+| `PrintSelectedTable` | Agregar columna "Cliente" |
+| `PrintLiquidacionSheet` | Agregar CUIT en el header |
+| `PrintTripDetail` | Incluir en header (al crear) |
+
+### B2. Bug PrintLiquidacionSheet — columnas faltantes
+**Archivo:** `Settlements.jsx:44-110`
+
+Las columnas "Chofer / Unidad" y "Cliente" no se muestran para liquidaciones de proveedor.
+Verificar que los datos vengan del backend del endpoint `show`.
+
+### B3. Tab Finanzas — quitar ganancia, agregar TOTAL
+**Archivo:** `Trips.jsx:1384-1407`
+
+- Quitar línea "Ganancia" (línea 1394)
+- Agregar bloque TOTAL grande al fondo:
+  ```
+  TOTAL = Precio - (Costo Prov - Anticipos) - Gastos propios s/reintegro - Gastos tercerizados c/reintegro
+  ```
+- Visualmente: fondo coloreado, borde, texto grande centrado, resultado con signo +/-
+
+### B4. Nuevo PrintTripDetail (apaisado, tabla financiera)
 **Archivo:** `Trips.jsx`
 
-En cada componente de impresión, agregar cabecera con:
-- **Nro de Viaje:** `viaje.codigo_viaje`
-- **Cliente:** `viaje.cliente?.razon_social` (ya viene del eager loading)
-- **CUIT:** `viaje.cliente?.cuit`
-
-Esto aplica a:
-- `PrintTripSheet`: Ya tiene `Nº {viaje.codigo_viaje}`, agregar Cliente + CUIT en el header derecho
-- `PrintReceipt`: Agregar línea debajo de "Viaje Nro"
-- `PrintDocumentVoucher`: Ya tiene Cliente, agregar CUIT
-- `PrintSelectedTable`: Agregar columna "Cliente" en la tabla
-- Nuevo `PrintTripDetail`: Incluir en el header
-
----
-
-## 3. Cambios en la tab Finanzas
-
-**Archivo:** `Trips.jsx`, sección Finanzas (líneas 1266-1289)
-
-**Quitar:**
-- La línea de "Ganancia" (línea 1276)
-
-**Agregar:**
-- Un bloque grande al final que muestre el **TOTAL DEL VIAJE**:
-
-```
-TOTAL = Precio Acordado - (Costo Proveedor - Anticipos) - Gastos propios s/reintegro - Gastos tercerizados c/reintegro
-```
-
-Visualmente: fondo con color, borde, texto grande centrado, resultado con signo +/- para indicar ganancia/pérdida.
-
----
-
-## 4. Nuevo imprimible: Detalle de Viaje (apaisado, tabla financiera)
-
-**Archivo:** `Trips.jsx`
-
-Nuevo componente `PrintTripDetail`:
 - `@page { size: A4 landscape; margin: 10mm; }`
-- Header: TAG Logística / Detalle de Viaje / Nº + Cliente + CUIT
-- **Tabla financiera** con columnas:
-
-| Concepto | Tipo | Clase | Reintegro | Monto |
-
-Con subtotales:
-- Costo Proveedor (base)
-- (-) Anticipos
-- (=) Costo Proveedor Ajustado
-- (-) Gastos Propios s/Reintegro
-- (-) Gastos Tercerizados c/Reintegro
-- (+) Gastos Propios c/Reintegro (si aplican)
-- (=) **TOTAL DEL VIAJE**
-- Precio Acordado
-- **= GANANCIA/PÉRDIDA**
-
+- Header: TAG / Detalle de Viaje / Nº + Cliente + CUIT
+- Tabla financiera con columnas: Concepto, Tipo, Clase, Reintegro, Monto
+- Subtotales: Costo Proveedor (base), (-) Anticipos, (=) Costo Ajustado, (-) Propios s/Reintegro, (-) Tercerizados c/Reintegro, (=) TOTAL, Precio Acordado, = GANANCIA/PÉRDIDA
 - Firma: "Firma Autorizada" / "Fecha"
 
----
+### B5. Botón imprimir → dropdown
+**Archivo:** `Trips.jsx:1842-1849`
 
-## 5. Reemplazar botón de imprimir por menú desplegable
-
-**Archivo:** `Trips.jsx`, línea 1724-1731
-
-Reemplazar el botón `<Printer />` por un componente dropdown con 2 opciones:
+Reemplazar `<Printer />` por dropdown con opciones:
 - **Hoja de Ruta** → `setPrintMode('sheet')`
 - **Detalle de Viaje** → `setPrintMode('detail')`
 
-Implementar con estado local `printDropdownOpen` por fila, usando `ChevronDown` icon. Se cierra al hacer click fuera o al seleccionar una opción.
+Implementar con estado local `printDropdownOpen` por fila, `ChevronDown` icon. Se cierra al click fuera o al seleccionar.
 
-Agregar `printMode === 'detail'` al sistema de renderizado existente (línea 1822).
+Agregar `printMode === 'detail'` al renderizado existente (línea 1946).
+
+---
+
+## Grupo C: Dropdowns de estado
+
+### C1. Dropdown de estado en grilla de viajes Y liquidaciones
+**Archivos:** `Trips.jsx`, `Settlements.jsx`
+
+**Viajes:** Reemplazar botón de estado por dropdown inline en la columna "Estado" de la grilla. Estados posibles según estado actual:
+- pendiente → en_curso, cancelado
+- en_curso → finalizado, cancelado
+- finalizado → liquidado (automático al crear liquidación)
+- liquidado / cancelado → sin cambios
+
+**Liquidaciones:** Dropdown inline en columna "Estado" de la grilla. Estados posibles:
+- borrador → pendiente
+- pendiente → facturada
+- facturada → sin cambios
+
+---
+
+## Bugs / Fixes pendientes
+
+- **PrintLiquidacionSheet:** En liquidaciones de proveedores, no se muestra unidad ni chofer del viaje. Tampoco se muestra para qué cliente fue cada viaje.
 
 ---
 
 ## Orden de implementación
 
-1. `index.css` — agregar estilos base de impresión monoespaciada ✅
-2. `Trips.jsx` + `Settlements.jsx` — actualizar los 5 componentes de impresión existentes (estilo) ✅
-3. `Trips.jsx` — crear componente `PrintTripDetail`
-4. `Trips.jsx` — modificar tab Finanzas (quitar ganancia, agregar TOTAL)
-5. `Trips.jsx` — reemplazar botón imprimir por dropdown
-6. `Trips.jsx` / `Settlements.jsx` — agregar info del viaje (Nro, Cliente, CUIT) a todos los imprimibles
-7. Verificar compilación con `npm run lint` y `npm run build`
-
-## Bugs / Fixes pendientes
-
-- **PrintLiquidacionSheet (Settlements.jsx):** En liquidaciones de proveedores, no se muestra la unidad ni el chofer del viaje. Tampoco se muestra para qué cliente fue cada viaje. Agregar columna "Cliente" y completar "Chofer / Unidad" en la tabla.
-
-## 6. Dropdown de estado en la grilla de viajes
-
-**Archivo:** `Trips.jsx`
-
-Reemplazar el botón de "marcar estado pendiente" por un **dropdown desplegable** directamente en la columna "Estado" de la grilla. El dropdown muestra los estados posibles (pendiente, en_curso, finalizado, cancelado) y permite cambiar el estado de un viaje directamente desde la grilla, sin necesidad de abrir el detalle.
-
-Aplica tanto para viajes propios como tercerizados.
+1. A1 → A2 → A3 (backend + frontend monto por tipo)
+2. B1 + B2 (imprimibles: info viaje + bug fix)
+3. B3 (tab Finanzas)
+4. B4 + B5 (PrintTripDetail + dropdown imprimir)
+5. C1 (dropdowns de estado viajes + liquidaciones)
+6. Verificar con `npm run lint` y `npm run build`

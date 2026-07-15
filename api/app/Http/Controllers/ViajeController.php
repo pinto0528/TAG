@@ -283,4 +283,15 @@ class ViajeController extends Controller
         $viaje->restore();
         return response()->json(['message' => 'Viaje restaurado']);
     }
+
+    public function cambiarEstado(Request $request, Viaje $viaje)
+    {
+        $validated = $request->validate([
+            'estado' => 'required|string|in:pendiente,en_curso,finalizado,liquidado,cancelado',
+        ]);
+
+        $viaje->update(['estado' => $validated['estado']]);
+
+        return response()->json($viaje->fresh(['cliente', 'proveedor', 'unidades', 'chofer']));
+    }
 }

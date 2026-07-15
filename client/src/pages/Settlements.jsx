@@ -58,7 +58,9 @@ const PrintLiquidacionSheet = ({ data }) => {
                 <div style={{ textAlign: 'right', fontSize: '11px' }}>
                     <p style={{ margin: '0 0 3px 0' }}><strong>Fecha Emisión:</strong> {formatDate(data.fecha_emision)}</p>
                     <p style={{ margin: '0 0 3px 0' }}><strong>Liquidación Nro:</strong> {data.numero}</p>
-                    <p style={{ margin: 0 }}><strong>{data.tipo === 'cliente' ? 'Cliente' : 'Proveedor'}:</strong> {getEntityName(data)}</p>
+                    <p style={{ margin: '0 0 3px 0' }}><strong>{data.tipo === 'cliente' ? 'Cliente' : 'Proveedor'}:</strong> {getEntityName(data)}</p>
+                    {data.tipo === 'cliente' && data.cliente?.cuit && <p style={{ margin: 0 }}><strong>CUIT:</strong> {data.cliente.cuit}</p>}
+                    {data.tipo === 'proveedor' && data.proveedor?.cuit && <p style={{ margin: 0 }}><strong>CUIT:</strong> {data.proveedor.cuit}</p>}
                 </div>
             </div>
 
@@ -69,6 +71,7 @@ const PrintLiquidacionSheet = ({ data }) => {
                         <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Código</th>
                         <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Origen / Destino</th>
                         <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Chofer / Unidad</th>
+                        {data.tipo === 'proveedor' && <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Cliente</th>}
                         <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Gastos</th>
                         <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Anticipos</th>
                         <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Monto</th>
@@ -81,6 +84,7 @@ const PrintLiquidacionSheet = ({ data }) => {
                             <td style={{ border: '1px solid #ccc', padding: '5px 8px', fontWeight: 'bold' }}>{getViajeCodigo(v)}</td>
                             <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.origen} → {v.destino}</td>
                             <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.chofer?.nombre} {v.chofer?.apellido} ({v.unidad?.patente})</td>
+                            {data.tipo === 'proveedor' && <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.cliente?.razon_social || '—'}</td>}
                             <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right' }}>{formatCurrency(v.total_gastos)}</td>
                             <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right' }}>{formatCurrency(v.total_anticipos)}</td>
                             <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(v.pivot?.monto ?? v.precio_pactado)}</td>
@@ -89,7 +93,7 @@ const PrintLiquidacionSheet = ({ data }) => {
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colSpan="6" style={{ border: '1px solid #333', padding: '8px', textAlign: 'right', fontWeight: 'bold', backgroundColor: '#e5e5e5', fontSize: '12px', textTransform: 'uppercase' }}>TOTAL A LIQUIDAR:</td>
+                        <td colSpan={data.tipo === 'proveedor' ? 7 : 6} style={{ border: '1px solid #333', padding: '8px', textAlign: 'right', fontWeight: 'bold', backgroundColor: '#e5e5e5', fontSize: '12px', textTransform: 'uppercase' }}>TOTAL A LIQUIDAR:</td>
                         <td style={{ border: '1px solid #333', padding: '8px', textAlign: 'right', fontWeight: 'bold', fontSize: '14px' }}>{formatCurrency(data.total)}</td>
                     </tr>
                 </tfoot>
@@ -192,7 +196,11 @@ const LiquidacionWizard = ({ onClose, onSave }) => {
             setViajesDisponibles(viajes);
             setViajesSeleccionados(viajes.map(v => v.id));
             const montosInit = {};
-            viajes.forEach(v => { montosInit[v.id] = v.precio_pactado; });
+            viajes.forEach(v => {
+                montosInit[v.id] = tipo === 'proveedor'
+                    ? (v.costo_proveedor_ajustado ?? v.costo_proveedor ?? v.precio_pactado)
+                    : v.precio_pactado;
+            });
             setMontosEditados(montosInit);
             setStep(2);
         } catch (err) {
@@ -390,7 +398,7 @@ const LiquidacionWizard = ({ onClose, onSave }) => {
                                                 <th>Fecha</th>
                                                 <th>Origen - Destino</th>
                                                 <th>Chofer / Unidad</th>
-                                                <th style={{ textAlign: 'right' }}>Precio del Viaje</th>
+                                                <th style={{ textAlign: 'right' }}>{tipo === 'proveedor' ? 'Costo Proveedor' : 'Precio del Viaje'}</th>
                                                 <th style={{ textAlign: 'right' }}>Monto</th>
                                             </tr>
                                         </thead>
@@ -406,7 +414,7 @@ const LiquidacionWizard = ({ onClose, onSave }) => {
                                                         <span style={{ display: 'block', fontSize: '0.85rem' }}>{v.chofer?.nombre} {v.chofer?.apellido}</span>
                                                         <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{v.unidad?.patente}</span>
                                                     </td>
-                                                    <td style={{ textAlign: 'right', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{formatCurrency(v.precio_pactado)}</td>
+                                                    <td style={{ textAlign: 'right', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{formatCurrency(tipo === 'proveedor' ? (v.costo_proveedor_ajustado ?? v.costo_proveedor ?? 0) : v.precio_pactado)}</td>
                                                     <td style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
                                                         <input
                                                             type="number"
@@ -557,6 +565,14 @@ const Settlements = () => {
     const [dataToPrint, setDataToPrint] = useState(null);
 
     const [confirmAction, setConfirmAction] = useState(null);
+    const [statusDropdownOpen, setStatusDropdownOpen] = useState(null);
+
+    useEffect(() => {
+        if (statusDropdownOpen === null) return;
+        const handleClick = () => setStatusDropdownOpen(null);
+        document.addEventListener('click', handleClick);
+        return () => document.removeEventListener('click', handleClick);
+    }, [statusDropdownOpen]);
 
     const fetchLiquidaciones = async () => {
         setLoading(true);
@@ -788,10 +804,33 @@ const Settlements = () => {
                                                 <td>{getEntityName(liq)}</td>
                                                 <td style={{ textAlign: 'center' }}>{liq.viajes?.length || 0}</td>
                                                 <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(liq.total)}</td>
-                                                <td style={{ textAlign: 'center' }}>
-                                                    <span className="badge" style={{ textTransform: 'uppercase' }}>
-                                                        {isArchived ? 'Archivada' : liq.estado}
-                                                    </span>
+                                                <td style={{ textAlign: 'center', position: 'relative' }}>
+                                                    <button
+                                                        className="outline"
+                                                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', textTransform: 'uppercase' }}
+                                                        onClick={(e) => { e.stopPropagation(); setStatusDropdownOpen(statusDropdownOpen === `liq-${liq.id}` ? null : `liq-${liq.id}`); }}
+                                                        disabled={isArchived}
+                                                    >
+                                                        {isArchived ? 'Archivada' : liq.estado} <ChevronDown size={10} />
+                                                    </button>
+                                                    {statusDropdownOpen === `liq-${liq.id}` && !isArchived && (
+                                                        <div style={{ position: 'fixed', zIndex: 9999, backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: '120px', overflow: 'hidden' }}
+                                                            ref={el => {
+                                                                if (el) {
+                                                                    const btn = el.previousElementSibling;
+                                                                    if (btn) {
+                                                                        const r = btn.getBoundingClientRect();
+                                                                        el.style.top = `${r.bottom + 4}px`;
+                                                                        el.style.left = `${r.left}px`;
+                                                                    }
+                                                                }
+                                                            }}
+                                                        >
+                                                            {['borrador', 'pendiente', 'facturada'].filter(s => s !== liq.estado).map(s => (
+                                                                <button key={s} style={{ display: 'block', width: '100%', padding: '0.4rem 0.6rem', textAlign: 'left', fontSize: '0.75rem', border: 'none', background: 'none', cursor: 'pointer', textTransform: 'capitalize' }} onMouseEnter={e => e.target.style.backgroundColor = 'var(--bg-hover)'} onMouseLeave={e => e.target.style.backgroundColor = 'transparent'} onClick={() => handleChangeEstado(liq, s)}>{s}</button>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td>
                                                     <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
@@ -801,11 +840,6 @@ const Settlements = () => {
                                                         <button className="outline" style={{ padding: '0.4rem', border: 'none' }} onClick={() => handlePrint(liq)} title="Imprimir">
                                                             <Printer size={16} />
                                                         </button>
-                                                        {!isArchived && siguiente && (
-                                                            <button className="outline" style={{ padding: '0.4rem', border: 'none', color: 'var(--color-success-text, #16a34a)' }} onClick={() => handleChangeEstado(liq, siguiente)} title={`Marcar como ${getEstadoLabel(liq.estado)}`}>
-                                                                <CheckSquare size={16} />
-                                                            </button>
-                                                        )}
                                                         {!isArchived ? (
                                                             <button className="outline" style={{ padding: '0.4rem', border: 'none', color: 'var(--color-danger-text)' }} onClick={() => handleArchive(liq)} title="Archivar">
                                                                 <Trash2 size={16} />

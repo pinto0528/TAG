@@ -83,6 +83,8 @@ const PrintReceipt = ({ type, item, viaje }) => {
           <div style={{ textAlign: 'right', fontSize: '12px' }}>
             <p style={{ margin: 0 }}><strong>Fecha:</strong> {formatDateForInput(item.fecha)}</p>
             <p style={{ margin: '3px 0 0' }}><strong>Viaje Nro:</strong> {viaje.codigo_viaje}</p>
+            {viaje.cliente && <p style={{ margin: '3px 0 0' }}><strong>Cliente:</strong> {viaje.cliente.razon_social}</p>}
+            {viaje.cliente?.cuit && <p style={{ margin: '3px 0 0' }}><strong>CUIT:</strong> {viaje.cliente.cuit}</p>}
           </div>
         </div>
 
@@ -158,6 +160,8 @@ const PrintDocumentVoucher = ({ type, item, viaje }) => {
           <div style={{ textAlign: 'right', fontSize: '12px' }}>
             <p style={{ margin: 0 }}><strong>Fecha:</strong> {formatDateForInput(item.fecha || item.fecha_emision || item.fecha_cobro)}</p>
             <p style={{ margin: '3px 0 0' }}><strong>Viaje:</strong> {viaje.codigo_viaje}</p>
+            {viaje.cliente && <p style={{ margin: '3px 0 0' }}><strong>Cliente:</strong> {viaje.cliente.razon_social}</p>}
+            {viaje.cliente?.cuit && <p style={{ margin: '3px 0 0' }}><strong>CUIT:</strong> {viaje.cliente.cuit}</p>}
           </div>
         </div>
 
@@ -561,6 +565,7 @@ const PrintSelectedTable = ({ viajes }) => (
           <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left', whiteSpace: 'nowrap' }}>Código</th>
           <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left' }}>Fechas (S / L)</th>
           <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left' }}>Proveedor</th>
+          <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left' }}>Cliente</th>
           <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left' }}>Ruta (Km)</th>
           <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left' }}>Estado</th>
           <th style={{ borderBottom: '2px solid black', padding: '4px 5px', textAlign: 'left' }}>Asignación a Cargo</th>
@@ -578,6 +583,7 @@ const PrintSelectedTable = ({ viajes }) => (
               Lle: {trip.fecha_llegada ? formatDateDisplay(trip.fecha_llegada) : 'S/D'} {trip.hora_llegada ? trip.hora_llegada.substring(11, 16) : ''}
             </td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '4px 5px' }}>{getProveedorName(trip)}</td>
+            <td style={{ borderBottom: '1px solid #ccc', padding: '4px 5px' }}>{trip.cliente?.razon_social || '—'}</td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '4px 5px' }}>{trip.origen} {' → '} {trip.destino}</td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '4px 5px', textTransform: 'uppercase' }}>{trip.estado}</td>
             <td style={{ borderBottom: '1px solid #ccc', padding: '4px 5px' }}>
@@ -613,7 +619,9 @@ const PrintTripSheet = ({ viaje }) => (
         </div>
         <div style={{ textAlign: 'right' }}>
           <h2 style={{ margin: 0, fontSize: '16px' }}>Nº {viaje.codigo_viaje}</h2>
-          <p style={{ margin: 0, textTransform: 'uppercase', fontWeight: 'bold', fontSize: '11px' }}>{viaje.estado}</p>
+          {viaje.cliente && <p style={{ margin: '2px 0 0', fontSize: '11px' }}>Cliente: {viaje.cliente.razon_social}</p>}
+          {viaje.cliente?.cuit && <p style={{ margin: '2px 0 0', fontSize: '11px' }}>CUIT: {viaje.cliente.cuit}</p>}
+          <p style={{ margin: '2px 0 0', textTransform: 'uppercase', fontWeight: 'bold', fontSize: '11px' }}>{viaje.estado}</p>
         </div>
       </div>
 
@@ -749,6 +757,129 @@ const PrintTripSheet = ({ viaje }) => (
     </div>
   </div>
 );
+
+const PrintTripDetail = ({ viaje }) => {
+  const anticipos = viaje.anticipos || [];
+  const gastos = viaje.gastos || [];
+  const totalAnticipos = anticipos.reduce((a, an) => a + parseFloat(an.monto), 0);
+  const propioReintegro = gastos.filter(g => g.clase === 'propio' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
+  const terceroReintegro = gastos.filter(g => g.clase === 'tercerizado' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
+  const propioSinReintegro = gastos.filter(g => g.clase === 'propio' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
+  const terceroSinReintegro = gastos.filter(g => g.clase === 'tercerizado' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
+  const costoBase = parseFloat(viaje.costo_proveedor) || 0;
+  const costoAjustado = costoBase - totalAnticipos - propioReintegro + terceroReintegro;
+  const costoViaje = costoAjustado + propioSinReintegro + terceroSinReintegro;
+  const ganancia = (viaje.precio_pactado || 0) - costoViaje;
+
+  return (
+    <div style={{ padding: '0', fontFamily: "'Courier New', 'Consolas', monospace", color: 'black', fontSize: '11px' }}>
+      <style>{`@page { size: A4 landscape; margin: 10mm; }`}</style>
+      <div style={{ border: '2px solid #333', padding: '15px 20px', position: 'relative' }}>
+        <div style={{ borderBottom: '2px solid #333', paddingBottom: '10px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '16px', textTransform: 'uppercase', letterSpacing: '1px' }}>TAG Logística</h1>
+            <h2 style={{ margin: '2px 0 0 0', textTransform: 'uppercase', letterSpacing: '2px', fontSize: '12px' }}>Detalle de Viaje</h2>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <h2 style={{ margin: 0, fontSize: '14px' }}>Nº {viaje.codigo_viaje}</h2>
+            {viaje.cliente && <p style={{ margin: '2px 0 0', fontSize: '10px' }}>Cliente: {viaje.cliente.razon_social}</p>}
+            {viaje.cliente?.cuit && <p style={{ margin: '2px 0 0', fontSize: '10px' }}>CUIT: {viaje.cliente.cuit}</p>}
+          </div>
+        </div>
+
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px', marginBottom: '10px' }}>
+          <thead>
+            <tr>
+              <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Concepto</th>
+              <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Tipo</th>
+              <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Clase</th>
+              <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Reintegro</th>
+              <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            {costoBase > 0 && (
+              <tr>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">Costo Proveedor (base)</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(costoBase)}</td>
+              </tr>
+            )}
+            {totalAnticipos > 0 && (
+              <tr>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(-) Anticipos ({anticipos.length})</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', color: '#22c55e' }}>-{formatCurrency(totalAnticipos)}</td>
+              </tr>
+            )}
+            {costoBase > 0 && (
+              <tr style={{ backgroundColor: '#f0f0f0' }}>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(=) Costo Proveedor Ajustado</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(costoAjustado)}</td>
+              </tr>
+            )}
+            {gastos.map((g, idx) => (
+              <tr key={`g-${g.id}`} style={idx % 2 === 0 ? {} : { backgroundColor: '#fafafa' }}>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px' }}>{g.concepto || g.tipo}</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px' }}>{g.tipo}</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px' }}>
+                  <span style={{ color: g.clase === 'propio' ? '#3b82f6' : '#a855f7' }}>{g.clase === 'propio' ? 'Propio' : 'Tercerizado'}</span>
+                </td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px' }}>
+                  <span style={{ color: g.reintegro ? '#22c55e' : '#ef4444' }}>{g.reintegro ? 'Sí' : 'No'}</span>
+                </td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right' }}>{formatCurrency(g.monto)}</td>
+              </tr>
+            ))}
+            {propioSinReintegro > 0 && (
+              <tr style={{ backgroundColor: '#f0f0f0' }}>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(-) Gastos Propios s/Reintegro</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>-{formatCurrency(propioSinReintegro)}</td>
+              </tr>
+            )}
+            {terceroSinReintegro > 0 && (
+              <tr style={{ backgroundColor: '#f0f0f0' }}>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(-) Gastos Tercerizados s/Reintegro</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>-{formatCurrency(terceroSinReintegro)}</td>
+              </tr>
+            )}
+            {terceroReintegro > 0 && (
+              <tr style={{ backgroundColor: '#f0f0f0' }}>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(+) Gastos Tercerizados c/Reintegro</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>+{formatCurrency(terceroReintegro)}</td>
+              </tr>
+            )}
+            {propioReintegro > 0 && (
+              <tr style={{ backgroundColor: '#f0f0f0' }}>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(+) Gastos Propios c/Reintegro</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>+{formatCurrency(propioReintegro)}</td>
+              </tr>
+            )}
+            <tr style={{ backgroundColor: '#e5e5e5' }}>
+              <td style={{ border: '1px solid #333', padding: '4px 6px', fontWeight: 'bold', fontSize: '11px' }} colSpan="4">(=) TOTAL VIAJE</td>
+              <td style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'right', fontWeight: 'bold', fontSize: '12px' }}>{formatCurrency(costoViaje)}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #333', padding: '4px 6px', fontWeight: 'bold', fontSize: '11px' }} colSpan="4">Precio Acordado</td>
+              <td style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'right', fontWeight: 'bold', fontSize: '12px', color: '#2563eb' }}>{formatCurrency(viaje.precio_pactado)}</td>
+            </tr>
+            <tr style={{ backgroundColor: ganancia >= 0 ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)' }}>
+              <td style={{ border: '1px solid #333', padding: '4px 6px', fontWeight: 'bold', fontSize: '11px' }} colSpan="4">= {ganancia >= 0 ? 'GANANCIA' : 'PÉRDIDA'}</td>
+              <td style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'right', fontWeight: 'bold', fontSize: '13px', color: ganancia >= 0 ? '#22c55e' : '#ef4444' }}>{ganancia >= 0 ? '+' : ''}{formatCurrency(ganancia)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '30px' }}>
+          <div style={{ textAlign: 'center', width: '180px', borderTop: '1px solid #333', paddingTop: '6px', fontSize: '9px' }}>
+            Firma Autorizada
+          </div>
+          <div style={{ textAlign: 'center', width: '180px', borderTop: '1px solid #333', paddingTop: '6px', fontSize: '9px' }}>
+            Fecha: {new Date().toLocaleDateString('es-AR')}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ============================================================ 
 // CUSTOM MODALS
@@ -1382,28 +1513,28 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
             </div>
 
             <div style={{ flex: '1 1 200px' }}>
-              <div style={{ backgroundColor: 'var(--bg-body)', padding: '1.5rem', borderRadius: 'var(--radius-md)', textAlign: 'center', border: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Precio Acordado</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--bg-primary)' }}>{formatCurrency(trip.precio_pactado)}</div>
-                {trip.proveedor_id && (
-                  <>
-                    <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Costo Proveedor</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-danger-text)' }}>{formatCurrency(costoProveedorAjustado)}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                      Ganancia: {formatCurrency((trip.precio_pactado || 0) - costoProveedorAjustado)}
+              <div style={{ backgroundColor: 'var(--bg-body)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                {[
+                  { label: 'Precio Acordado', value: trip.precio_pactado, color: 'var(--bg-primary)', large: false },
+                  ...(trip.proveedor_id ? [{ label: 'Costo Proveedor', value: costoProveedorAjustado, color: 'var(--color-danger-text)', large: false }] : []),
+                  { label: 'Costo Viaje', value: trip.costo_viaje || 0, color: 'var(--color-danger-text)', large: false },
+                  { label: 'Gastos', value: totalGastos, color: 'var(--color-danger-text)', large: false },
+                  { label: 'Anticipos', value: totalAnticipos, color: 'var(--color-success-text)', large: false },
+                ].map((row, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: i < 4 ? '1px solid var(--border-color)' : 'none' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{row.label}</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: row.color }}>{formatCurrency(row.value)}</span>
+                  </div>
+                ))}
+                {(() => {
+                  const total = (trip.precio_pactado || 0) - (costoProveedorBase - totalAnticipos) - propioSinReintegro - terceroReintegro;
+                  return (
+                    <div style={{ marginTop: '0.6rem', padding: '0.5rem 0.75rem', backgroundColor: total >= 0 ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${total >= 0 ? '#22c55e' : '#ef4444'}`, borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: total >= 0 ? '#22c55e' : '#ef4444', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total</span>
+                      <span style={{ fontSize: '1.3rem', fontWeight: 'bold', color: total >= 0 ? '#22c55e' : '#ef4444' }}>{total >= 0 ? '+' : ''}{formatCurrency(total)}</span>
                     </div>
-                  </>
-                )}
-                <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Costo Viaje</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-danger-text)' }}>{formatCurrency(trip.costo_viaje || 0)}</div>
-                <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Gastos Registrados</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-danger-text)' }}>{formatCurrency(totalGastos)}</div>
-                <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '1rem 0' }}></div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Anticipos Registrados</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-success-text)' }}>{formatCurrency(totalAnticipos)}</div>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -1557,8 +1688,24 @@ const Trips = () => {
   const [tripToPrint, setTripToPrint] = useState(null);
   const [printItem, setPrintItem] = useState(null);
   const [printSubType, setPrintSubType] = useState(null);
+  const [printDropdownOpen, setPrintDropdownOpen] = useState(null);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(null);
   const [alertMsg, setAlertMsg] = useState(null);
   const [confirmCfg, setConfirmCfg] = useState(null);
+
+  useEffect(() => {
+    if (printDropdownOpen === null) return;
+    const handleClick = () => setPrintDropdownOpen(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [printDropdownOpen]);
+
+  useEffect(() => {
+    if (statusDropdownOpen === null) return;
+    const handleClick = () => setStatusDropdownOpen(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [statusDropdownOpen]);
 
   useEffect(() => {
     if (printMode) {
@@ -1587,6 +1734,24 @@ const Trips = () => {
   const toggleTripSelection = (id) => {
     if (selectedTrips.includes(id)) setSelectedTrips(selectedTrips.filter(tId => tId !== id));
     else setSelectedTrips([...selectedTrips, id]);
+  };
+
+  const handleCambiarEstado = async (viajeId, nuevoEstado) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/viajes/${viajeId}/estado`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: nuevoEstado }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Error al cambiar estado');
+      }
+      setViajes(prev => prev.map(v => v.id === viajeId ? { ...v, estado: nuevoEstado } : v));
+      setStatusDropdownOpen(null);
+    } catch (err) {
+      setAlertMsg({ type: 'error', text: err.message });
+    }
   };
 
   const fetchViajes = async (page = currentPage, forceSortBy = sortBy, forceSortDir = sortDir) => {
@@ -1812,7 +1977,33 @@ const Trips = () => {
                         <td>{trip.origen} {' → '} {trip.destino}</td>
                         <td style={{ fontSize: '0.8rem' }}>{getUnidadLabel(trip)}</td>
                         <td>{getChoferName(trip)}</td>
-                        <td>{getStatusBadge(trip.estado)}</td>
+                        <td style={{ position: 'relative' }}>
+                          <button
+                            className="outline"
+                            style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); setStatusDropdownOpen(statusDropdownOpen === `trip-${trip.id}` ? null : `trip-${trip.id}`); }}
+                          >
+                            {getStatusBadge(trip.estado)} <ChevronDown size={10} />
+                          </button>
+                          {statusDropdownOpen === `trip-${trip.id}` && (
+                            <div style={{ position: 'fixed', zIndex: 9999, backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: '120px', overflow: 'hidden' }}
+                              ref={el => {
+                                if (el) {
+                                  const btn = el.previousElementSibling;
+                                  if (btn) {
+                                    const r = btn.getBoundingClientRect();
+                                    el.style.top = `${r.bottom + 4}px`;
+                                    el.style.left = `${r.left}px`;
+                                  }
+                                }
+                              }}
+                            >
+                              {['pendiente', 'en_curso', 'finalizado', 'liquidado', 'cancelado'].filter(s => s !== trip.estado).map(s => (
+                                <button key={s} style={{ display: 'block', width: '100%', padding: '0.4rem 0.6rem', textAlign: 'left', fontSize: '0.75rem', border: 'none', background: 'none', cursor: 'pointer', textTransform: 'capitalize' }} onMouseEnter={e => e.target.style.backgroundColor = 'var(--bg-hover)'} onMouseLeave={e => e.target.style.backgroundColor = 'transparent'} onClick={() => handleCambiarEstado(trip.id, s)}>{s.replace('_', ' ')}</button>
+                              ))}
+                            </div>
+                          )}
+                        </td>
                         <td style={{ textAlign: 'right', fontWeight: '500' }}>{formatCurrency(trip.precio_pactado)}</td>
                         <td style={{ textAlign: 'right', fontWeight: '500', color: trip.costo_proveedor > 0 ? 'var(--color-danger-text)' : 'inherit' }}>{trip.costo_proveedor > 0 ? formatCurrency(trip.costo_proveedor) : '—'}</td>
                         <td style={{ textAlign: 'center' }}>
@@ -1839,14 +2030,36 @@ const Trips = () => {
                                 Restaurar
                               </button>
                             )}
-                            <button
-                              className="outline"
-                              style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}
-                              onClick={() => { setTripToPrint(trip); setPrintMode('sheet'); }}
-                              title="Imprimir Hoja de Ruta"
-                            >
-                              <Printer size={14} />
-                            </button>
+                            <div style={{ position: 'relative' }}>
+                              <button
+                                className="outline"
+                                style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}
+                                onClick={(e) => { e.stopPropagation(); setPrintDropdownOpen(printDropdownOpen === trip.id ? null : trip.id); }}
+                                title="Imprimir"
+                              >
+                                <Printer size={14} /> <ChevronDown size={12} />
+                              </button>
+                              {printDropdownOpen === trip.id && (
+                                <div style={{ position: 'absolute', right: 0, top: '100%', zIndex: 50, backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: '160px', overflow: 'hidden' }}>
+                                  <button
+                                    style={{ display: 'block', width: '100%', padding: '0.5rem 0.75rem', textAlign: 'left', fontSize: '0.75rem', border: 'none', background: 'none', cursor: 'pointer' }}
+                                    onMouseEnter={e => e.target.style.backgroundColor = 'var(--bg-hover)'}
+                                    onMouseLeave={e => e.target.style.backgroundColor = 'transparent'}
+                                    onClick={() => { setTripToPrint(trip); setPrintMode('sheet'); setPrintDropdownOpen(null); }}
+                                  >
+                                    <FileText size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} /> Hoja de Ruta
+                                  </button>
+                                  <button
+                                    style={{ display: 'block', width: '100%', padding: '0.5rem 0.75rem', textAlign: 'left', fontSize: '0.75rem', border: 'none', background: 'none', cursor: 'pointer', borderTop: '1px solid var(--border-color)' }}
+                                    onMouseEnter={e => e.target.style.backgroundColor = 'var(--bg-hover)'}
+                                    onMouseLeave={e => e.target.style.backgroundColor = 'transparent'}
+                                    onClick={() => { setTripToPrint(trip); setPrintMode('detail'); setPrintDropdownOpen(null); }}
+                                  >
+                                    <DollarSign size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} /> Detalle de Viaje
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                             <button
                               className="outline"
                               style={{ padding: '0.25rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}
@@ -1946,6 +2159,12 @@ const Trips = () => {
       {printMode === 'sheet' && tripToPrint && (
         <PrintPortal>
           <PrintTripSheet viaje={tripToPrint} />
+        </PrintPortal>
+      )}
+
+      {printMode === 'detail' && tripToPrint && (
+        <PrintPortal>
+          <PrintTripDetail viaje={tripToPrint} />
         </PrintPortal>
       )}
 

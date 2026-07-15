@@ -64,7 +64,9 @@ class LiquidacionController extends Controller
     public function show($id)
     {
         $liquidacion = Liquidacion::withTrashed()
-            ->with(['cliente', 'proveedor', 'viajes', 'factura'])
+            ->with(['cliente', 'proveedor', 'viajes' => function ($q) {
+                $q->with(['chofer', 'unidades', 'cliente']);
+            }, 'factura'])
             ->findOrFail($id);
         return response()->json($liquidacion);
     }
@@ -134,7 +136,7 @@ class LiquidacionController extends Controller
         $viajesYaEnLiquidacion = $liquidacion->viajes()->pluck('viajes.id');
         $query->whereNotIn('viajes.id', $viajesYaEnLiquidacion);
 
-        $viajes = $query->with(['cliente', 'proveedor', 'unidades', 'chofer', 'documento'])
+        $viajes = $query->with(['cliente', 'proveedor', 'unidades', 'chofer', 'documento', 'gastos', 'anticipos'])
             ->orderBy('fecha_salida', 'desc')
             ->get();
 
@@ -251,5 +253,18 @@ class LiquidacionController extends Controller
             ->where('liquidacion_id', $liquidacion->id)
             ->sum('monto');
         $liquidacion->update(['total' => $total]);
+    }
+
+    public function cambiarEstado(Request $request, $id)
+    {
+        $liquidacion = Liquidacion::findOrFail($id);
+
+        $validated = $request->validate([
+            'estado' => 'required|string|in:borrador,pendiente,facturada',
+        ]);
+
+        $liquidacion->update(['estado' => $validated['estado']]);
+
+        return response()->json($liquidacion->load(['cliente', 'proveedor', 'viajes']));
     }
 }

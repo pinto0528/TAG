@@ -34,6 +34,7 @@ foreach ($resources as $name => $controller) {
     Route::apiResource($name, $controller);
     Route::post("/{$name}/{id}/restore", [$controller, 'restore']);
 }
+Route::patch('/viajes/{viaje}/estado', [ViajeController::class, 'cambiarEstado']);
 
 // Liquidaciones (with custom endpoints)
 Route::apiResource('liquidaciones', LiquidacionController::class);
