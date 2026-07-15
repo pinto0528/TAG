@@ -261,7 +261,8 @@ const FinanceForm = ({ item, viajetoId, onSave, onClose }) => {
             <label style={labelStyle}>Clase</label>
             <select className="input-field" value={formData.clase} onChange={e => setFormData({ ...formData, clase: e.target.value })} required>
               <option value="propio">Propio</option>
-              <option value="tercerizado">Tercerizado</option>
+              <option value="cliente" disabled>Cliente (próximamente)</option>
+              <option value="proveedor">Proveedor</option>
             </select>
           </div>
           <div>
@@ -617,9 +618,9 @@ const PrintTripDetail = ({ viaje }) => {
   const gastos = viaje.gastos || [];
   const totalAnticipos = anticipos.reduce((a, an) => a + parseFloat(an.monto), 0);
   const propioReintegro = gastos.filter(g => g.clase === 'propio' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
-  const terceroReintegro = gastos.filter(g => g.clase === 'tercerizado' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
+  const terceroReintegro = gastos.filter(g => g.clase === 'proveedor' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
   const propioSinReintegro = gastos.filter(g => g.clase === 'propio' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
-  const terceroSinReintegro = gastos.filter(g => g.clase === 'tercerizado' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
+  const terceroSinReintegro = gastos.filter(g => g.clase === 'proveedor' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
   const costoBase = parseFloat(viaje.costo_proveedor) || 0;
   const costoAjustado = costoBase - totalAnticipos - propioReintegro + terceroReintegro;
   const costoViaje = costoAjustado + propioSinReintegro + terceroSinReintegro;
@@ -850,13 +851,13 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                 </select>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingBottom: '0.5rem' }}>
-                <input type="checkbox" id="tercerizado" checked={esTercerizado} onChange={e => {
+                <input type="checkbox" id="proveedor" checked={esTercerizado} onChange={e => {
                   setEsTercerizado(e.target.checked);
                   if (!e.target.checked) setProveedorId('');
                   setUnidadesRows([null]);
                   setChoferId('');
                 }} />
-                <label htmlFor="tercerizado" style={{ fontSize: '0.875rem', fontWeight: 600, whiteSpace: 'nowrap' }}>Tercerizado</label>
+                <label htmlFor="proveedor" style={{ fontSize: '0.875rem', fontWeight: 600, whiteSpace: 'nowrap' }}>Proveedor</label>
               </div>
               <div style={{ opacity: esTercerizado ? 1 : 0.6 }}>
                 <label style={labelStyle}>Proveedor (Empresa) *</label>
@@ -1205,7 +1206,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
   const totalAnticipos = trip.anticipos?.reduce((a, an) => a + parseFloat(an.monto), 0) || 0;
 
   const propioReintegro = trip.gastos?.filter(g => g.clase === 'propio' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
-  const terceroReintegro = trip.gastos?.filter(g => g.clase === 'tercerizado' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
+  const terceroReintegro = trip.gastos?.filter(g => g.clase === 'proveedor' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
   const propioSinReintegro = trip.gastos?.filter(g => g.clase === 'propio' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
   const costoProveedorBase = parseFloat(trip.costo_proveedor) || 0;
   const costoProveedorAjustado = costoProveedorBase - totalAnticipos - propioReintegro + terceroReintegro;

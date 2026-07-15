@@ -27,7 +27,7 @@ class GastoController extends Controller
         $validated = $request->validate([
             'viaje_id' => 'required|exists:viajes,id',
             'tipo' => 'required|string',
-            'clase' => 'required|in:propio,tercerizado',
+            'clase' => 'required|in:propio,cliente,proveedor',
             'reintegro' => 'required|boolean',
             'concepto' => 'nullable|string',
             'monto' => 'required|numeric|min:0',
@@ -53,7 +53,7 @@ class GastoController extends Controller
 
         $validated = $request->validate([
             'tipo' => 'sometimes|required|string',
-            'clase' => 'sometimes|required|in:propio,tercerizado',
+            'clase' => 'sometimes|required|in:propio,cliente,proveedor',
             'reintegro' => 'sometimes|required|boolean',
             'concepto' => 'nullable|string',
             'monto' => 'sometimes|required|numeric|min:0',

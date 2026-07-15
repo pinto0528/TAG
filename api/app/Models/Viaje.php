@@ -78,7 +78,7 @@ class Viaje extends Model
         $anticipos = $this->relationLoaded('anticipos') ? $this->anticipos->sum('monto') : $this->anticipos()->withoutTrashed()->sum('monto');
 
         $propioReintegro = $gastos->where('clase', 'propio')->where('reintegro', true)->sum('monto');
-        $terceroReintegro = $gastos->where('clase', 'tercerizado')->where('reintegro', true)->sum('monto');
+        $terceroReintegro = $gastos->where('clase', 'proveedor')->where('reintegro', true)->sum('monto');
 
         $costoProveedorBase = $this->costo_proveedor ?? 0;
 
@@ -148,7 +148,7 @@ class Viaje extends Model
         $anticipos = $this->anticipos()->withoutTrashed()->sum('monto');
 
         $propioReintegro = $gastos->where('clase', 'propio')->where('reintegro', true)->sum('monto');
-        $terceroReintegro = $gastos->where('clase', 'tercerizado')->where('reintegro', true)->sum('monto');
+        $terceroReintegro = $gastos->where('clase', 'proveedor')->where('reintegro', true)->sum('monto');
         $propioSinReintegro = $gastos->where('clase', 'propio')->where('reintegro', false)->sum('monto');
 
         $costoProveedorBase = $this->costo_proveedor ?? 0;

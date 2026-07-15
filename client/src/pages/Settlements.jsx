@@ -72,8 +72,8 @@ const PrintLiquidacionSheet = ({ data }) => {
                         <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Origen / Destino</th>
                         <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Chofer / Unidad</th>
                         {data.tipo === 'proveedor' && <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Cliente</th>}
-                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Gastos</th>
-                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Anticipos</th>
+                        {data.tipo === 'proveedor' && <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Gastos</th>}
+                        {data.tipo === 'proveedor' && <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Anticipos</th>}
                         <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Monto</th>
                     </tr>
                 </thead>
@@ -86,15 +86,15 @@ const PrintLiquidacionSheet = ({ data }) => {
                             <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.origen} → {v.destino}</td>
                             <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.chofer?.nombre} {v.chofer?.apellido} ({v.unidades?.[0]?.patente || '—'})</td>
                             {data.tipo === 'proveedor' && <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.cliente?.razon_social || '—'}</td>}
-                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right' }}>{formatCurrency(v.gastos?.reduce((s, g) => s + parseFloat(g.monto || 0), 0) || 0)}</td>
-                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right' }}>{formatCurrency(v.anticipos?.reduce((s, a) => s + parseFloat(a.monto || 0), 0) || 0)}</td>
+                            {data.tipo === 'proveedor' && <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right' }}>{formatCurrency(v.gastos?.reduce((s, g) => s + parseFloat(g.monto || 0), 0) || 0)}</td>}
+                            {data.tipo === 'proveedor' && <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right' }}>{formatCurrency(v.anticipos?.reduce((s, a) => s + parseFloat(a.monto || 0), 0) || 0)}</td>}
                             <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(v.pivot?.monto ?? v.precio_pactado)}</td>
                         </tr>
                     ))}
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colSpan={data.tipo === 'proveedor' ? 7 : 6} style={{ border: '1px solid #333', padding: '8px', textAlign: 'right', fontWeight: 'bold', backgroundColor: '#e5e5e5', fontSize: '12px', textTransform: 'uppercase' }}>TOTAL A LIQUIDAR:</td>
+                        <td colSpan={data.tipo === 'proveedor' ? 8 : 5} style={{ border: '1px solid #333', padding: '8px', textAlign: 'right', fontWeight: 'bold', backgroundColor: '#e5e5e5', fontSize: '12px', textTransform: 'uppercase' }}>TOTAL A LIQUIDAR:</td>
                         <td style={{ border: '1px solid #333', padding: '8px', textAlign: 'right', fontWeight: 'bold', fontSize: '14px' }}>{formatCurrency(data.total)}</td>
                     </tr>
                 </tfoot>
