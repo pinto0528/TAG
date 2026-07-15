@@ -24,7 +24,6 @@ const getStatusBadge = (status) => {
     case 'finalizado': return <span className="badge success">Finalizado</span>;
     case 'en_curso': return <span className="badge info">En curso</span>;
     case 'pendiente': return <span className="badge warning">Pendiente</span>;
-    case 'liquidado': return <span className="badge" style={{ backgroundColor: '#8b5cf6', color: '#fff' }}>Liquidado</span>;
     case 'cancelado': return <span className="badge danger">Cancelado</span>;
     default: return <span className="badge">{status}</span>;
   }
@@ -1869,7 +1868,6 @@ const Trips = () => {
                                 { key: 'pendiente', label: 'Pendiente' },
                                 { key: 'en_curso', label: 'En Curso' },
                                 { key: 'finalizado', label: 'Finalizado' },
-                                { key: 'liquidado', label: 'Liquidado' },
                                 { key: 'cancelado', label: 'Cancelado' },
                               ].filter(s => s.key !== trip.estado).map(s => (
                                 <button key={s.key} style={{ display: 'block', width: '100%', padding: '0.4rem 0.6rem', textAlign: 'left', fontSize: '0.75rem', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-main, #333)' }} onMouseEnter={e => e.target.style.backgroundColor = 'var(--bg-hover)'} onMouseLeave={e => e.target.style.backgroundColor = 'transparent'} onClick={() => handleCambiarEstado(trip.id, s.key)}>{s.label}</button>

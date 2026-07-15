@@ -124,8 +124,7 @@ class LiquidacionController extends Controller
         $liquidacion = Liquidacion::findOrFail($id);
 
         $query = Viaje::query()
-            ->where('estado', '!=', 'cancelado')
-            ->where('estado', '!=', 'liquidado');
+            ->where('estado', '!=', 'cancelado');
 
         if ($liquidacion->tipo === 'cliente') {
             $query->where('cliente_id', $liquidacion->cliente_id);
@@ -151,6 +150,13 @@ class LiquidacionController extends Controller
 
         $viajesYaEnLiquidacion = $liquidacion->viajes()->pluck('viajes.id');
         $query->whereNotIn('viajes.id', $viajesYaEnLiquidacion);
+
+        $viajesYaEnMismoTipo = \DB::table('liquidacion_viaje')
+            ->join('liquidaciones', 'liquidaciones.id', '=', 'liquidacion_viaje.liquidacion_id')
+            ->where('liquidaciones.tipo', $liquidacion->tipo)
+            ->where('liquidaciones.id', '!=', $liquidacion->id)
+            ->pluck('liquidacion_viaje.viaje_id');
+        $query->whereNotIn('viajes.id', $viajesYaEnMismoTipo);
 
         $viajes = $query->with(['cliente', 'proveedor', 'unidades', 'chofer', 'documento', 'gastos', 'anticipos'])
             ->orderBy('fecha_salida', 'desc')
@@ -228,11 +234,6 @@ class LiquidacionController extends Controller
         ]);
 
         $liquidacion->update(['estado' => $validated['estado']]);
-
-        if ($validated['estado'] === 'pendiente') {
-            $viajeIds = $liquidacion->viajes()->pluck('viajes.id');
-            Viaje::whereIn('id', $viajeIds)->update(['estado' => 'liquidado']);
-        }
 
         return response()->json($liquidacion->load(['cliente', 'proveedor', 'viajes']));
     }
