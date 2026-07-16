@@ -740,17 +740,21 @@ const PrintTripDetail = ({ viaje }) => {
 // ============================================================ 
 // CUSTOM MODALS
 // ============================================================
-const AlertModal = ({ message, onClose }) => (
-  <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
-    <div className="card" style={{ maxWidth: '400px', width: '90%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--color-danger-text)' }}>Atención</h3>
-      <p style={{ margin: 0, fontSize: '0.9rem' }}>{message}</p>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-        <button onClick={onClose}>Aceptar</button>
+const AlertModal = ({ message, onClose }) => {
+  const text = typeof message === 'object' ? message.text : message;
+  const isError = typeof message === 'object' && message.type === 'error';
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+      <div className="card" style={{ maxWidth: '400px', width: '90%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <h3 style={{ margin: 0, fontSize: '1.1rem', color: isError ? 'var(--color-danger-text)' : 'var(--color-success-text, #2e7d32)' }}>{isError ? 'Error' : 'Atención'}</h3>
+        <p style={{ margin: 0, fontSize: '0.9rem' }}>{text}</p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+          <button onClick={onClose}>Aceptar</button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ConfirmModal = ({ message, onConfirm, onClose }) => (
   <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
@@ -900,6 +904,30 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                     const usedIds = unidadesRows.filter((v, i) => i !== idx && v !== null);
                     return (
                       <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <input
+                          className="input-field"
+                          style={{ width: '80px', flexShrink: 0 }}
+                          placeholder="Nro."
+                          value={unidadSearch[idx] || ''}
+                          onChange={e => {
+                            const newSearch = [...unidadSearch];
+                            newSearch[idx] = e.target.value;
+                            setUnidadSearch(newSearch);
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const match = filteredUnidades.find(u => u.numero === unidadSearch[idx]);
+                              if (match) {
+                                const updated = [...unidadesRows];
+                                updated[idx] = match.id;
+                                setUnidadesRows(updated);
+                              } else {
+                                setAlertMsg({ type: 'error', text: 'No se encontró unidad con ese número' });
+                              }
+                            }
+                          }}
+                        />
                         <select
                           className="input-field"
                           style={{ flex: 1 }}
@@ -920,31 +948,6 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                             .filter(u => u.id === val || !usedIds.includes(u.id))
                             .map(u => <option key={u.id} value={u.id}>{u.marca} {u.modelo} ({u.patente})</option>)}
                         </select>
-                        <input
-                          className="input-field"
-                          style={{ width: '80px', flexShrink: 0 }}
-                          placeholder="Nro."
-                          value={unidadSearch[idx] || ''}
-                          onChange={e => {
-                            const newSearch = [...unidadSearch];
-                            newSearch[idx] = e.target.value;
-                            setUnidadSearch(newSearch);
-                          }}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              const match = filteredUnidades.find(u => u.numero === unidadSearch[idx]);
-                              if (match) {
-                                const updated = [...unidadesRows];
-                                updated[idx] = match.id;
-                                setUnidadesRows(updated);
-                                setAlertMsg({ type: 'success', text: `Unidad seleccionada: ${match.marca} ${match.modelo} (${match.patente})` });
-                              } else {
-                                setAlertMsg({ type: 'error', text: 'No se encontró unidad con ese número' });
-                              }
-                            }
-                          }}
-                        />
                         <button
                           type="button"
                           className="outline"
@@ -971,14 +974,6 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
               <div>
                 <label style={labelStyle}>Chofer *</label>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <select className="input-field" style={{ flex: 1 }} value={choferId} onChange={e => {
-                    setChoferId(e.target.value);
-                    const c = filteredChoferes.find(ch => ch.id === Number(e.target.value));
-                    setChoferSearch(c?.numero || '');
-                  }} required>
-                    <option value="">Seleccione chofer...</option>
-                    {filteredChoferes.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.apellido}</option>)}
-                  </select>
                   <input
                     className="input-field"
                     style={{ width: '80px', flexShrink: 0 }}
@@ -991,13 +986,20 @@ const TripFormModal = ({ trip, onClose, onSave, clientes, unidades, choferes, pr
                         const match = filteredChoferes.find(c => c.numero === choferSearch);
                         if (match) {
                           setChoferId(match.id);
-                          setAlertMsg({ type: 'success', text: `Chofer seleccionado: ${match.nombre} ${match.apellido}` });
                         } else {
                           setAlertMsg({ type: 'error', text: 'No se encontró chofer con ese número' });
                         }
                       }
                     }}
                   />
+                  <select className="input-field" style={{ flex: 1 }} value={choferId} onChange={e => {
+                    setChoferId(e.target.value);
+                    const c = filteredChoferes.find(ch => ch.id === Number(e.target.value));
+                    setChoferSearch(c?.numero || '');
+                  }} required>
+                    <option value="">Seleccione chofer...</option>
+                    {filteredChoferes.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.apellido}</option>)}
+                  </select>
                 </div>
               </div>
             </div>
