@@ -1208,6 +1208,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
   const propioReintegro = trip.gastos?.filter(g => g.clase === 'propio' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
   const terceroReintegro = trip.gastos?.filter(g => g.clase === 'proveedor' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
   const propioSinReintegro = trip.gastos?.filter(g => g.clase === 'propio' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
+  const terceroSinReintegro = trip.gastos?.filter(g => g.clase === 'proveedor' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
   const costoProveedorBase = parseFloat(trip.costo_proveedor) || 0;
   const costoProveedorAjustado = costoProveedorBase - totalAnticipos - propioReintegro + terceroReintegro;
 
@@ -1371,19 +1372,21 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
             <div style={{ flex: '1 1 200px' }}>
               <div style={{ backgroundColor: 'var(--bg-body)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
                 {[
-                  { label: 'Precio del Viaje', value: trip.precio_pactado, color: 'var(--bg-primary)', prefix: '' },
-                  ...(trip.proveedor_id ? [{ label: 'Costo Proveedor', value: costoProveedorBase, color: 'var(--color-danger-text)', prefix: '-' }] : []),
-                  { label: 'Costo Viaje', value: trip.costo_viaje || 0, color: 'var(--color-danger-text)', prefix: '-' },
-                  { label: 'Gastos', value: totalGastos, color: 'var(--color-danger-text)', prefix: '-' },
-                  { label: 'Anticipos', value: totalAnticipos, color: 'var(--color-success-text)', prefix: '+' },
+                  { label: 'Precio del Viaje', value: trip.precio_pactado, color: 'var(--bg-primary)' },
+                  { label: 'Costo Proveedor', value: costoProveedorBase, color: 'var(--color-danger-text)' },
+                  { label: 'Anticipos', value: totalAnticipos, color: 'var(--color-success-text)' },
+                  { label: 'Gastos propios s/reintegro', value: propioSinReintegro, color: 'var(--color-danger-text)' },
+                  { label: 'Gastos propios c/reintegro', value: propioReintegro, color: 'var(--color-success-text)' },
+                  { label: 'Gastos prov. s/reintegro', value: terceroSinReintegro, color: 'var(--color-danger-text)' },
+                  { label: 'Gastos prov. c/reintegro', value: terceroReintegro, color: 'var(--color-success-text)' },
                 ].map((row, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: i < 4 ? '1px solid var(--border-color)' : 'none' }}>
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: i < 6 ? '1px solid var(--border-color)' : 'none' }}>
                     <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{row.label}</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: row.color }}>{row.prefix}{formatCurrency(row.value)}</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: row.color }}>{row.value < 0 ? '-' : ''}{formatCurrency(Math.abs(row.value))}</span>
                   </div>
                 ))}
                 {(() => {
-                  const total = (trip.precio_pactado || 0) - (costoProveedorBase - totalAnticipos) - propioSinReintegro - terceroReintegro;
+                  const total = (trip.precio_pactado || 0) - (trip.costo_viaje || 0);
                   return (
                     <div style={{ marginTop: '0.6rem', padding: '0.5rem 0.75rem', backgroundColor: total >= 0 ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${total >= 0 ? '#22c55e' : '#ef4444'}`, borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: '0.8rem', fontWeight: 700, color: total >= 0 ? '#22c55e' : '#ef4444', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total</span>
