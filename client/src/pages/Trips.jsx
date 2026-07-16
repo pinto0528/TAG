@@ -524,15 +524,15 @@ const PrintTripSheet = ({ viaje }) => (
           <h1 style={{ margin: 0, fontSize: '18px', textTransform: 'uppercase', letterSpacing: '1px' }}>TAG Logística</h1>
           <h2 style={{ margin: '3px 0 0 0', textTransform: 'uppercase', letterSpacing: '2px', fontSize: '13px' }}>Hoja de Ruta / Viaje</h2>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <h2 style={{ margin: 0, fontSize: '16px' }}>Nº {viaje.codigo_viaje}</h2>
-          {viaje.cliente && <p style={{ margin: '2px 0 0', fontSize: '14px' }}>Cliente: {viaje.cliente.razon_social}</p>}
-          {viaje.cliente?.cuit && <p style={{ margin: '2px 0 0', fontSize: '14px' }}>CUIT: {viaje.cliente.cuit}</p>}
-          {viaje.documento ? <p style={{ margin: '2px 0 0', fontSize: '14px' }}>{viaje.documento.tipo === 'REMITO' ? 'Remito' : viaje.documento.tipo === 'CARTA_DE_PORTE' ? 'Carta de Porte' : 'Hoja de Ruta'} N°: {viaje.documento.numero}</p> : <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#999' }}>Sin Documento Asociado</p>}
+          <div style={{ textAlign: 'right' }}>
+            <h2 style={{ margin: 0, fontSize: '16px' }}>Nº {viaje.codigo_viaje}</h2>
+            {viaje.cliente && <p style={{ margin: '2px 0 0', fontSize: '14px' }}><strong>Cliente:</strong> {viaje.cliente.razon_social}</p>}
+            {viaje.cliente?.cuit && <p style={{ margin: '2px 0 0', fontSize: '14px' }}><strong>CUIT:</strong> {viaje.cliente.cuit}</p>}
+            {viaje.documento ? <p style={{ margin: '2px 0 0', fontSize: '14px' }}><strong>{viaje.documento.tipo === 'REMITO' ? 'Remito' : viaje.documento.tipo === 'CARTA_DE_PORTE' ? 'Carta de Porte' : 'Hoja de Ruta'} N°:</strong> {viaje.documento.numero}</p> : <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#999' }}>Sin Documento Asociado</p>}
+          </div>
         </div>
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
         <div>
           <h3 style={{ borderBottom: '1px solid #333', paddingBottom: '3px', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Logística</h3>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
@@ -637,9 +637,9 @@ const PrintTripDetail = ({ viaje }) => {
           </div>
           <div style={{ textAlign: 'right' }}>
             <h2 style={{ margin: 0, fontSize: '14px' }}>Nº {viaje.codigo_viaje}</h2>
-            {viaje.cliente && <p style={{ margin: '2px 0 0', fontSize: '14px' }}>Cliente: {viaje.cliente.razon_social}</p>}
-            {viaje.cliente?.cuit && <p style={{ margin: '2px 0 0', fontSize: '14px' }}>CUIT: {viaje.cliente.cuit}</p>}
-            {viaje.documento ? <p style={{ margin: '2px 0 0', fontSize: '14px' }}>{viaje.documento.tipo === 'REMITO' ? 'Remito' : viaje.documento.tipo === 'CARTA_DE_PORTE' ? 'Carta de Porte' : 'Hoja de Ruta'} N°: {viaje.documento.numero}</p> : <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#999' }}>Sin Documento Asociado</p>}
+            {viaje.cliente && <p style={{ margin: '2px 0 0', fontSize: '14px' }}><strong>Cliente:</strong> {viaje.cliente.razon_social}</p>}
+            {viaje.cliente?.cuit && <p style={{ margin: '2px 0 0', fontSize: '14px' }}><strong>CUIT:</strong> {viaje.cliente.cuit}</p>}
+            {viaje.documento ? <p style={{ margin: '2px 0 0', fontSize: '14px' }}><strong>{viaje.documento.tipo === 'REMITO' ? 'Remito' : viaje.documento.tipo === 'CARTA_DE_PORTE' ? 'Carta de Porte' : 'Hoja de Ruta'} N°:</strong> {viaje.documento.numero}</p> : <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#999' }}>Sin Documento Asociado</p>}
           </div>
         </div>
 
@@ -677,7 +677,7 @@ const PrintTripDetail = ({ viaje }) => {
                 <td style={{ border: '1px solid #ccc', padding: '3px 6px' }}>{g.concepto || g.tipo}</td>
                 <td style={{ border: '1px solid #ccc', padding: '3px 6px' }}>{g.tipo}</td>
                 <td style={{ border: '1px solid #ccc', padding: '3px 6px' }}>
-                  <span style={{ color: g.clase === 'propio' ? '#3b82f6' : '#a855f7' }}>{g.clase === 'propio' ? 'Propio' : 'Tercerizado'}</span>
+                  <span style={{ color: g.clase === 'propio' ? '#3b82f6' : '#a855f7' }}>{g.clase === 'propio' ? 'Propio' : 'Proveedor'}</span>
                 </td>
                 <td style={{ border: '1px solid #ccc', padding: '3px 6px' }}>
                   <span style={{ color: g.reintegro ? '#22c55e' : '#ef4444' }}>{g.reintegro ? 'Sí' : 'No'}</span>
