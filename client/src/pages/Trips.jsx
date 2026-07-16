@@ -700,18 +700,18 @@ const PrintTripDetail = ({ viaje }) => {
             {terceroReintegro > 0 && (
               <tr style={{ backgroundColor: '#f0f0f0' }}>
                 <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(+) Gastos Tercerizados c/Reintegro</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>+{formatCurrency(terceroReintegro)}</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(terceroReintegro)}</td>
               </tr>
             )}
             {propioReintegro > 0 && (
               <tr style={{ backgroundColor: '#f0f0f0' }}>
                 <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(+) Gastos Propios c/Reintegro</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>+{formatCurrency(propioReintegro)}</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(propioReintegro)}</td>
               </tr>
             )}
             <tr style={{ backgroundColor: '#e5e5e5' }}>
               <td style={{ border: '1px solid #333', padding: '4px 6px', fontWeight: 'bold', fontSize: '11px' }} colSpan="4">(=) TOTAL VIAJE</td>
-              <td style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'right', fontWeight: 'bold', fontSize: '12px' }}>{formatCurrency(costoViaje)}</td>
+              <td style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'right', fontWeight: 'bold', fontSize: '12px' }}><strong>{formatCurrency(costoViaje)}</strong></td>
             </tr>
             <tr>
               <td style={{ border: '1px solid #333', padding: '4px 6px', fontWeight: 'bold', fontSize: '11px' }} colSpan="4">Precio Acordado</td>
