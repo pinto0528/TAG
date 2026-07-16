@@ -1382,7 +1382,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
                 ].map((row, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: i < 6 ? '1px solid var(--border-color)' : 'none' }}>
                     <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{row.label}</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: row.color }}>{row.value < 0 ? '-' : ''}{formatCurrency(Math.abs(row.value))}</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: row.color }}>{i === 0 ? '' : (row.value >= 0 ? '+' : '-')}{formatCurrency(Math.abs(row.value))}</span>
                   </div>
                 ))}
                 {(() => {
