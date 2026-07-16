@@ -20,7 +20,6 @@ class Unidad extends Model
         'anio',
         'tipo',
         'numero',
-        'numero_interno',
         'vtv_vencimiento',
         'seguro_vencimiento',
         'activo',

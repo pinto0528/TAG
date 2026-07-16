@@ -58,6 +58,17 @@ class ChoferController extends Controller
 
         $chofer = Chofer::create($validated);
 
+        if ($request->filled('numero')) {
+            $duplicado = Chofer::where('numero', $request->numero)
+                ->where('proveedor_id', $request->proveedor_id)
+                ->where('id', '!=', $chofer->id)
+                ->exists();
+            if ($duplicado) {
+                $chofer->delete();
+                return response()->json(['errors' => ['numero' => ['El número ya existe en esta flota']]], 422);
+            }
+        }
+
         return response()->json($chofer, 201);
     }
 
@@ -87,6 +98,16 @@ class ChoferController extends Controller
         ]);
 
         $chofer->update($validated);
+
+        if ($request->filled('numero')) {
+            $duplicado = Chofer::where('numero', $request->numero)
+                ->where('proveedor_id', $request->proveedor_id)
+                ->where('id', '!=', $id)
+                ->exists();
+            if ($duplicado) {
+                return response()->json(['errors' => ['numero' => ['El número ya existe en esta flota']]], 422);
+            }
+        }
 
         return response()->json($chofer);
     }

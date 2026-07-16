@@ -21,8 +21,7 @@ class UnidadController extends Controller
                 $q->where('patente', 'like', "%{$search}%")
                   ->orWhere('marca', 'like', "%{$search}%")
                   ->orWhere('modelo', 'like', "%{$search}%")
-                  ->orWhere('numero', 'like', "%{$search}%")
-                  ->orWhere('numero_interno', 'like', "%{$search}%");
+                  ->orWhere('numero', 'like', "%{$search}%");
             });
         }
 
@@ -47,7 +46,6 @@ class UnidadController extends Controller
             'anio' => 'nullable|integer',
             'tipo' => 'nullable|string',
             'numero' => 'nullable|string',
-            'numero_interno' => 'nullable|string',
             'vtv_vencimiento' => 'nullable|date',
             'seguro_vencimiento' => 'nullable|date',
             'proveedor_id' => 'nullable|exists:proveedores,id',
@@ -55,6 +53,17 @@ class UnidadController extends Controller
         ]);
 
         $unidad = Unidad::create($validated);
+
+        if ($request->filled('numero')) {
+            $duplicado = Unidad::where('numero', $request->numero)
+                ->where('proveedor_id', $request->proveedor_id)
+                ->where('id', '!=', $unidad->id)
+                ->exists();
+            if ($duplicado) {
+                $unidad->delete();
+                return response()->json(['errors' => ['numero' => ['El número ya existe en esta flota']]], 422);
+            }
+        }
 
         return response()->json($unidad, 201);
     }
@@ -76,7 +85,6 @@ class UnidadController extends Controller
             'anio' => 'nullable|integer',
             'tipo' => 'nullable|string',
             'numero' => 'nullable|string',
-            'numero_interno' => 'nullable|string',
             'vtv_vencimiento' => 'nullable|date',
             'seguro_vencimiento' => 'nullable|date',
             'proveedor_id' => 'nullable|exists:proveedores,id',
@@ -84,6 +92,16 @@ class UnidadController extends Controller
         ]);
 
         $unidade->update($validated);
+
+        if ($request->filled('numero')) {
+            $duplicado = Unidad::where('numero', $request->numero)
+                ->where('proveedor_id', $request->proveedor_id)
+                ->where('id', '!=', $id)
+                ->exists();
+            if ($duplicado) {
+                return response()->json(['errors' => ['numero' => ['El número ya existe en esta flota']]], 422);
+            }
+        }
 
         return response()->json($unidade);
     }
