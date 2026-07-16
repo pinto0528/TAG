@@ -454,10 +454,6 @@ const Form = ({ type, initialData, onSave, onDelete, onRestore, onCancel, select
                             <input name="numero" value={formData.numero || ''} onChange={handleChange} className="input-field" placeholder="Nro. identificador" />
                         </div>
                     </div>
-                    <div>
-                        <label style={labelStyle}>Nro Interno</label>
-                        <input name="numero_interno" value={formData.numero_interno || ''} onChange={handleChange} className="input-field" />
-                    </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div>
                             <label style={labelStyle}>Marca</label>
