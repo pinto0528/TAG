@@ -617,13 +617,13 @@ const PrintTripDetail = ({ viaje }) => {
   const anticipos = viaje.anticipos || [];
   const gastos = viaje.gastos || [];
   const totalAnticipos = anticipos.reduce((a, an) => a + parseFloat(an.monto), 0);
-  const propioReintegro = gastos.filter(g => g.clase === 'propio' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
   const terceroReintegro = gastos.filter(g => g.clase === 'proveedor' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
   const propioSinReintegro = gastos.filter(g => g.clase === 'propio' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
+  const propioReintegro = gastos.filter(g => g.clase === 'propio' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
   const terceroSinReintegro = gastos.filter(g => g.clase === 'proveedor' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
   const costoBase = parseFloat(viaje.costo_proveedor) || 0;
-  const costoAjustado = costoBase - totalAnticipos - propioReintegro + terceroReintegro;
-  const costoViaje = costoAjustado + propioSinReintegro + terceroSinReintegro;
+  const costoAjustado = costoBase - totalAnticipos + terceroReintegro;
+  const costoViaje = costoAjustado + propioSinReintegro;
   const ganancia = (viaje.precio_pactado || 0) - costoViaje;
 
   return (
@@ -687,26 +687,26 @@ const PrintTripDetail = ({ viaje }) => {
             ))}
             {propioSinReintegro > 0 && (
               <tr style={{ backgroundColor: '#f0f0f0' }}>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(-) Gastos Propios s/Reintegro</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>-{formatCurrency(propioSinReintegro)}</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold', color: '#999' }} colSpan="4">Gastos Propios s/Reintegro</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', color: '#999' }}>-{formatCurrency(propioSinReintegro)}</td>
               </tr>
             )}
             {terceroSinReintegro > 0 && (
-              <tr style={{ backgroundColor: '#f0f0f0' }}>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(-) Gastos Tercerizados s/Reintegro</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>-{formatCurrency(terceroSinReintegro)}</td>
+              <tr style={{ backgroundColor: '#f9f9f9' }}>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold', color: '#bbb' }} colSpan="4">Gastos prov. s/Reintegro</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', color: '#bbb' }}>{formatCurrency(terceroSinReintegro)}</td>
               </tr>
             )}
             {terceroReintegro > 0 && (
               <tr style={{ backgroundColor: '#f0f0f0' }}>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(+) Gastos Tercerizados c/Reintegro</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(terceroReintegro)}</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(-) Gastos prov. c/Reintegro</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>-{formatCurrency(terceroReintegro)}</td>
               </tr>
             )}
             {propioReintegro > 0 && (
-              <tr style={{ backgroundColor: '#f0f0f0' }}>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(+) Gastos Propios c/Reintegro</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(propioReintegro)}</td>
+              <tr style={{ backgroundColor: '#f9f9f9' }}>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold', color: '#bbb' }} colSpan="4">Gastos propios c/Reintegro</td>
+                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', color: '#bbb' }}>{formatCurrency(propioReintegro)}</td>
               </tr>
             )}
             <tr style={{ backgroundColor: '#e5e5e5' }}>
@@ -1210,7 +1210,7 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
   const propioSinReintegro = trip.gastos?.filter(g => g.clase === 'propio' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
   const terceroSinReintegro = trip.gastos?.filter(g => g.clase === 'proveedor' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
   const costoProveedorBase = parseFloat(trip.costo_proveedor) || 0;
-  const costoProveedorAjustado = costoProveedorBase - totalAnticipos - propioReintegro + terceroReintegro;
+  const costoProveedorAjustado = costoProveedorBase - totalAnticipos + terceroReintegro;
 
   const handleDelete = (endpoint, id) => {
     setConfirmCfg({
@@ -1372,25 +1372,25 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
             <div style={{ flex: '1 1 200px' }}>
               <div style={{ backgroundColor: 'var(--bg-body)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
                 {[
-                  { label: 'Precio del Viaje', value: trip.precio_pactado, color: 'var(--bg-primary)' },
-                  { label: 'Costo Proveedor', value: costoProveedorBase, color: 'var(--color-danger-text)' },
-                  { label: 'Anticipos', value: totalAnticipos, color: 'var(--color-success-text)' },
-                  { label: 'Gastos propios s/reintegro', value: propioSinReintegro, color: 'var(--color-danger-text)' },
-                  { label: 'Gastos propios c/reintegro', value: propioReintegro, color: 'var(--color-success-text)' },
-                  { label: 'Gastos prov. s/reintegro', value: terceroSinReintegro, color: 'var(--color-danger-text)' },
-                  { label: 'Gastos prov. c/reintegro', value: terceroReintegro, color: 'var(--color-success-text)' },
+                  { label: 'Precio del Viaje', value: trip.precio_pactado, color: 'var(--bg-primary)', gray: false },
+                  { label: 'Costo Proveedor', value: costoProveedorBase, color: 'var(--color-danger-text)', gray: false },
+                  { label: 'Anticipos', value: totalAnticipos, color: 'var(--color-success-text)', gray: false },
+                  { label: 'Gastos propios s/reintegro', value: propioSinReintegro, color: 'var(--color-danger-text)', gray: false },
+                  { label: 'Gastos propios c/reintegro', value: propioReintegro, color: '#bbb', gray: true },
+                  { label: 'Gastos prov. s/reintegro', value: terceroSinReintegro, color: '#bbb', gray: true },
+                  { label: 'Gastos prov. c/reintegro', value: terceroReintegro, color: 'var(--color-danger-text)', gray: false },
                 ].map((row, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: i < 6 ? '1px solid var(--border-color)' : 'none' }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{row.label}</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: row.color }}>{i === 0 ? '' : (row.value >= 0 ? '+' : '-')}{formatCurrency(Math.abs(row.value))}</span>
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', borderBottom: i < 6 ? '1px solid var(--border-color)' : 'none', opacity: row.gray ? 0.5 : 1 }}>
+                    <span style={{ fontSize: '0.78rem', color: row.gray ? '#bbb' : 'var(--text-muted)' }}>{row.label}</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: row.gray ? '#bbb' : row.color }}>{i === 0 ? '' : (row.value >= 0 ? '+' : '-')}{formatCurrency(Math.abs(row.value))}</span>
                   </div>
                 ))}
                 {(() => {
                   const total = (trip.precio_pactado || 0) - (trip.costo_viaje || 0);
                   return (
                     <div style={{ marginTop: '0.6rem', padding: '0.5rem 0.75rem', backgroundColor: total >= 0 ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${total >= 0 ? '#22c55e' : '#ef4444'}`, borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: total >= 0 ? '#22c55e' : '#ef4444', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total</span>
-                      <span style={{ fontSize: '1.3rem', fontWeight: 'bold', color: total >= 0 ? '#22c55e' : '#ef4444' }}>{total >= 0 ? '+' : ''}{formatCurrency(total)}</span>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: total >= 0 ? '#22c55e' : '#ef4444', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total</span>
+                        <span style={{ fontSize: '1.3rem', fontWeight: 'bold', color: total >= 0 ? '#22c55e' : '#ef4444' }}>{formatCurrency(total)}</span>
                     </div>
                   );
                 })()}

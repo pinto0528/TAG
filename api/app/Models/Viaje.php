@@ -82,7 +82,7 @@ class Viaje extends Model
 
         $costoProveedorBase = $this->costo_proveedor ?? 0;
 
-        return (float) $costoProveedorBase - (float) $anticipos - (float) $propioReintegro + (float) $terceroReintegro;
+        return (float) $costoProveedorBase - (float) $anticipos + (float) $terceroReintegro;
     }
 
     // ---------- Relaciones ----------
@@ -147,14 +147,12 @@ class Viaje extends Model
         $gastos = $this->gastos()->withoutTrashed()->get();
         $anticipos = $this->anticipos()->withoutTrashed()->sum('monto');
 
-        $propioReintegro = $gastos->where('clase', 'propio')->where('reintegro', true)->sum('monto');
-        $terceroReintegro = $gastos->where('clase', 'proveedor')->where('reintegro', true)->sum('monto');
         $propioSinReintegro = $gastos->where('clase', 'propio')->where('reintegro', false)->sum('monto');
+        $terceroReintegro = $gastos->where('clase', 'proveedor')->where('reintegro', true)->sum('monto');
 
         $costoProveedorBase = $this->costo_proveedor ?? 0;
-        $costoProveedorAjustado = $costoProveedorBase - $anticipos - $propioReintegro + $terceroReintegro;
 
-        $this->costo_viaje = $costoProveedorAjustado + $propioSinReintegro + $terceroReintegro;
+        $this->costo_viaje = $costoProveedorBase - $anticipos + $propioSinReintegro + $terceroReintegro;
         $this->save();
     }
 
