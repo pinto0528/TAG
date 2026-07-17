@@ -324,12 +324,14 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
     tipo: existingDoc?.tipo || 'REMITO',
     numero: existingDoc?.numero || '',
     fecha: existingDoc?.fecha ? formatDateForInput(existingDoc.fecha) : new Date().toISOString().split('T')[0],
+    descripcion: existingDoc?.descripcion || '',
     notas: existingDoc?.notas || '',
   });
 
   const [files, setFiles] = useState([]);
   const [existingFiles, setExistingFiles] = useState(existingDoc?.archivos || []);
   const [uploading, setUploading] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const fileInputRef = useRef(null);
 
   const isEdit = !!existingDoc;
@@ -364,8 +366,13 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
     finally { setLoading(false); }
   };
 
-  const handleDeleteFile = async (archivoId) => {
-    if (!confirm('Eliminar este archivo?')) return;
+  const handleDeleteFile = (archivoId) => {
+    setConfirmDeleteId(archivoId);
+  };
+
+  const confirmDeleteFile = async () => {
+    const archivoId = confirmDeleteId;
+    setConfirmDeleteId(null);
     setUploading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/documentos/${existingDoc.id}/archivos/${archivoId}`, { method: 'DELETE' });
@@ -401,6 +408,10 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
         <input type="date" className="input-field" value={docData.fecha} onChange={e => setDocData({ ...docData, fecha: e.target.value })} required />
       </div>
       <div>
+        <label style={labelStyle}>Descripción</label>
+        <input className="input-field" value={docData.descripcion} onChange={e => setDocData({ ...docData, descripcion: e.target.value })} placeholder="Descripción del documento" />
+      </div>
+      <div>
         <label style={labelStyle}>Notas</label>
         <textarea className="input-field" rows={2} value={docData.notas} onChange={e => setDocData({ ...docData, notas: e.target.value })} placeholder="Notas adicionales" />
       </div>
@@ -414,7 +425,17 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
           multiple
           accept=".jpg,.jpeg,.png,.pdf"
           style={{ display: 'none' }}
-          onChange={e => setFiles([...files, ...Array.from(e.target.files)])}
+          onChange={e => {
+            const newFiles = Array.from(e.target.files);
+            const MAX_SIZE = 10 * 1024 * 1024;
+            const tooLarge = newFiles.filter(f => f.size > MAX_SIZE);
+            if (tooLarge.length > 0) {
+              alert(`${tooLarge.length} archivo(s) superan 10MB y no se agregaron: ${tooLarge.map(f => f.name).join(', ')}`);
+            }
+            const valid = newFiles.filter(f => f.size <= MAX_SIZE);
+            if (valid.length > 0) setFiles([...files, ...valid]);
+            e.target.value = '';
+          }}
         />
         <button
           type="button"
@@ -450,6 +471,9 @@ const DocumentationForm = ({ trip, onSave, onClose }) => {
         <button type="button" className="outline" onClick={onClose}>Cancelar</button>
         <button type="submit" disabled={loading || uploading}>{loading ? 'Guardando...' : (isEdit ? 'Actualizar Documento' : 'Cargar Documento')}</button>
       </div>
+      {confirmDeleteId && (
+        <ConfirmModal message="¿Eliminar este archivo?" onConfirm={confirmDeleteFile} onClose={() => setConfirmDeleteId(null)} />
+      )}
     </form>
   );
 };
@@ -1271,6 +1295,30 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
 
   const [modalCfg, setModalCfg] = useState(null); // { type: 'finance'|'documentation'|'view', item: null|object }
 
+  const standaloneFileInputRef = useRef(null);
+
+  const handleStandaloneUpload = async (e) => {
+    const newFiles = Array.from(e.target.files);
+    const MAX_SIZE = 10 * 1024 * 1024;
+    const valid = newFiles.filter(f => f.size <= MAX_SIZE);
+    const tooLarge = newFiles.filter(f => f.size > MAX_SIZE);
+    if (tooLarge.length > 0) {
+      alert(`${tooLarge.length} archivo(s) superan 10MB y no se subieron: ${tooLarge.map(f => f.name).join(', ')}`);
+    }
+    if (valid.length === 0) { e.target.value = ''; return; }
+    for (const file of valid) {
+      const formData = new FormData();
+      formData.append('archivo', file);
+      await fetch(`${API_BASE_URL}/documentos/${trip.documento.id}/archivos`, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: formData,
+      });
+    }
+    e.target.value = '';
+    onRefresh();
+  };
+
   const totalGastos = trip.gastos?.reduce((a, g) => a + parseFloat(g.monto), 0) || 0;
   const totalAnticipos = trip.anticipos?.reduce((a, an) => a + parseFloat(an.monto), 0) || 0;
 
@@ -1533,6 +1581,21 @@ const TripDetail = ({ trip, onRefresh, onPrint, setConfirmCfg, setAlertMsg }) =>
                     ))}
                   </div>
                 )}
+                <div style={{ marginTop: '0.75rem' }}>
+                  <input
+                    ref={standaloneFileInputRef}
+                    type="file"
+                    multiple
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    style={{ display: 'none' }}
+                    onChange={handleStandaloneUpload}
+                  />
+                  <button
+                    className="outline"
+                    style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                    onClick={() => standaloneFileInputRef.current?.click()}
+                  >+ Agregar archivo</button>
+                </div>
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '3rem', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}>
