@@ -181,7 +181,9 @@ class LiquidacionController extends Controller
 
         foreach ($validated['viajes'] as $item) {
             $viaje = Viaje::findOrFail($item['viaje_id']);
-            $monto = $item['monto'] ?? $viaje->precio_pactado;
+            $monto = $item['monto'] ?? ($liquidacion->tipo === 'proveedor'
+                ? ($viaje->costo_proveedor_ajustado ?? $viaje->costo_viaje ?? 0)
+                : $viaje->precio_pactado);
 
             $liquidacion->viajes()->attach($item['viaje_id'], ['monto' => $monto]);
         }

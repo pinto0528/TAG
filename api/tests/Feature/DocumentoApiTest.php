@@ -60,7 +60,7 @@ class DocumentoApiTest extends TestCase
             'fecha' => '2026-07-15',
         ]);
 
-        $archivo = UploadedFile::fake()->image('remito.jpg', 200, 200);
+        $archivo = UploadedFile::fake()->create('remito.pdf', 100, 'application/pdf');
 
         $response = $this->postJson("/api/documentos/{$documento->id}/archivos", [
             'archivo' => $archivo,
@@ -71,7 +71,7 @@ class DocumentoApiTest extends TestCase
 
         $this->assertDatabaseHas('documento_archivos', [
             'documento_id' => $documento->id,
-            'archivo_nombre' => 'remito.jpg',
+            'archivo_nombre' => 'remito.pdf',
         ]);
     }
 

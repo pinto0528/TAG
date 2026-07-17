@@ -63,17 +63,22 @@ class LiquidacionApiTest extends TestCase
         ], $overrides));
     }
 
+    private static int $liqCounter = 0;
+
     private function crearLiquidacion(array $overrides = []): Liquidacion
     {
-        return Liquidacion::create(array_merge([
-            'numero' => 'LIQ-C-0001',
+        self::$liqCounter++;
+        $defaults = [
+            'numero' => 'LIQ-TEST-' . str_pad(self::$liqCounter, 4, '0', STR_PAD_LEFT),
             'tipo' => 'cliente',
             'cliente_id' => $this->cliente->id,
             'proveedor_id' => null,
             'fecha_emision' => '2026-07-15',
             'total' => 0,
             'estado' => 'borrador',
-        ], $overrides));
+        ];
+
+        return Liquidacion::create(array_merge($defaults, $overrides));
     }
 
     // ================================================================

@@ -127,6 +127,7 @@ class FlujoViajeCompletoTest extends TestCase
             'viaje_id' => $viajeId,
             'monto' => 100000,
             'fecha' => '2026-07-15',
+            'concepto' => 'Anticipo proveedor',
         ])->assertCreated();
 
         // 3. Agregar gasto proveedor c/reintegro ($30,000)
@@ -180,6 +181,8 @@ class FlujoViajeCompletoTest extends TestCase
 
     public function test_crear_editar_eliminar_gasto(): void
     {
+        $costoProveedor = 200000;
+
         // 1. Crear viaje
         $response = $this->postJson('/api/viajes', [
             'chofer_id' => $this->chofer->id,
@@ -187,14 +190,11 @@ class FlujoViajeCompletoTest extends TestCase
             'origen' => 'CABA',
             'destino' => 'Rosario',
             'fecha_salida' => '2026-07-15',
-            'costo_proveedor' => 200000,
+            'costo_proveedor' => $costoProveedor,
         ]);
         $viajeId = $response->json('id');
 
-        $viaje = Viaje::find($viajeId);
-        $costoOriginal = $viaje->costo_viaje;
-
-        // 2. Crear gasto ($50,000)
+        // 2. Crear gasto propio s/reintegro ($50,000)
         $gastoResponse = $this->postJson('/api/gastos', [
             'viaje_id' => $viajeId,
             'tipo' => 'gasto',
@@ -207,25 +207,25 @@ class FlujoViajeCompletoTest extends TestCase
 
         $gastoId = $gastoResponse->json('id');
 
-        // 3. Verificar que costo_viaje se actualizó
-        $viaje->refresh();
-        $this->assertEquals($costoOriginal + 50000, $viaje->costo_viaje);
+        // 3. costo_viaje = costoProv(200000) + propioSinReint(50000) = 250000
+        $viaje = Viaje::find($viajeId);
+        $this->assertEquals(250000, $viaje->costo_viaje);
 
         // 4. Editar gasto ($75,000)
         $this->putJson("/api/gastos/{$gastoId}", [
             'monto' => 75000,
         ])->assertOk();
 
-        // 5. Verificar que costo_viaje se actualizó de nuevo
+        // 5. costo_viaje = 200000 + 75000 = 275000
         $viaje->refresh();
-        $this->assertEquals($costoOriginal + 75000, $viaje->costo_viaje);
+        $this->assertEquals(275000, $viaje->costo_viaje);
 
         // 6. Eliminar gasto
         $this->deleteJson("/api/gastos/{$gastoId}")->assertOk();
 
-        // 7. Verificar que costo_viaje volvió al valor original
+        // 7. costo_viaje = 200000 + 0 = 200000
         $viaje->refresh();
-        $this->assertEquals($costoOriginal, $viaje->costo_viaje);
+        $this->assertEquals($costoProveedor, $viaje->costo_viaje);
     }
 
     // ================================================================
@@ -254,6 +254,7 @@ class FlujoViajeCompletoTest extends TestCase
             'viaje_id' => $viajeId,
             'monto' => 50000,
             'fecha' => '2026-07-15',
+            'concepto' => 'Anticipo inicial',
         ])->assertCreated();
 
         $anticipoId = $anticipoResponse->json('id');

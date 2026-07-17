@@ -118,7 +118,7 @@ class GastoApiTest extends TestCase
 
     public function test_gasto_update_recalcula_viaje(): void
     {
-        $gasto = Gasto::create([
+        $createResponse = $this->postJson('/api/gastos', [
             'viaje_id' => $this->viaje->id,
             'tipo' => 'gasto',
             'clase' => 'propio',
@@ -126,9 +126,11 @@ class GastoApiTest extends TestCase
             'concepto' => 'Peaje',
             'monto' => 25000,
             'fecha' => '2026-07-15',
-        ]);
+        ])->assertCreated();
 
-        $this->putJson("/api/gastos/{$gasto->id}", [
+        $gastoId = $createResponse->json('id');
+
+        $this->putJson("/api/gastos/{$gastoId}", [
             'monto' => 50000,
         ]);
 
@@ -139,7 +141,7 @@ class GastoApiTest extends TestCase
 
     public function test_gasto_destroy_recalcula_viaje(): void
     {
-        $gasto = Gasto::create([
+        $createResponse = $this->postJson('/api/gastos', [
             'viaje_id' => $this->viaje->id,
             'tipo' => 'gasto',
             'clase' => 'propio',
@@ -147,15 +149,17 @@ class GastoApiTest extends TestCase
             'concepto' => 'Peaje',
             'monto' => 25000,
             'fecha' => '2026-07-15',
-        ]);
+        ])->assertCreated();
+
+        $gastoId = $createResponse->json('id');
 
         $this->viaje->refresh();
         $this->assertEquals(255000, $this->viaje->costo_viaje);
 
-        $this->deleteJson("/api/gastos/{$gasto->id}");
+        $this->deleteJson("/api/gastos/{$gastoId}");
 
         $this->viaje->refresh();
-        $this->assertEquals(0, $this->viaje->costo_viaje);
+        $this->assertEquals($this->viaje->costo_proveedor, $this->viaje->costo_viaje);
     }
 
     // ================================================================
