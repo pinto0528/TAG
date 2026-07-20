@@ -649,13 +649,14 @@ const PrintTripDetail = ({ viaje }) => {
     <div style={{ padding: '0', fontFamily: "'Courier New', 'Consolas', monospace", color: 'black', fontSize: '11px' }}>
       <style>{`@page { size: A4 landscape; margin: 10mm; }`}</style>
       <div style={{ border: '2px solid #333', padding: '15px 20px', position: 'relative' }}>
+        <div style={{ marginBottom: '15px', fontSize: '12px', fontWeight: 'bold' }}>{new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')}</div>
         <div style={{ borderBottom: '2px solid #333', paddingBottom: '10px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <h1 style={{ margin: 0, fontSize: '16px', textTransform: 'uppercase', letterSpacing: '1px' }}>TAG Logística</h1>
-            <h2 style={{ margin: '2px 0 0 0', textTransform: 'uppercase', letterSpacing: '2px', fontSize: '12px' }}>Detalle de Viaje</h2>
+            <h2 style={{ margin: '4px 0 0 0', textTransform: 'uppercase', letterSpacing: '2px', fontSize: '15px' }}>Detalle de Viaje</h2>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <h2 style={{ margin: 0, fontSize: '14px' }}>Nº {viaje.codigo_viaje}</h2>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '14px', textAlign: 'right' }}>Nº {viaje.codigo_viaje}</h2>
             {viaje.cliente && <p style={{ margin: '2px 0 0', fontSize: '14px' }}><strong>Cliente:</strong> {viaje.cliente.razon_social}</p>}
             {viaje.cliente?.cuit && <p style={{ margin: '2px 0 0', fontSize: '14px' }}><strong>CUIT:</strong> {viaje.cliente.cuit}</p>}
             {viaje.documento ? <p style={{ margin: '2px 0 0', fontSize: '14px' }}><strong>{viaje.documento.tipo === 'REMITO' ? 'Remito' : viaje.documento.tipo === 'CARTA_DE_PORTE' ? 'Carta de Porte' : 'Hoja de Ruta'} N°:</strong> {viaje.documento.numero}</p> : <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#999' }}>Sin Documento Asociado</p>}
