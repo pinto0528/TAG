@@ -641,14 +641,12 @@ const PrintTripDetail = ({ viaje }) => {
   const anticipos = viaje.anticipos || [];
   const gastos = viaje.gastos || [];
   const totalAnticipos = anticipos.reduce((a, an) => a + parseFloat(an.monto), 0);
-  const terceroReintegro = gastos.filter(g => g.clase === 'proveedor' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
-  const propioSinReintegro = gastos.filter(g => g.clase === 'propio' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
-  const propioReintegro = gastos.filter(g => g.clase === 'propio' && g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
-  const terceroSinReintegro = gastos.filter(g => g.clase === 'proveedor' && !g.reintegro).reduce((a, g) => a + parseFloat(g.monto), 0);
+  const terceroReintegro = gastos.filter(g => g.clase === 'proveedor' && g.reintegro);
+  const propioSinReintegro = gastos.filter(g => g.clase === 'propio' && !g.reintegro);
+  const totalPropioSR = propioSinReintegro.reduce((a, g) => a + parseFloat(g.monto), 0);
+  const totalProvCR = terceroReintegro.reduce((a, g) => a + parseFloat(g.monto), 0);
   const costoBase = parseFloat(viaje.costo_proveedor) || 0;
-  const costoAjustado = costoBase - totalAnticipos + terceroReintegro;
-  const costoViaje = costoAjustado + propioSinReintegro;
-  const ganancia = (viaje.precio_pactado || 0) - costoViaje;
+  const ganancia = (viaje.precio_pactado || 0) - costoBase + totalAnticipos - totalPropioSR - totalProvCR;
 
   return (
     <div style={{ padding: '0', fontFamily: "'Courier New', 'Consolas', monospace", color: 'black', fontSize: '11px' }}>
@@ -667,95 +665,67 @@ const PrintTripDetail = ({ viaje }) => {
           </div>
         </div>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px', marginBottom: '10px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
           <thead>
             <tr>
-              <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Concepto</th>
-              <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Tipo</th>
-              <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Clase</th>
-              <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Reintegro</th>
-              <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Monto</th>
+              <th style={{ border: '1px solid #ccc', padding: '5px 10px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px', width: '25%' }}>Concepto</th>
+              <th style={{ border: '1px solid #ccc', padding: '5px 10px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Detalle</th>
+              <th style={{ border: '1px solid #ccc', padding: '5px 10px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px', width: '20%' }}>Monto</th>
             </tr>
           </thead>
           <tbody>
+            <tr>
+              <td style={{ border: '1px solid #ccc', padding: '5px 10px', fontWeight: 'bold' }} colSpan="2">Precio del Viaje</td>
+              <td style={{ border: '1px solid #ccc', padding: '5px 10px', textAlign: 'right', fontWeight: 'bold' }}>+{formatCurrency(viaje.precio_pactado || 0)}</td>
+            </tr>
             {costoBase > 0 && (
               <tr>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">Costo Proveedor (base)</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(costoBase)}</td>
+                <td style={{ border: '1px solid #ccc', padding: '5px 10px', fontWeight: 'bold' }} colSpan="2">Costo Proveedor</td>
+                <td style={{ border: '1px solid #ccc', padding: '5px 10px', textAlign: 'right', fontWeight: 'bold' }}>-{formatCurrency(costoBase)}</td>
               </tr>
             )}
             {totalAnticipos > 0 && (
               <tr>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(-) Anticipos ({anticipos.length})</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', color: '#22c55e' }}>-{formatCurrency(totalAnticipos)}</td>
+                <td style={{ border: '1px solid #ccc', padding: '5px 10px', fontWeight: 'bold' }} colSpan="2">Anticipos</td>
+                <td style={{ border: '1px solid #ccc', padding: '5px 10px', textAlign: 'right', fontWeight: 'bold' }}>+{formatCurrency(totalAnticipos)}</td>
               </tr>
             )}
-            {costoBase > 0 && (
-              <tr style={{ backgroundColor: '#f0f0f0' }}>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(=) Costo Proveedor Ajustado</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(costoAjustado)}</td>
-              </tr>
+            {totalPropioSR > 0 && (
+              <>
+                <tr>
+                  <td style={{ border: '1px solid #ccc', padding: '5px 10px', fontWeight: 'bold' }} rowSpan={propioSinReintegro.length + 1}>Gastos propios s/reintegro</td>
+                  <td style={{ border: '1px solid #ccc', padding: '5px 10px' }}></td>
+                  <td style={{ border: '1px solid #ccc', padding: '5px 10px', textAlign: 'right', fontWeight: 'bold' }}>-{formatCurrency(totalPropioSR)}</td>
+                </tr>
+                {propioSinReintegro.map(g => (
+                  <tr key={`psr-${g.id}`}>
+                    <td style={{ border: '1px solid #ccc', padding: '3px 10px' }}>{g.concepto || g.tipo}</td>
+                    <td style={{ border: '1px solid #ccc', padding: '3px 10px', textAlign: 'right' }}>-{formatCurrency(parseFloat(g.monto))}</td>
+                  </tr>
+                ))}
+              </>
             )}
-            {gastos.map((g, idx) => (
-              <tr key={`g-${g.id}`} style={idx % 2 === 0 ? {} : { backgroundColor: '#fafafa' }}>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px' }}>{g.concepto || g.tipo}</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px' }}>{g.tipo}</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px' }}>
-                  <span style={{ color: g.clase === 'propio' ? '#3b82f6' : '#a855f7' }}>{g.clase === 'propio' ? 'Propio' : 'Proveedor'}</span>
-                </td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px' }}>
-                  <span style={{ color: g.reintegro ? '#22c55e' : '#ef4444' }}>{g.reintegro ? 'Sí' : 'No'}</span>
-                </td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right' }}>{formatCurrency(g.monto)}</td>
-              </tr>
-            ))}
-            {propioSinReintegro > 0 && (
-              <tr style={{ backgroundColor: '#f0f0f0' }}>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold', color: '#999' }} colSpan="4">Gastos Propios s/Reintegro</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', color: '#999' }}>-{formatCurrency(propioSinReintegro)}</td>
-              </tr>
+            {totalProvCR > 0 && (
+              <>
+                <tr>
+                  <td style={{ border: '1px solid #ccc', padding: '5px 10px', fontWeight: 'bold' }} rowSpan={terceroReintegro.length + 1}>Gastos prov. c/reintegro</td>
+                  <td style={{ border: '1px solid #ccc', padding: '5px 10px' }}></td>
+                  <td style={{ border: '1px solid #ccc', padding: '5px 10px', textAlign: 'right', fontWeight: 'bold' }}>-{formatCurrency(totalProvCR)}</td>
+                </tr>
+                {terceroReintegro.map(g => (
+                  <tr key={`pcr-${g.id}`}>
+                    <td style={{ border: '1px solid #ccc', padding: '3px 10px' }}>{g.concepto || g.tipo}</td>
+                    <td style={{ border: '1px solid #ccc', padding: '3px 10px', textAlign: 'right' }}>-{formatCurrency(parseFloat(g.monto))}</td>
+                  </tr>
+                ))}
+              </>
             )}
-            {terceroSinReintegro > 0 && (
-              <tr style={{ backgroundColor: '#f9f9f9' }}>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold', color: '#bbb' }} colSpan="4">Gastos prov. s/Reintegro</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', color: '#bbb' }}>{formatCurrency(terceroSinReintegro)}</td>
-              </tr>
-            )}
-            {terceroReintegro > 0 && (
-              <tr style={{ backgroundColor: '#f0f0f0' }}>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold' }} colSpan="4">(-) Gastos prov. c/Reintegro</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold' }}>-{formatCurrency(terceroReintegro)}</td>
-              </tr>
-            )}
-            {propioReintegro > 0 && (
-              <tr style={{ backgroundColor: '#f9f9f9' }}>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', fontWeight: 'bold', color: '#bbb' }} colSpan="4">Gastos propios c/Reintegro</td>
-                <td style={{ border: '1px solid #ccc', padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', color: '#bbb' }}>{formatCurrency(propioReintegro)}</td>
-              </tr>
-            )}
-            <tr style={{ backgroundColor: '#e5e5e5' }}>
-              <td style={{ border: '1px solid #333', padding: '4px 6px', fontWeight: 'bold', fontSize: '11px' }} colSpan="4">(=) TOTAL VIAJE</td>
-              <td style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'right', fontWeight: 'bold', fontSize: '12px' }}><strong>{formatCurrency(costoViaje)}</strong></td>
-            </tr>
             <tr>
-              <td style={{ border: '1px solid #333', padding: '4px 6px', fontWeight: 'bold', fontSize: '11px' }} colSpan="4">Precio Acordado</td>
-              <td style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'right', fontWeight: 'bold', fontSize: '12px', color: '#2563eb' }}>{formatCurrency(viaje.precio_pactado)}</td>
-            </tr>
-            <tr style={{ backgroundColor: ganancia >= 0 ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)' }}>
-              <td style={{ border: '1px solid #333', padding: '4px 6px', fontWeight: 'bold', fontSize: '11px' }} colSpan="4">= TOTAL</td>
-              <td style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'right', fontWeight: 'bold', fontSize: '13px', color: ganancia >= 0 ? '#22c55e' : '#ef4444' }}>{ganancia >= 0 ? '+' : ''}{formatCurrency(ganancia)}</td>
+              <td style={{ border: '2px solid #333', padding: '6px 10px', fontWeight: 'bold', fontSize: '13px' }} colSpan="2">TOTAL</td>
+              <td style={{ border: '2px solid #333', padding: '6px 10px', textAlign: 'right', fontWeight: 'bold', fontSize: '14px', color: 'black' }}>{formatCurrency(ganancia)}</td>
             </tr>
           </tbody>
         </table>
-
-        <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '30px' }}>
-          <div style={{ textAlign: 'center', width: '180px', borderTop: '1px solid #333', paddingTop: '6px', fontSize: '9px' }}>
-            Firma Autorizada
-          </div>
-          <div style={{ textAlign: 'center', width: '180px', borderTop: '1px solid #333', paddingTop: '6px', fontSize: '9px' }}>
-            Fecha: {new Date().toLocaleDateString('es-AR')}
-          </div>
-        </div>
       </div>
     </div>
   );
