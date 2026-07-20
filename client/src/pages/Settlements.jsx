@@ -50,54 +50,50 @@ const PrintLiquidacionSheet = ({ data }) => {
                 {`@media print { @page { size: landscape; margin: 10mm; } }`}
             </style>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #333', paddingBottom: '10px', marginBottom: '15px' }}>
+            <div style={{ marginBottom: '15px', fontSize: '12px', fontWeight: 'bold' }}>{new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')}</div>
+            <div style={{ borderBottom: '2px solid #333', paddingBottom: '10px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                    <h1 style={{ margin: 0, fontSize: '18px', textTransform: 'uppercase', letterSpacing: '1px' }}>LIQUIDACIÓN DE {data.tipo}</h1>
-                    <h2 style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#555' }}>TAG Logística S.A.</h2>
+                    <h1 style={{ margin: 0, fontSize: '16px', textTransform: 'uppercase', letterSpacing: '1px' }}>TAG Logística</h1>
+                    <h2 style={{ margin: '4px 0 0 0', textTransform: 'uppercase', letterSpacing: '2px', fontSize: '15px' }}>LIQUIDACIÓN DE {data.tipo}</h2>
                 </div>
-                <div style={{ textAlign: 'right', fontSize: '13px' }}>
-                    <p style={{ margin: '0 0 3px 0' }}><strong>Fecha Emisión:</strong> {formatDate(data.fecha_emision)}</p>
-                    <p style={{ margin: '0 0 3px 0' }}><strong>Liquidación Nro:</strong> {data.numero}</p>
-                    <p style={{ margin: '0 0 3px 0' }}><strong>{data.tipo === 'cliente' ? 'Cliente' : 'Proveedor'}:</strong> {getEntityName(data)}</p>
-                    {(data.cliente?.cuit || data.proveedor?.cuit) && <p style={{ margin: 0 }}><strong>CUIT:</strong> {data.cliente?.cuit || data.proveedor?.cuit}</p>}
+                <div>
+                    <h2 style={{ margin: 0, fontSize: '14px', textAlign: 'right' }}>Nº {data.numero}</h2>
+                    <p style={{ margin: '2px 0 0', fontSize: '14px' }}><strong>{data.tipo === 'cliente' ? 'Cliente' : 'Proveedor'}:</strong> {getEntityName(data)}</p>
+                    {(data.cliente?.cuit || data.proveedor?.cuit) && <p style={{ margin: '2px 0 0', fontSize: '14px' }}><strong>CUIT:</strong> {data.cliente?.cuit || data.proveedor?.cuit}</p>}
                 </div>
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', marginBottom: '20px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px', marginBottom: '20px' }}>
                 <thead>
                     <tr>
-                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Fecha</th>
-                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Código</th>
-                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Documento</th>
-                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Origen / Destino</th>
-                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Chofer</th>
-                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Unidad</th>
-                        {data.tipo === 'proveedor' && <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Cliente</th>}
-                        {data.tipo === 'proveedor' && <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Gastos</th>}
-                        {data.tipo === 'proveedor' && <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Anticipos</th>}
-                        <th style={{ border: '1px solid #333', padding: '5px 8px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '10px' }}>Monto</th>
+                        <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Fecha</th>
+                        <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Código</th>
+                        <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Documento</th>
+                        <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Origen / Destino</th>
+                        <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Chofer</th>
+                        <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Unidad</th>
+                        {data.tipo === 'proveedor' && <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Cliente</th>}
+                        <th style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'right', backgroundColor: '#e5e5e5', textTransform: 'uppercase', fontSize: '9px' }}>Monto</th>
                     </tr>
                 </thead>
                 <tbody>
                     {viajes.map((v, idx) => (
                         <tr key={v.id} style={idx % 2 === 0 ? {} : { backgroundColor: '#f5f5f5' }}>
-                            <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{formatDate(v.fecha_salida)}</td>
-                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', fontWeight: 'bold', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{getViajeCodigo(v)}</td>
-                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', fontSize: '10px' }}>{v.documento ? `${v.documento.tipo === 'REMITO' ? 'Remito' : v.documento.tipo === 'CARTA_DE_PORTE' ? 'CdP' : 'HoR'} ${v.documento.numero}` : '—'}</td>
-                            <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.origen} → {v.destino}</td>
-                            <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.chofer?.nombre} {v.chofer?.apellido}</td>
-                            <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.unidades?.[0]?.marca} {v.unidades?.[0]?.modelo} ({v.unidades?.[0]?.patente || '—'})</td>
-                            {data.tipo === 'proveedor' && <td style={{ border: '1px solid #ccc', padding: '5px 8px' }}>{v.cliente?.razon_social || '—'}</td>}
-                            {data.tipo === 'proveedor' && <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right' }}>{formatCurrency(v.gastos?.reduce((s, g) => s + parseFloat(g.monto || 0), 0) || 0)}</td>}
-                            {data.tipo === 'proveedor' && <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right' }}>{formatCurrency(v.anticipos?.reduce((s, a) => s + parseFloat(a.monto || 0), 0) || 0)}</td>}
-                            <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(v.pivot?.monto ?? v.precio_pactado)}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '4px 6px', whiteSpace: 'nowrap' }}>{formatDate(v.fecha_salida)}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '4px 6px', fontWeight: 'bold', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{getViajeCodigo(v)}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '4px 6px', whiteSpace: 'nowrap' }}>{v.documento ? `${v.documento.tipo === 'REMITO' ? 'Rem' : v.documento.tipo === 'CARTA_DE_PORTE' ? 'CdP' : 'HoR'} ${v.documento.numero}` : '—'}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '4px 6px', whiteSpace: 'nowrap' }}>{v.origen} → {v.destino}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '4px 6px', whiteSpace: 'nowrap' }}>{v.chofer?.nombre} {v.chofer?.apellido}</td>
+                            <td style={{ border: '1px solid #ccc', padding: '4px 6px', whiteSpace: 'nowrap' }}>{v.unidades?.[0]?.patente || '—'}</td>
+                            {data.tipo === 'proveedor' && <td style={{ border: '1px solid #ccc', padding: '4px 6px', whiteSpace: 'nowrap' }}>{v.cliente?.razon_social || '—'}</td>}
+                            <td style={{ border: '1px solid #ccc', padding: '4px 6px', textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{formatCurrency(v.pivot?.monto ?? v.precio_pactado)}</td>
                         </tr>
                     ))}
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colSpan={data.tipo === 'proveedor' ? 8 : 5} style={{ border: '1px solid #333', padding: '8px', textAlign: 'right', fontWeight: 'bold', backgroundColor: '#e5e5e5', fontSize: '12px', textTransform: 'uppercase' }}>TOTAL A LIQUIDAR:</td>
-                        <td style={{ border: '1px solid #333', padding: '8px', textAlign: 'right', fontWeight: 'bold', fontSize: '14px' }}>{formatCurrency(data.total)}</td>
+                        <td colSpan={data.tipo === 'proveedor' ? 6 : 5} style={{ border: '1px solid #333', padding: '6px', textAlign: 'right', fontWeight: 'bold', backgroundColor: '#e5e5e5', fontSize: '11px', textTransform: 'uppercase' }}>TOTAL A LIQUIDAR:</td>
+                        <td style={{ border: '1px solid #333', padding: '6px', textAlign: 'right', fontWeight: 'bold', fontSize: '13px' }}>{formatCurrency(data.total)}</td>
                     </tr>
                 </tfoot>
             </table>
@@ -493,8 +489,6 @@ const LiquidacionPreview = ({ data, onClose, onPrint }) => {
                                     <th style={{ padding: '10px 8px', textAlign: 'left', color: '#555' }}>Origen - Destino</th>
                                     <th style={{ padding: '10px 8px', textAlign: 'left', color: '#555' }}>Chofer</th>
                                     <th style={{ padding: '10px 8px', textAlign: 'left', color: '#555' }}>Unidad</th>
-                                    <th style={{ padding: '10px 8px', textAlign: 'right', color: '#555' }}>Gastos</th>
-                                    <th style={{ padding: '10px 8px', textAlign: 'right', color: '#555' }}>Anticipos</th>
                                     <th style={{ padding: '10px 8px', textAlign: 'right', color: '#555' }}>Monto</th>
                                 </tr>
                             </thead>
@@ -506,15 +500,13 @@ const LiquidacionPreview = ({ data, onClose, onPrint }) => {
                                         <td style={{ padding: '10px 8px' }}>{v.origen} → {v.destino}</td>
                                         <td style={{ padding: '10px 8px' }}>{v.chofer?.nombre} {v.chofer?.apellido}</td>
                                         <td style={{ padding: '10px 8px' }}>{v.unidad?.marca} {v.unidad?.modelo} ({v.unidad?.patente || '—'})</td>
-                                        <td style={{ padding: '10px 8px', textAlign: 'right' }}>{formatCurrency(v.total_gastos)}</td>
-                                        <td style={{ padding: '10px 8px', textAlign: 'right' }}>{formatCurrency(v.total_anticipos)}</td>
                                         <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: '500' }}>{formatCurrency(v.pivot?.monto ?? v.precio_pactado)}</td>
                                     </tr>
                                 ))}
                             </tbody>
                             <tfoot>
                                 <tr style={{ fontWeight: 'bold', fontSize: '16px' }}>
-                                    <td colSpan="6" style={{ padding: '20px 8px 10px', textAlign: 'right', borderTop: '2px solid #ddd' }}>TOTAL A LIQUIDAR:</td>
+                                    <td colSpan="4" style={{ padding: '20px 8px 10px', textAlign: 'right', borderTop: '2px solid #ddd' }}>TOTAL A LIQUIDAR:</td>
                                     <td style={{ padding: '20px 8px 10px', textAlign: 'right', borderTop: '2px solid #ddd', color: 'var(--bg-primary)' }}>{formatCurrency(data.total)}</td>
                                 </tr>
                             </tfoot>
@@ -859,10 +851,8 @@ const Settlements = () => {
                                                                         <th style={{ textAlign: 'left', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Ruta</th>
                                                                          <th style={{ textAlign: 'left', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Chofer</th>
                                                                          <th style={{ textAlign: 'left', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Unidad</th>
-                                                                        {liq.tipo === 'proveedor' && <th style={{ textAlign: 'left', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Cliente</th>}
-                                                                        <th style={{ textAlign: 'right', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Gastos</th>
-                                                                        <th style={{ textAlign: 'right', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Anticipos</th>
-                                                                        <th style={{ textAlign: 'right', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Monto</th>
+                                                                         {liq.tipo === 'proveedor' && <th style={{ textAlign: 'left', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Cliente</th>}
+                                                                         <th style={{ textAlign: 'right', padding: '0.4rem 0.6rem', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>Monto</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
@@ -873,10 +863,8 @@ const Settlements = () => {
                                                                             <td style={{ padding: '0.4rem 0.6rem' }}>{v.origen} → {v.destino}</td>
                                                                              <td style={{ padding: '0.4rem 0.6rem' }}>{v.chofer?.nombre} {v.chofer?.apellido}</td>
                                                                              <td style={{ padding: '0.4rem 0.6rem' }}>{v.unidades?.[0]?.marca} {v.unidades?.[0]?.modelo} ({v.unidades?.[0]?.patente || '—'})</td>
-                                                                            {liq.tipo === 'proveedor' && <td style={{ padding: '0.4rem 0.6rem' }}>{v.cliente?.razon_social || '—'}</td>}
-                                                                            <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>{formatCurrency(v.gastos?.reduce((s, g) => s + parseFloat(g.monto || 0), 0) || 0)}</td>
-                                                                            <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>{formatCurrency(v.anticipos?.reduce((s, a) => s + parseFloat(a.monto || 0), 0) || 0)}</td>
-                                                                            <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(v.pivot?.monto ?? v.precio_pactado)}</td>
+                                                                             {liq.tipo === 'proveedor' && <td style={{ padding: '0.4rem 0.6rem' }}>{v.cliente?.razon_social || '—'}</td>}
+                                                                             <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(v.pivot?.monto ?? v.precio_pactado)}</td>
                                                                         </tr>
                                                                     ))}
                                                                 </tbody>
